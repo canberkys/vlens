@@ -2,14 +2,13 @@ import SwiftUI
 import AppKit
 
 /// In-app feedback/bug-report, reached from the Help menu. Faz 5 of
-/// `~/.claude/plans/swirling-painting-snail.md`. Only the email channel is
-/// built here — the GitHub Issue channel is deliberately withheld until the
-/// project actually has a GitHub repo (it doesn't yet; that's a business
-/// decision — public vs. private — not something to decide unilaterally).
-///
-/// No backend, no embedded secrets: this builds a prefilled `mailto:` URL
-/// and hands it to the user's own mail client via `NSWorkspace` — they see
-/// and send it themselves, nothing leaves this machine automatically.
+/// `~/.claude/plans/swirling-painting-snail.md`. Two channels, both
+/// zero-backend/zero-embedded-secret: a prefilled `mailto:` draft the user's
+/// own mail client sends, and a prefilled GitHub "new issue" URL the user's
+/// own browser/GitHub session sends — nothing leaves this machine
+/// automatically in either case, no credential ships inside the app binary.
+/// The GitHub channel needed `github.com/canberkys/vlens` (private) to
+/// exist first — see the repo-creation note in the plan file.
 struct FeedbackView: View {
     @Bindable var viewModel: ConnectionViewModel
 
@@ -28,6 +27,7 @@ struct FeedbackView: View {
     /// party. **Confirm or change this** before relying on it for real user
     /// feedback; see Faz 5 in the plan file.
     private static let recipientEmail = "kayit@canberkki.com"
+    private static let githubRepo = "canberkys/vlens"
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -63,6 +63,8 @@ struct FeedbackView: View {
 
             HStack {
                 Spacer()
+                Button("Open as GitHub Issue") { openAsGitHubIssue() }
+                    .disabled(title.isEmpty)
                 Button("Send via Email") { sendViaEmail() }
                     .buttonStyle(.borderedProminent)
                     .disabled(title.isEmpty)
@@ -87,6 +89,17 @@ struct FeedbackView: View {
         components.queryItems = [
             URLQueryItem(name: "subject", value: "[vLens \(kind.rawValue)] \(title)"),
             URLQueryItem(name: "body", value: "\(description)\n\n---\n\(diagnosticInfo)")
+        ]
+        guard let url = components.url else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    private func openAsGitHubIssue() {
+        var components = URLComponents(string: "https://github.com/\(Self.githubRepo)/issues/new")!
+        components.queryItems = [
+            URLQueryItem(name: "title", value: title),
+            URLQueryItem(name: "body", value: "\(description)\n\n---\n\(diagnosticInfo)"),
+            URLQueryItem(name: "labels", value: kind == .bug ? "bug" : "enhancement")
         ]
         guard let url = components.url else { return }
         NSWorkspace.shared.open(url)

@@ -937,11 +937,12 @@ headless exports). Not started.
 vLens's MVP supports one active connection at a time, switchable. Not started.
 
 **Distribution**: no app bundle, code signing, or notarization yet — everything so
-far runs via `swift run` / `swift build` in development. This blocks real
-auto-update (target: Sparkle) and the GitHub-Issue channel of the Feedback
-screen (email channel is done, see [§13](#13-feedback--bug-reports)) — both
-need the project on GitHub with signed, hosted releases first. See
-`~/.claude/plans/swirling-painting-snail.md` for the phased plan.
+far runs via `swift run` / `swift build` in development. This still blocks real
+auto-update (target: Sparkle), which needs signed, hosted releases. The
+project itself is now on GitHub (`github.com/canberkys/vlens`, private) as of
+2026-09-04 — this unblocked the Feedback screen's GitHub-Issue channel, see
+[§13](#13-feedback--bug-reports). See `~/.claude/plans/swirling-painting-snail.md`
+for the phased plan.
 
 **VMSA security advisory awareness**: Phase A done — see [§12](#12-security-advisory-awareness).
 Phase B (build-level matching against `HostInfo.esxVersion`/`VCenterInfo.build`)
@@ -1044,22 +1045,44 @@ mutable response state means these specific tests must run serialized
 
 `Sources/vLens/FeedbackView.swift`, reached from the Help menu ("Send
 Feedback…", `vLensApp.swift`'s Feedback `Window` scene). Faz 5 of
-`~/.claude/plans/swirling-painting-snail.md` — **partially done**: the email
-channel is built, the GitHub Issue channel isn't (it needs the project on an
-actual GitHub repo, which doesn't exist yet — a business decision, public vs.
-private, not something to make unilaterally).
+`~/.claude/plans/swirling-painting-snail.md` — **done, both channels**: email
+and GitHub Issue. The project moved to GitHub (`github.com/canberkys/vlens`,
+private) on 2026-09-04, which unblocked the second channel.
 
 Fields: type (Bug Report / Feature Request), title, description, and
 automatically-attached diagnostic info shown transparently before sending —
 macOS version, and connected vCenter's version/build if there is one.
-**Never** the vCenter host, username, or password. "Send via Email" builds a
-`mailto:` URL (`URLComponents`, scheme `mailto`) and opens it with
-`NSWorkspace.shared.open` — the user's own mail client opens with a
-ready-made draft that *they* review and send. No backend, no embedded
-credentials: sending a bug-report email or opening a GitHub issue
+**Never** the vCenter host, username, or password.
+
+- **"Send via Email"** builds a `mailto:` URL (`URLComponents`, scheme
+  `mailto`) and opens it with `NSWorkspace.shared.open` — the user's own mail
+  client opens with a ready-made draft that *they* review and send.
+- **"Open as GitHub Issue"** builds a prefilled
+  `github.com/canberkys/vlens/issues/new?title=...&body=...&labels=...` URL
+  (label `bug` or `enhancement` depending on the selected type — both exist
+  as GitHub's own default labels, verified via `gh api repos/.../labels`
+  rather than assumed) and opens it in the browser — the user's own GitHub
+  session reviews and submits it.
+
+Both are the same "prefilled deep link, human confirms" pattern — no
+backend, no embedded credentials. Sending an email or opening a GitHub issue
 automatically and silently would need a secret (SMTP creds or a GitHub
 token) shipped inside the app binary, extractable by anyone — a real
-security anti-pattern this deliberately avoids.
+security anti-pattern this deliberately avoids. A *silent*, one-click send
+(no visible mail client/browser step) was explicitly requested and just as
+explicitly deferred to release time — see the note in
+`~/.claude/projects/-Users-c-kilicarsl/memory/project_vlens.md` and Faz 5's
+"Kullanıcı onayı" note in the plan file: it needs a small serverless relay
+holding the secret server-side, real infrastructure not yet justified before
+the app has real users.
+
+**On "PR" vs. "issue"**: the user also asked about feature requests becoming
+GitHub PRs directly, not just issues. Deliberately not built — auto-opening a
+PR (an actual code change) from a freeform text description isn't something
+a mechanical transformation can respect; it needs a human/agent to actually
+understand the request and write the fix. What issues *do* enable: a future
+Claude Code session can be pointed at an open issue and triage/fix/PR it
+quickly — a workflow, not a feature embedded in the app.
 
 Recipient is currently a hardcoded default (the developer's own address) —
 confirm or change `FeedbackView.recipientEmail` before relying on this for

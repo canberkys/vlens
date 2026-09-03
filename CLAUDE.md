@@ -129,8 +129,27 @@ go build -o vcsim/vcsim ./vcsim && ./vcsim/vcsim
 `VLENS_HELPER_PATH` env var → dev fallback (`helper/vlens-helper`, proje kökünde
 `go build` ile üretilmiş olmalı).
 
-## Durum (2026-09-03, son madde 2026-09-04)
+## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) Proje GitHub'a taşındı + Feedback'in GitHub Issue kanalı
+      tamamlandı (Faz 5 bitti)** — kullanıcı Feature Request'lerin doğrudan
+      repo'ya issue olarak düşmesini istedi, bu da repo kararını gerektirdi.
+      `github.com/canberkys/vlens` **private** olarak oluşturuldu
+      (`gh repo create`), ilk commit push edildi (109 dosya). Git identity
+      kurulumu kullanıcı tarafından yapıldı (`git config user.name/email`) —
+      ben git config'e asla dokunmuyorum, istisnasız bir kural; bu PkgLens'in
+      commit geçmişi kontrol edilerek de doğrulandı (orada da Claude
+      co-authorship trailer'lı commit'ler var, ama identity kurulumu ayrı
+      tutulmuş). `FeedbackView.swift`'e "Open as GitHub Issue" butonu eklendi
+      — `bug`/`enhancement` label'ları gerçek `gh api` çağrısıyla doğrulandı,
+      varsayılmadı. **"PR otomatik açsın" isteği bilinçli olarak yapılmadı**:
+      bir feature request metninden mekanik olarak PR (gerçek kod değişikliği)
+      üretmek sorumlu değil — issue'lar GitHub'a düşer, ben (gelecek bir
+      oturumda) onları görüp triage edip PR'a çeviririm, bu bir iş akışı, app'e
+      gömülü bir özellik değil.
+      - **Sessiz/tek-tık gönderim** (kullanıcının ayrı bir isteği) bilinçli
+        olarak release zamanına ertelendi — `~/.claude/projects/-Users-c-kilicarsl/memory/project_vlens.md`'e
+        not düşüldü, gelecek oturum Faz 3 başladığında bunu proaktif hatırlatmalı.
 - [x] **(2026-09-04) Feedback ekranı eklendi (Faz 5, sadece email kanalı)** — kullanıcı
       uzaktan ulaşılamaz durumdaydı ("devam etmen mümkün mü"), bağlı kaldığım
       için sadece GitHub'a muhtaç OLMAYAN kısımla devam ettim. `FeedbackView.swift`
