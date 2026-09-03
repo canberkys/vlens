@@ -960,13 +960,23 @@ headless exports). Not started.
 **Multi-vCenter merge**: RVTools ships a separate `RVToolsMergeExcelFiles` utility.
 vLens's MVP supports one active connection at a time, switchable. Not started.
 
-**Distribution**: no app bundle, code signing, or notarization yet — everything so
-far runs via `swift run` / `swift build` in development. This still blocks real
-auto-update (target: Sparkle), which needs signed, hosted releases. The
-project itself is now on GitHub (`github.com/canberkys/vlens`, private) as of
-2026-09-04 — this unblocked the Feedback screen's GitHub-Issue channel, see
-[§13](#13-feedback--bug-reports). See `~/.claude/plans/swirling-painting-snail.md`
-for the phased plan.
+**Distribution**: `scripts/release.sh` builds a real, signed `.app` bundle now —
+`swift build -c release`, hand-constructed `Contents/{MacOS,Resources}` (no Xcode
+project — mirrors the same developer's already-proven PkgLens release pattern),
+signs the embedded `vlens-helper` binary before the outer app (nested code must
+be signed first), verified with `codesign --verify --deep --strict`. Only
+notarization/DMG remain gated on a one-time manual step (`xcrun notarytool
+store-credentials`, needs an Apple ID app-specific password — can't be automated,
+needs the developer's own Apple ID login) — the script detects whether that's
+done and skips straight to a clear instruction if not, rather than failing.
+`Resources/Info.plist` carries real versioning (`CFBundleShortVersionString`
+1.0.0 — the first real release; Package.swift's old "v0.1.0" comment was never
+distributed) and `Resources/AppIcon.icns` (placeholder, SF Symbol-based, per
+§10's icon note below). Auto-update (target: Sparkle) still needs the
+notarized/hosted release this unblocks. The project itself is on GitHub
+(`github.com/canberkys/vlens`, private) as of 2026-09-04 — this unblocked the
+Feedback screen's GitHub-Issue channel, see [§13](#13-feedback--bug-reports).
+See `~/.claude/plans/swirling-painting-snail.md` for the phased plan.
 
 **VMSA security advisory awareness**: Phase A done — see [§12](#12-security-advisory-awareness).
 Phase B (build-level matching against `HostInfo.esxVersion`/`VCenterInfo.build`)

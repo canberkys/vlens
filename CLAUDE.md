@@ -56,6 +56,8 @@ gibi Swift-olmayan bağımlılıklar gömüyor, bu yeni bir pattern değil.
 ```
 vLens/
 ├── Package.swift
+├── Resources/               # Info.plist, vLens.entitlements, AppIcon.icns/.iconset — .app paketleme için
+├── scripts/release.sh       # build → bundle → codesign → (varsa) notarize → DMG, tek script
 ├── Sources/
 │   ├── vLens/              # SwiftUI app target
 │   │   ├── vLensApp.swift        # NSApplicationDelegateAdaptor (`swift run` focus fix'i) +
@@ -132,6 +134,25 @@ go build -o vcsim/vcsim ./vcsim && ./vcsim/vcsim
 
 ## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) Gerçek imzalı `.app` bundle çalışıyor (Faz 3'ün büyük kısmı)** —
+      `scripts/release.sh`: `swift build -c release` + elle inşa edilmiş `.app`
+      bundle (Xcode projesi yok, PkgLens'in kanıtlanmış deseni) + iki aşamalı
+      codesign (önce `vlens-helper`, sonra `.app` — nested code sırası önemli) +
+      `codesign --verify --deep --strict` doğrulaması. Gerçekten çalıştırıldı,
+      gerçek bir sorun bulundu: Apple'ın timestamp sunucusu bir seferinde flaky
+      çıktı, retry'da düzeldi — script'e 3 denemeli retry loop eklendi. İmzalı
+      `.app` gerçekten `open` ile başlatılıp çalıştığı doğrulandı. Placeholder
+      icon (`Resources/AppIcon.icns`, SF Symbol tabanlı, mavi gradient — AppKit
+      ile programatik üretildi, tasarımcı emeği değil) ve gerçek versiyonlama
+      (`Resources/Info.plist`, `CFBundleShortVersionString` **1.0.0** — ilk
+      gerçek sürüm, Package.swift'teki "v0.1.0" yorumu hiç dağıtılmamıştı).
+      **Kalan**: notarization — kullanıcının bir kerelik `xcrun notarytool
+      store-credentials` adımını bekliyor (Apple ID gerektirdiği için
+      otomatikleştirilemez), script bunu algılayıp net talimatla duruyor.
+      Ayrıca kullanıcı Preferences ekranını gözden geçirip geliştirmeye açık
+      yerleri not almamı istedi — plan dosyasına Faz 7 altına eklendi (validasyon
+      eksikliği, VMSA kontrolüne aç/kapa yok, Select All/None yok vb.) —
+      henüz uygulanmadı, sadece kayıt.
 - [x] **(2026-09-04) Proje GitHub'a taşındı + Feedback'in GitHub Issue kanalı
       tamamlandı (Faz 5 bitti)** — kullanıcı Feature Request'lerin doğrudan
       repo'ya issue olarak düşmesini istedi, bu da repo kararını gerektirdi.
