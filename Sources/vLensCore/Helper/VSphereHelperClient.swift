@@ -39,6 +39,7 @@ public struct VSphereHelperClient: Sendable {
             dvSwitches: response.dvSwitches ?? [],
             dvPorts: response.dvPorts ?? [],
             resourcePools: response.resourcePools ?? [],
+            vApps: response.vApps ?? [],
             hbas: response.hbas ?? [],
             nics: response.nics ?? [],
             vmKernels: response.vmKernels ?? [],

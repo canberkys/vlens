@@ -147,3 +147,32 @@ import Testing
 
     #expect(results.isEmpty)
 }
+
+@Test func flagsConsolidationNeeded() {
+    let vm = VirtualMachineInfo(
+        name: "web-01", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 2,
+        memoryMiB: 4096, hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "vm1", consolidationNeeded: true
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [], vms: [vm]
+    )
+
+    #expect(results.count == 1)
+    #expect(results[0].rule == "Consolidation needed")
+}
+
+@Test func doesNotFlagVMWithoutConsolidationNeeded() {
+    let vm = VirtualMachineInfo(
+        name: "web-01", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 2,
+        memoryMiB: 4096, hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "vm1"
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [], vms: [vm]
+    )
+
+    #expect(results.isEmpty)
+}

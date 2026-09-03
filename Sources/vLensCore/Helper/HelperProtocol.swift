@@ -55,6 +55,7 @@ public struct HelperResponse: Codable, Sendable {
     public let dvSwitches: [DVSwitchInfo]?
     public let dvPorts: [DVPortInfo]?
     public let resourcePools: [ResourcePoolInfo]?
+    public let vApps: [VAppInfo]?
     public let hbas: [HBAInfo]?
     public let nics: [NicInfo]?
     public let vmKernels: [VMKernelInfo]?
@@ -95,6 +96,7 @@ public struct CollectedInventory: Sendable {
     public let dvSwitches: [DVSwitchInfo]
     public let dvPorts: [DVPortInfo]
     public let resourcePools: [ResourcePoolInfo]
+    public let vApps: [VAppInfo]
     public let hbas: [HBAInfo]
     public let nics: [NicInfo]
     public let vmKernels: [VMKernelInfo]

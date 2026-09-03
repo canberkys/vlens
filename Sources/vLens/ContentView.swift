@@ -335,6 +335,7 @@ struct ContentView: View {
     private var filteredDVSwitches: [DVSwitchInfo] { viewModel.dvSwitches.filter { $0.matches(viewModel.searchText) } }
     private var filteredDVPorts: [DVPortInfo] { viewModel.dvPorts.filter { $0.matches(viewModel.searchText) } }
     private var filteredResourcePools: [ResourcePoolInfo] { viewModel.resourcePools.filter { $0.matches(viewModel.searchText) } }
+    private var filteredVApps: [VAppInfo] { viewModel.vApps.filter { $0.matches(viewModel.searchText) } }
     private var filteredHBAs: [HBAInfo] { viewModel.hbas.filter { $0.matches(viewModel.searchText) } }
     private var filteredNics: [NicInfo] { viewModel.nics.filter { $0.matches(viewModel.searchText) } }
     private var filteredVMKernels: [VMKernelInfo] { viewModel.vmKernels.filter { $0.matches(viewModel.searchText) } }
@@ -364,6 +365,7 @@ struct ContentView: View {
         case .dvSwitch: return filteredDVSwitches.count
         case .dvPort: return filteredDVPorts.count
         case .vRP: return filteredResourcePools.count
+        case .vApp: return filteredVApps.count
         case .vHBA: return filteredHBAs.count
         case .vNic: return filteredNics.count
         case .vmk: return filteredVMKernels.count
@@ -396,6 +398,7 @@ struct ContentView: View {
         case .dvSwitch: DVSwitchTabView(rows: filteredDVSwitches)
         case .dvPort: DVPortTabView(rows: filteredDVPorts)
         case .vRP: VRPTabView(rows: filteredResourcePools)
+        case .vApp: VAppTabView(rows: filteredVApps)
         case .vHBA: VHBATabView(rows: filteredHBAs)
         case .vNic: VNicTabView(rows: filteredNics)
         case .vmk: VMKTabView(rows: filteredVMKernels)
@@ -451,6 +454,7 @@ struct ContentView: View {
         case .dvSwitch: export(filteredDVSwitches, format: format)
         case .dvPort: export(filteredDVPorts, format: format)
         case .vRP: export(filteredResourcePools, format: format)
+        case .vApp: export(filteredVApps, format: format)
         case .vHBA: export(filteredHBAs, format: format)
         case .vNic: export(filteredNics, format: format)
         case .vmk: export(filteredVMKernels, format: format)

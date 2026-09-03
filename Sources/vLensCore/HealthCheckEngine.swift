@@ -4,7 +4,7 @@ import Foundation
 /// tabs — matches RVTools' own model (vHealth doesn't do a separate
 /// collection pass, it evaluates rules over vInfo/vSnapshot/vTools/etc.).
 ///
-/// Implements 9 of RVTools' 24 documented rules (numbering matches
+/// Implements 10 of RVTools' 24 documented rules (numbering matches
 /// rvtools.txt's vHealth section):
 ///   #1  VM has a CDROM device connected!
 ///   #3  VM has an active snapshot!
@@ -14,8 +14,9 @@ import Foundation
 ///   #7  There are xx virtual CPUs active per core on this host! (threshold zz)
 ///   #8  There are xx VMs active on this datastore! (threshold zz)
 ///   #12 Multipath operational state (degraded/dead paths)
+///   #13 Virtual machine consolidation needed
 ///   host config status not green (rolled into the vHealth concept generally)
-/// The remaining 15 rules (floppy connected, zombie VMDK/VM, NTP/cert
+/// The remaining 14 rules (floppy connected, zombie VMDK/VM, NTP/cert
 /// expiry, config-issue events, etc.) need data this app doesn't collect
 /// yet — add them incrementally as their source tabs are built.
 public enum HealthCheckEngine {
@@ -28,9 +29,20 @@ public enum HealthCheckEngine {
         cds: [CDInfo] = [],
         partitions: [PartitionInfo] = [],
         multipaths: [MultipathInfo] = [],
+        vms: [VirtualMachineInfo] = [],
         thresholds: HealthCheckThresholds = HealthCheckThresholds()
     ) -> [HealthCheckResult] {
         var results: [HealthCheckResult] = []
+
+        for vm in vms where vm.consolidationNeeded {
+            results.append(HealthCheckResult(
+                id: "consolidation.\(vm.vmUUID)",
+                severity: .yellow,
+                rule: "Consolidation needed",
+                message: "\(vm.name): virtual machine disk consolidation needed.",
+                relatedObject: vm.name
+            ))
+        }
 
         for snapshot in snapshots {
             results.append(HealthCheckResult(

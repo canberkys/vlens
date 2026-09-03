@@ -19,6 +19,10 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
     public let primaryIPAddress: String?
     public let vmwareToolsStatus: String?
     public let vmUUID: String
+    /// Not a vInfo column — only read by `HealthCheckEngine`'s "consolidation
+    /// needed" rule (matches this doc comment's own "don't pre-model unread
+    /// fields" rule: this one is read).
+    public let consolidationNeeded: Bool
 
     public init(
         name: String,
@@ -32,7 +36,8 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
         resourcePoolName: String?,
         primaryIPAddress: String?,
         vmwareToolsStatus: String?,
-        vmUUID: String
+        vmUUID: String,
+        consolidationNeeded: Bool = false
     ) {
         self.name = name
         self.powerState = powerState
@@ -46,6 +51,7 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
         self.primaryIPAddress = primaryIPAddress
         self.vmwareToolsStatus = vmwareToolsStatus
         self.vmUUID = vmUUID
+        self.consolidationNeeded = consolidationNeeded
     }
 }
 

@@ -320,6 +320,12 @@ public enum DemoData {
         }
     }
 
+    public static func vApps() -> [VAppInfo] {
+        [
+            VAppInfo(id: "vapp-1", name: "3-Tier-WebApp", ownerName: clusters.first, numVMs: 3, productName: "Internal Web Platform", productVersion: "2.4.0")
+        ]
+    }
+
     public static func hbas() -> [HBAInfo] {
         hostNames.map { host in
             HBAInfo(id: "\(host)-vmhba0", hostName: host, device: "vmhba0", model: "Smart Array P440ar", driver: "nhpsa", status: "online")

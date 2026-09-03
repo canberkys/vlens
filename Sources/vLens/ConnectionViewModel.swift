@@ -50,6 +50,7 @@ final class ConnectionViewModel {
     var dvSwitches: [DVSwitchInfo] = []
     var dvPorts: [DVPortInfo] = []
     var resourcePools: [ResourcePoolInfo] = []
+    var vApps: [VAppInfo] = []
     var hbas: [HBAInfo] = []
     var nics: [NicInfo] = []
     var vmKernels: [VMKernelInfo] = []
@@ -155,6 +156,7 @@ final class ConnectionViewModel {
         dvSwitches = DemoData.dvSwitches()
         dvPorts = DemoData.dvPorts()
         resourcePools = DemoData.resourcePools()
+        vApps = DemoData.vApps()
         hbas = DemoData.hbas()
         nics = DemoData.nics()
         vmKernels = DemoData.vmKernels()
@@ -191,6 +193,7 @@ final class ConnectionViewModel {
         dvSwitches = []
         dvPorts = []
         resourcePools = []
+        vApps = []
         hbas = []
         nics = []
         vmKernels = []
@@ -215,6 +218,7 @@ final class ConnectionViewModel {
             cds: cds,
             partitions: partitions,
             multipaths: multipaths,
+            vms: vms,
             thresholds: healthCheckThresholds
         )
     }
@@ -328,6 +332,7 @@ final class ConnectionViewModel {
             dvSwitches = inventory.dvSwitches
             dvPorts = inventory.dvPorts
             resourcePools = inventory.resourcePools
+            vApps = inventory.vApps
             hbas = inventory.hbas
             nics = inventory.nics
             vmKernels = inventory.vmKernels

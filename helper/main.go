@@ -60,6 +60,7 @@ type helperResponse struct {
 	DVSwitches    []dvSwitchInfo       `json:"dvSwitches"`
 	DVPorts       []dvPortInfo         `json:"dvPorts"`
 	ResourcePools []resourcePoolInfo   `json:"resourcePools"`
+	VApps         []vAppInfo           `json:"vApps"`
 	HBAs          []hbaInfo            `json:"hbas"`
 	Nics          []nicInfo            `json:"nics"`
 	VMKernels     []vmkInfo            `json:"vmKernels"`
@@ -97,6 +98,10 @@ type virtualMachineInfo struct {
 	PrimaryIPAddress  *string `json:"primaryIPAddress"`
 	VMwareToolsStatus *string `json:"vmwareToolsStatus"`
 	VMUUID            string  `json:"vmUUID"`
+	// Not a vInfo column — carried only for the vHealth "consolidation
+	// needed" rule (see HealthCheckEngine.swift), matching the doc comment's
+	// "don't pre-model fields nothing reads" rule: this one is read.
+	ConsolidationNeeded bool `json:"consolidationNeeded"`
 }
 
 type vmCPUInfo struct {
@@ -275,6 +280,15 @@ type resourcePoolInfo struct {
 	MemoryReservationMiB int     `json:"memoryReservationMiB"`
 	MemoryLimitMiB       int     `json:"memoryLimitMiB"`
 	NumVMs               int     `json:"numVMs"`
+}
+
+type vAppInfo struct {
+	ID             string  `json:"id"`
+	Name           string  `json:"name"`
+	OwnerName      *string `json:"ownerName"`
+	NumVMs         int     `json:"numVMs"`
+	ProductName    *string `json:"productName"`
+	ProductVersion *string `json:"productVersion"`
 }
 
 type hbaInfo struct {
@@ -623,6 +637,10 @@ func collectAll(req helperRequest) (helperResponse, error) {
 	if err != nil {
 		return helperResponse{}, fmt.Errorf("resource pool collection failed: %w", err)
 	}
+	vApps, err := collectVApps(ctx, client)
+	if err != nil {
+		return helperResponse{}, fmt.Errorf("vApp collection failed: %w", err)
+	}
 	hbas, err := collectHBAs(ctx, client)
 	if err != nil {
 		return helperResponse{}, fmt.Errorf("HBA collection failed: %w", err)
@@ -648,7 +666,7 @@ func collectAll(req helperRequest) (helperResponse, error) {
 	resp := helperResponse{
 		OK: true, Hosts: hosts, Datastores: datastores, Clusters: clusters, Licenses: licenses,
 		VSwitches: vSwitches, Ports: ports, DVSwitches: dvSwitches, DVPorts: dvPorts,
-		ResourcePools: resourcePools, HBAs: hbas, Nics: nics, VMKernels: vmKernels, Multipaths: multipaths,
+		ResourcePools: resourcePools, VApps: vApps, HBAs: hbas, Nics: nics, VMKernels: vmKernels, Multipaths: multipaths,
 		VCenter: &vCenterInfo{
 			FullName: about.FullName, Version: about.Version, Build: about.Build, APIVersion: about.ApiVersion,
 		},
@@ -867,6 +885,7 @@ func collectVMs(ctx context.Context, client *govmomi.Client) ([]mo.VirtualMachin
 	props := []string{
 		"name",
 		"runtime.powerState",
+		"runtime.consolidationNeeded",
 		"config.template",
 		"config.guestFullName",
 		"config.hardware.numCPU",
@@ -1355,6 +1374,54 @@ func collectResourcePools(ctx context.Context, client *govmomi.Client) ([]resour
 	return result, nil
 }
 
+// collectVApps mirrors collectResourcePools almost exactly — VirtualApp
+// (vim25/mo) embeds ResourcePool, so it's the same container-view-plus-owner-
+// name-map pattern, just over a different vim25 type and with product
+// metadata (VAppConfig.Product) added on top.
+func collectVApps(ctx context.Context, client *govmomi.Client) ([]vAppInfo, error) {
+	m := view.NewManager(client.Client)
+	cv, err := m.CreateContainerView(ctx, client.Client.ServiceContent.RootFolder, []string{"VirtualApp"}, true)
+	if err != nil {
+		return nil, err
+	}
+	defer cv.Destroy(ctx)
+
+	var raw []mo.VirtualApp
+	if err := cv.Retrieve(ctx, []string{"VirtualApp"}, []string{"name", "owner", "vm", "vAppConfig"}, &raw); err != nil {
+		return nil, err
+	}
+
+	ownerNames, err := nameMap(ctx, client, "ComputeResource")
+	if err != nil {
+		return nil, err
+	}
+
+	result := []vAppInfo{}
+	for _, va := range raw {
+		info := vAppInfo{
+			ID:     va.Reference().Value,
+			Name:   va.Name,
+			NumVMs: len(va.Vm),
+		}
+		if name, ok := ownerNames[va.Owner]; ok {
+			info.OwnerName = &name
+		}
+		if va.VAppConfig != nil && len(va.VAppConfig.Product) > 0 {
+			product := va.VAppConfig.Product[0]
+			if product.Name != "" {
+				name := product.Name
+				info.ProductName = &name
+			}
+			if product.Version != "" {
+				version := product.Version
+				info.ProductVersion = &version
+			}
+		}
+		result = append(result, info)
+	}
+	return result, nil
+}
+
 func collectHBAs(ctx context.Context, client *govmomi.Client) ([]hbaInfo, error) {
 	m := view.NewManager(client.Client)
 	cv, err := m.CreateContainerView(ctx, client.Client.ServiceContent.RootFolder, []string{"HostSystem"}, true)
@@ -1518,10 +1585,11 @@ func collectMultipaths(ctx context.Context, client *govmomi.Client) ([]multipath
 
 func mapVMInfo(vm mo.VirtualMachine, hostName string, clusterName *string, poolName *string) virtualMachineInfo {
 	info := virtualMachineInfo{
-		Name:        vm.Name,
-		PowerState:  string(vm.Runtime.PowerState),
-		HostName:    hostName,
-		ClusterName: clusterName,
+		Name:                vm.Name,
+		PowerState:          string(vm.Runtime.PowerState),
+		HostName:            hostName,
+		ClusterName:         clusterName,
+		ConsolidationNeeded: vm.Runtime.ConsolidationNeeded,
 	}
 	if vm.Config != nil {
 		info.Template = vm.Config.Template

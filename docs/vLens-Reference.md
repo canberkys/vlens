@@ -374,6 +374,31 @@ Interval-to-sampling-parameters mapping (`perfSamplingParameters` in
 | ≤ 30 days | 2-hour long-term |
 | > 30 days | 1-day historical |
 
+### vApp
+
+Model: `VAppInfo` · View: `VAppTabView` · Source: `collectVApps`
+
+A container grouping related VMs with shared power-on order/product
+metadata — real vSphere feature, but niche enough (RVTools' own users rarely
+rely on it) that vLens deferred it until the RVTools-parity closeout pass.
+`VirtualApp` (vim25) extends `ResourcePool`, so this mirrors `collectResourcePools`
+almost exactly — same container-view-plus-owner-name-map pattern, over a
+different vim25 type, with product metadata (`VAppConfig.Product`) added on top.
+
+| Column | Type | vim25 source |
+|---|---|---|
+| vApp | String | `name` |
+| Owner | String? | resolved from `owner` via the same `ComputeResource` name map as vRP |
+| VMs | Int | `len(virtualApp.vm)` |
+| Product | String? | `vAppConfig.product[0].name`, first product entry only |
+| Version | String? | `vAppConfig.product[0].version` |
+
+Verified against a real `VirtualApp` instance created in vcsim (`helper/vcsim/mkvapp`,
+mirrors `mksnap`'s pattern) — not assumed from the type definitions alone. vcsim's
+`ResourcePool.createChild` requires every `ResourceAllocationInfo` field set
+(reservation/limit/expandable/shares) or it rejects the creation with
+`InvalidArgument` — found by testing against the real simulator, not guessed.
+
 ### vHost
 
 Model: `HostInfo` · View: `VHostTabView` · Source: `collectHosts`
@@ -695,7 +720,7 @@ isn't inherently good or bad).
 ## 5. vHealth rule status
 
 RVTools documents 24 built-in health-check rules (rvtools.txt's vHealth section).
-vLens implements the 9 computable from data the other tabs already collect. All
+vLens implements the 10 computable from data the other tabs already collect. All
 numeric thresholds are user-adjustable — RVTools' equivalent is its Health
 Properties panel; vLens' is the standard macOS Settings scene (Cmd+,,
 `Sources/vLens/PreferencesView.swift`), backed by `HealthCheckPreferencesStore`
@@ -713,12 +738,12 @@ whatever's already collected, in both the main window and the shared
 | 7 | There are xx virtual CPUs active per core on this host! | ✅ Implemented — default threshold 4.0, adjustable in Preferences |
 | 8 | There are xx VMs active on this datastore! | ✅ Implemented — counts registered VMs (`numVMsTotal`), not power-state-filtered; default threshold 30, adjustable in Preferences |
 | 12 | Multipath operational state | ✅ Implemented — flags any path not in `active`/`standby` state |
+| 13 | Virtual machine consolidation needed | ✅ Implemented — reads `runtime.consolidationNeeded`, one finding per VM needing it |
 | — | Host config status not green | ✅ Implemented (not a numbered RVTools rule, rolled into the general vHealth concept) |
 | 2 | VM has a Floppy device connected! | ❌ needs a vFloppy tab (not built — floppy devices are effectively extinct on modern guests, low priority) |
 | 9 | Possibly a zombie vmdk file! | ❌ needs `vFileInfo` (datastore file browser — deliberately deferred, see §10) |
 | 10 | Possibly a zombie vm! | ❌ same dependency |
-| 11 | Inconsistent Folder Names | ❌ needs folder-path data vLens doesn't collect |
-| 13 | Virtual machine consolidation needed | ❌ needs `runtime.consolidationNeeded`, not currently fetched |
+| 11 | Inconsistent Folder Names | ❌ needs folder-path data vLens doesn't collect yet — buildable without a real vCenter (vcsim), planned in the parity-closeout pass |
 | 14 | Search datastore errors | ❌ N/A without a datastore browser |
 | 15 | VM config issues | ❌ needs `configIssue` events, not fetched |
 | 16 | Host config issues | ❌ same |
@@ -915,14 +940,13 @@ still worth doing — but it's no longer the blocker it looked like.
 Organized by "buildable without a real vCenter" (everything, via vcsim + demo data)
 versus what's simply not started yet:
 
-**Missing tabs** (2 of RVTools' 24 — every tab now has a vLens counterpart except
-these two, see [§4](#4-tab-reference)): `vApp` and `vFileInfo` (datastore file
-browser). Both are deliberately deferred indefinitely rather than lower-value —
-`vApp` (vApp resource-config metadata) is niche enough that it's worth building on
-request, not proactively; `vFileInfo` is explicitly out of scope since RVTools'
-own docs flag it as slow and rarely used interactively.
+**Missing tabs** (1 of RVTools' 24 — every tab now has a vLens counterpart except
+this one, see [§4](#4-tab-reference)): `vFileInfo` (datastore file browser).
+Explicitly out of scope indefinitely since RVTools' own docs flag it as slow and
+rarely used interactively — this is the one tab that's a deliberate, permanent
+scope decision rather than a "not gotten to it yet."
 
-**vHealth**: 9 of 24 rules implemented, 15 remaining — see [§5](#5-vhealth-rule-status)
+**vHealth**: 10 of 24 rules implemented, 14 remaining — see [§5](#5-vhealth-rule-status)
 for the full table.
 
 **Export**: CSV and XLSX are both done — see [§6](#6-export). A PDF **report**

@@ -63,7 +63,7 @@ vLens/
 │   │   │                          # arasında paylaştırır
 │   │   ├── ContentView.swift     # tab bar + demo banner + connect ekranı + cert onay sheet'i
 │   │   ├── PreferencesView.swift # Cmd+, — vHealth eşikleri (RVTools'un Health Properties'i)
-│   │   ├── AppTab.swift          # 26 tab'ın enum'u
+│   │   ├── AppTab.swift          # 27 tab'ın enum'u
 │   │   ├── ConnectionViewModel.swift
 │   │   ├── HelperLocator.swift
 │   │   ├── ReportView.swift      # yönetici raporu (PDF) — SwiftUI Charts + stat kartları
@@ -80,7 +80,7 @@ vLens/
 │       ├── Credentials/    # Keychain credential store
 │       ├── Helper/         # Go helper ile JSON protokolü + Process client
 │       ├── Demo/DemoData.swift   # 40 VM + tüm tab'lar için tutarlı mock veri üretici
-│       ├── HealthCheckEngine.swift  # RVTools'un 24 vHealth kuralından 9'u, gerçek hesaplama
+│       ├── HealthCheckEngine.swift  # RVTools'un 24 vHealth kuralından 10'u, gerçek hesaplama
 │       ├── HealthCheckPreferencesStore.swift  # eşikleri UserDefaults'a kaydeder
 │       ├── SnapshotStore.swift     # InventorySnapshot geçmişi, Application Support'ta JSON
 │       ├── SnapshotPreferencesStore.swift  # Compare panelinde hangi metriklerin gösterileceği
@@ -97,16 +97,17 @@ vLens/
 ├── Tests/vLensCoreTests/    # decode + HealthCheckEngine + CSVWriter + XLSXWriter +
 │                             # FieldComparator + Searchable + ConnectionProfileStore +
 │                             # CertificateTrust + HealthCheckPreferencesStore + SnapshotStore +
-│                             # InventorySnapshotMetrics + TutorialStore + VMSAClient testleri (50 test)
+│                             # InventorySnapshotMetrics + TutorialStore + VMSAClient testleri (52 test)
 ├── docs/vLens-Reference.md  # RVTools PDF'i tarzında kapsamlı proje referansı
 └── helper/                 # Go module (govmomi)
     ├── go.mod
-    ├── main.go              # `collectAll` (23 collector, artık vCenter About bilgisi
+    ├── main.go              # `collectAll` (24 collector, artık vCenter About bilgisi
     │                          # de dahil — bedava, login sonrası zaten mevcut) +
     │                          # `getCertificate` + `collectPerformance` action (kendi
     │                          # login'i, ayrı tutulan tek istisna — bkz. §3 mimari notu)
     ├── vcsim/main.go        # dev-only: localhost'ta gerçek vCenter simülatörü (VPN gerekmez)
-    └── vcsim/mksnap/main.go # dev-only: vcsim'de test snapshot'ı oluşturur (snapshot-size testi için)
+    ├── vcsim/mksnap/main.go # dev-only: vcsim'de test snapshot'ı oluşturur (snapshot-size testi için)
+    └── vcsim/mkvapp/main.go # dev-only: vcsim'de gerçek bir VirtualApp instance'ı oluşturur (vApp testi için)
 ```
 
 ## Build & Run
@@ -399,9 +400,9 @@ go build -o vcsim/vcsim ./vcsim && ./vcsim/vcsim
       sorgulanıyor — standalone host'ların Cluster kolonu doğru şekilde boş
 - [x] **vcsim ile gerçek entegrasyon testi** — bkz. yukarıdaki bölüm. 1200 VM
       ölçeğinde doğrulandı, 0.58s
-- [x] **26 tab'ın tamamı UI'da var**: vInfo, vCPU, vMemory, vDisk, vSnapshot, vTools,
-      vNetwork, vCD, vUSB, vPartition, vPerformance, vHost, vDatastore, vCluster, vRP,
-      vSwitch, vPort, dvSwitch, dvPort, vNic, vSC+VMK, vHBA, vMultipath, vLicense,
+- [x] **27 tab'ın tamamı UI'da var**: vInfo, vCPU, vMemory, vDisk, vSnapshot, vTools,
+      vNetwork, vCD, vUSB, vPartition, vPerformance, vApp, vHost, vDatastore, vCluster,
+      vRP, vSwitch, vPort, dvSwitch, dvPort, vNic, vSC+VMK, vHBA, vMultipath, vLicense,
       vHealth, Snapshots — sidebar (gruplu) + her biri için `Table` view, canlı
       bağlantıda hepsi dolu geliyor (vPerformance ve Snapshots hariç — ikisi de kendi
       aksiyon butonlarıyla ayrı tetiklenir, bkz. ilgili maddeler)
@@ -409,10 +410,11 @@ go build -o vcsim/vcsim ./vcsim && ./vcsim/vcsim
       (Swift'in `SortComparator` protokolüne uyan, optional alanlarda nil'leri her
       zaman sona atan custom comparator; `FieldComparator.swift`)
 - [x] `DemoData` — 40 VM'lik tutarlı mock veri seti, tüm tab'ları besliyor
-- [x] `HealthCheckEngine` — RVTools'un 24 vHealth kuralından 9'u gerçek hesaplama
+- [x] `HealthCheckEngine` — RVTools'un 24 vHealth kuralından 10'u gerçek hesaplama
       (CD-ROM bağlı, aktif snapshot, VMware Tools durumu, guest disk boş alan eşiği,
       datastore boş alan eşiği, host başına vCPU oranı, datastore başına VM sayısı,
-      multipath durumu, host config status); tab bar'da bulgu sayısı rozeti var.
+      multipath durumu, consolidation needed, host config status); tab bar'da bulgu
+      sayısı rozeti var.
       4 eşik artık Preferences'ta ayarlanabilir (datastore boş alan %, vCPU/core,
       guest disk boş alan %, datastore başına max VM)
 - [x] `swift run` focus sorunu çözüldü (`NSApplicationDelegateAdaptor` +
@@ -425,13 +427,18 @@ go build -o vcsim/vcsim ./vcsim && ./vcsim/vcsim
       4×`ConnectionProfileStore`, 6×`CertificateTrust`, 2×`HealthCheckPreferencesStore`)
 - [ ] Kullanıcının gerçek vCenter 8 + ESXi 8 ortamına karşı canlı doğrulama — hâlâ
       yapılmadı (VPN erişimi yok), ama vcsim ile mimari zaten gerçek anlamda doğrulandı
-- [ ] Kalan 15 vHealth kuralı (floppy bağlı, zombie VMDK/VM, NTP/sertifika bitişi,
-      config-issue event'leri vb.) — bu MVP'nin topladığı veriyle
-      hesaplanamıyorlar, kaynak tab'ları büyüdükçe eklenecek
-- [ ] Sadece **vApp** eksik (RVTools'un 24 tab'ından — niş, VM'leri gruplayan bir
-      konteyner tipi, gerçek dünyada nadiren kullanılıyor) + **vFileInfo**
-      (bilinçli olarak süresiz ertelendi — RVTools'un kendisi de yavaş/nadir
-      kullanılan diyor)
+- [ ] Kalan 14 vHealth kuralı (floppy bağlı, zombie VMDK/VM, NTP/sertifika bitişi,
+      config-issue event'leri vb.) — çoğu `vFileInfo`'ya veya toplanmayan
+      event/config verisine muhtaç, kaynak tab'ları büyüdükçe eklenecek
+- [x] **(2026-09-04) vApp tab'ı tamamlandı** — `collectVApps`, `collectResourcePools`
+      pattern'inin `VirtualApp` üzerinden neredeyse birebir tekrarı (vim25'te
+      `VirtualApp`, `ResourcePool`'u extend ediyor). vcsim'de gerçek bir VirtualApp
+      instance'ı oluşturan yeni bir dev-tool (`helper/vcsim/mkvapp`) ile doğrulandı —
+      vcsim'in `createChild`'ı her `ResourceAllocationInfo` alanının set edilmesini
+      zorunlu kılıyor, boş spec ile `InvalidArgument` hatası veriyor (canlı test
+      ederek bulundu, tahmin edilmedi). Artık RVTools'un 24 tab'ından sadece
+      **vFileInfo** eksik (bilinçli olarak süresiz ertelendi — RVTools'un kendisi
+      de yavaş/nadir kullanılan diyor).
 - [ ] Multi-vCenter merge, CLI/launchd otomasyonu, tags/custom attributes kolonları
 - [ ] App bundle/notarization
 

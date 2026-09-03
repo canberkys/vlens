@@ -84,6 +84,10 @@ extension ResourcePoolInfo: Searchable {
     public var searchableText: String { [name, ownerName].compactMap { $0 }.joined(separator: " ") }
 }
 
+extension VAppInfo: Searchable {
+    public var searchableText: String { [name, ownerName, productName].compactMap { $0 }.joined(separator: " ") }
+}
+
 extension HBAInfo: Searchable {
     public var searchableText: String { [hostName, device, model, driver].joined(separator: " ") }
 }

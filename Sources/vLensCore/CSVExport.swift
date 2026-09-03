@@ -157,6 +157,11 @@ extension ResourcePoolInfo: CSVExportable {
     }
 }
 
+extension VAppInfo: CSVExportable {
+    public static var csvHeader: [String] { ["vApp", "Owner", "VMs", "Product", "Version"] }
+    public var csvRow: [String] { [name, ownerName ?? "", "\(numVMs)", productName ?? "", productVersion ?? ""] }
+}
+
 extension HBAInfo: CSVExportable {
     public static var csvHeader: [String] { ["Host", "Device", "Model", "Driver", "Status"] }
     public var csvRow: [String] { [hostName, device, model, driver, status] }
