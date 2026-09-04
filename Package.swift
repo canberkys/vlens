@@ -18,6 +18,7 @@ let package = Package(
             name: "vLens",
             dependencies: ["vLensCore"],
             path: "Sources/vLens",
+            resources: [.copy("Resources/AppIconImage.png")],
             swiftSettings: [
                 .unsafeFlags(["-strict-concurrency=complete"])
             ]
