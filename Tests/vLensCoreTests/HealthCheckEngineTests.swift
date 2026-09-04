@@ -120,10 +120,16 @@ import Testing
     #expect(results[0].rule == "VMs per datastore")
 }
 
+/// `operationalState` is `ScsiLun.operationalState` (LUN-level: "ok",
+/// "degraded", "error", etc.) — NOT per-path state ("active"/"standby"/
+/// "dead"). These fixtures originally used the wrong vocabulary, which
+/// meant they couldn't have caught the real bug this rule had (every real
+/// "ok" LUN was being flagged red) — an external code review caught it,
+/// verified against `helper/main.go`'s actual Go field mapping first.
 @Test func flagsDegradedMultipath() {
     let multipath = MultipathInfo(
         id: "mp1", hostName: "esxi-01", disk: "naa.001", displayName: "SAN LUN 0", numPaths: 4,
-        operationalState: ["active", "dead"], vendor: "NETAPP", model: "LUN"
+        operationalState: ["degraded"], vendor: "NETAPP", model: "LUN"
     )
 
     let results = HealthCheckEngine.evaluate(
@@ -138,7 +144,7 @@ import Testing
 @Test func doesNotFlagHealthyMultipath() {
     let multipath = MultipathInfo(
         id: "mp1", hostName: "esxi-01", disk: "naa.001", displayName: "SAN LUN 0", numPaths: 4,
-        operationalState: ["active", "standby"], vendor: "NETAPP", model: "LUN"
+        operationalState: ["ok"], vendor: "NETAPP", model: "LUN"
     )
 
     let results = HealthCheckEngine.evaluate(

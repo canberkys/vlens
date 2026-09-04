@@ -11,18 +11,31 @@ public struct HelperRequest: Codable, Sendable {
     public let url: String
     public let username: String
     public let password: String
+    /// Only meaningful for `.getCertificate` (a credential-free probe with
+    /// nothing to pin against yet). `.collectAll`/`.collectPerformance`
+    /// ignore this on the Go side and require `expectedFingerprint`
+    /// instead — see `helper/main.go`'s `newPinnedClient` doc comment for
+    /// why a blanket-insecure authenticated connection was a real
+    /// vulnerability (the fingerprint check and the credentialed login used
+    /// to be two unrelated TLS connections).
     public let insecure: Bool
+    /// The already-pinned `CertificateFingerprint.displayValue` for this
+    /// host — required for `.collectAll`/`.collectPerformance`, so the Go
+    /// helper can bind the actual login connection to the certificate that
+    /// was verified, via govmomi's own `soap.Client.SetThumbprint`.
+    public let expectedFingerprint: String?
     public let perfIntervalMinutes: Int?
 
     public init(
         action: HelperAction, url: String, username: String, password: String, insecure: Bool,
-        perfIntervalMinutes: Int? = nil
+        expectedFingerprint: String? = nil, perfIntervalMinutes: Int? = nil
     ) {
         self.action = action
         self.url = url
         self.username = username
         self.password = password
         self.insecure = insecure
+        self.expectedFingerprint = expectedFingerprint
         self.perfIntervalMinutes = perfIntervalMinutes
     }
 }

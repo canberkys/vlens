@@ -110,17 +110,27 @@ public enum HealthCheckEngine {
             ))
         }
 
-        // Any state other than "active"/"standby" indicates a degraded or
-        // dead path (vim25's HostMultipathStateType — "dead", "disabled",
-        // "unknown" are the other documented values).
+        // `MultipathInfo.operationalState` is `ScsiLun.operationalState` —
+        // the LUN's own operational state ("ok", "degraded", "error",
+        // "lostCommunication", "off", "quiesced", "unbound" are the
+        // documented vim25 values), NOT the per-path state of an individual
+        // path within `HostMultipathInfo.Lun[].Path` (which uses a
+        // different vocabulary — "active"/"standby"/"disabled"/"dead").
+        // This rule originally checked for the wrong vocabulary — a
+        // perfectly healthy LUN reporting "ok" would never match
+        // "active"/"standby" and was flagged red on every real (and demo)
+        // environment. `VMultipathTabView`'s own coloring already used the
+        // correct "ok" baseline; this rule just hadn't matched it. Caught
+        // by an external code review, verified against the real Go field
+        // mapping (`helper/main.go`'s `collectMultipaths`) before fixing.
         for multipath in multipaths {
-            let badStates = multipath.operationalState.filter { $0 != "active" && $0 != "standby" }
+            let badStates = multipath.operationalState.filter { $0 != "ok" }
             if !badStates.isEmpty {
                 results.append(HealthCheckResult(
                     id: "multipath.\(multipath.id)",
                     severity: .red,
                     rule: "Multipath state",
-                    message: "\(multipath.hostName): \(multipath.displayName) has a path in state \(badStates.joined(separator: ", ")).",
+                    message: "\(multipath.hostName): \(multipath.displayName) is in state \(badStates.joined(separator: ", ")).",
                     relatedObject: multipath.hostName
                 ))
             }

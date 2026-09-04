@@ -151,3 +151,61 @@ private func makeVM(name: String, uuid: String) -> VirtualMachineInfo {
     #expect(newStore.loadAll().count == 1)
     #expect(newStore.loadAll()[0].label == "before-move")
 }
+
+// Concurrent writers to the same file (the real scenario: the GUI and a
+// scheduled `vlens-cli snapshot` run, Faz 10B) used to silently lose
+// updates — both load the same starting array, both persist(.atomic)
+// their own version, whichever finishes last wins and the other's write
+// vanishes with no error anywhere. Found by an external code review. This
+// fires many concurrent `add()` calls from separate tasks against one
+// store/file and checks every single one survived.
+@Test func concurrentAddsDoNotLoseWrites() async throws {
+    let store = makeStore()
+    let writerCount = 20
+
+    await withTaskGroup(of: Void.self) { group in
+        for i in 0..<writerCount {
+            group.addTask {
+                try? store.add(InventorySnapshot(vCenterHost: "vcenter.local", label: "writer-\(i)", metrics: makeMetrics()))
+            }
+        }
+    }
+
+    let loaded = store.loadAll()
+    #expect(loaded.count == writerCount)
+    let labels = Set(loaded.compactMap(\.label))
+    #expect(labels.count == writerCount) // every writer's label present, none overwritten
+}
+
+// A file that exists but fails to decode (truncated write, disk corruption,
+// a future incompatible format) must not be silently treated the same as
+// "no snapshots yet" — that would let the next add()/delete() persist right
+// over it, discarding whatever was actually in there. Found by an external
+// code review alongside the concurrency issue (the two compound each other:
+// a lost/interrupted concurrent write is exactly how a file ends up
+// truncated mid-JSON in the first place).
+@Test func addThrowsRatherThanOverwritingCorruptFile() throws {
+    let store = makeStore()
+    try FileManager.default.createDirectory(at: store.url.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try Data("{ this is not valid JSON at all".utf8).write(to: store.url)
+
+    #expect(throws: (any Error).self) {
+        try store.add(InventorySnapshot(vCenterHost: "vcenter.local", label: "should not be saved", metrics: makeMetrics()))
+    }
+
+    // The corrupt file must be left exactly as it was — not overwritten
+    // with a single-entry array.
+    let rawAfter = try String(contentsOf: store.url, encoding: .utf8)
+    #expect(rawAfter == "{ this is not valid JSON at all")
+}
+
+// loadAll() (the read path the GUI's snapshot list actually uses) is
+// deliberately more forgiving than add()/delete() — showing an empty list
+// beats refusing to render the tab at all over a corrupt file.
+@Test func loadAllReturnsEmptyForCorruptFileRatherThanThrowing() throws {
+    let store = makeStore()
+    try FileManager.default.createDirectory(at: store.url.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try Data("{ this is not valid JSON at all".utf8).write(to: store.url)
+
+    #expect(store.loadAll().isEmpty)
+}

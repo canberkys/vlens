@@ -10,7 +10,7 @@ set -euo pipefail
 # (also SwiftPM-only, also signed/notarized this way).
 
 APP_NAME="vLens"
-VERSION="1.2.3"
+VERSION="1.3.0"
 SIGN_IDENTITY="Developer ID Application: Canberk KILIÇARSLAN (9QB26WKA4K)"
 NOTARY_PROFILE="vlens-notary"
 
@@ -42,6 +42,21 @@ cp "$ROOT_DIR/helper/vlens-helper" "$APP_BUNDLE/Contents/Resources/vlens-helper"
 cp "$ROOT_DIR/Resources/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 cp "$ROOT_DIR/Resources/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
 printf 'APPL????' > "$APP_BUNDLE/Contents/PkgInfo"
+
+# SwiftPM's generated resource bundle (AppIconImage.png, CHANGELOG.md) —
+# this was never being copied into the packaged app at all before this fix,
+# so every release crashed with a `fatalError` on any Mac other than the
+# build machine (see AppResourceLocator.swift's doc comment for the full
+# story, including why it's copied to Contents/Resources rather than the
+# app bundle root Bundle.module's own generated accessor would look in:
+# codesign rejects anything outside Contents/ — "unsealed contents present
+# in the bundle root" — confirmed directly while fixing this).
+RESOURCE_BUNDLE="$BIN_PATH/${APP_NAME}_${APP_NAME}.bundle"
+if [ ! -d "$RESOURCE_BUNDLE" ]; then
+    echo "Resource bundle not found at $RESOURCE_BUNDLE — run 'swift build -c release' first" >&2
+    exit 1
+fi
+cp -R "$RESOURCE_BUNDLE" "$APP_BUNDLE/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle"
 
 # Sparkle.framework (Faz 3 auto-update) — embedded at the conventional
 # Contents/Frameworks location, matching Package.swift's linker rpath

@@ -9,7 +9,7 @@ import SwiftUI
 /// asset catalog so it loads identically in both dev and packaged builds.
 enum AppIconImage {
     static var image: Image {
-        guard let url = Bundle.module.url(forResource: "AppIconImage", withExtension: "png"),
+        guard let url = AppResourceLocator.resourceBundle().url(forResource: "AppIconImage", withExtension: "png"),
             let nsImage = NSImage(contentsOf: url)
         else {
             return Image(systemName: "server.rack")

@@ -160,6 +160,63 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) Harici bir kod review'ının 4 kritik (P1) bulgusu
+      düzeltildi (v1.3.0)** — kullanıcı detaylı, dosya:satır referanslı 12
+      maddelik bir profesyonel kod review'ı paylaştı, 4'ü P1/kritik
+      işaretliydi; her biri gerçek kodda doğrulandı (varsayım değil), sonra
+      "fix it pls" onayıyla düzeltildi. (1) **Paketlenmiş app her zaman
+      çöküyordu** — `Bundle.module`'ün ürettiği resource bundle hiçbir zaman
+      `.app`'e kopyalanmıyordu, fallback'i sadece build makinesinde
+      çalışıyordu; her önceki release başka bir Mac'te fatalError veriyordu.
+      Kanıtlandı: fallback path gizlenip paketlenmiş app gerçekten
+      çöktürüldü. Düzeltme iki denemede oldu — ilk deneme (bundle'ı app
+      root'una kopyalamak, `Bundle.module`'ün aradığı birebir yer) app'i
+      çalıştırdı ama codesign'ı kırdı ("unsealed contents present in the
+      bundle root" — `Contents/` dışına hiçbir şey, symlink dahil,
+      konamıyor, doğrudan test edilerek doğrulandı); ikinci ve kalıcı
+      çözüm: yeni `AppResourceLocator.swift`, bundle'ı `Contents/Resources/`'a
+      bakıyor (`scripts/release.sh` oraya kopyluyor), dev modda
+      `Bundle.module`'e düşüyor. Son doğrulama: fallback path tekrar
+      gizlenip düzeltilmiş paketlenmiş app'in artık çökmediği doğrulandı.
+      (2) **Sertifika pinleme gerçek bağlantıyı korumuyordu** — fingerprint
+      sadece tek seferlik bir TLS probe'unda kontrol ediliyordu, asıl
+      kimlik doğrulanmış bağlantı (`collectAll`, performans toplama)
+      `insecure: true` ile bu fingerprint'e hiç bağlı olmadan kuruluyordu —
+      ilk kontrolü geçen bir MITM ikinciyi hiç görmeden araya girebilirdi.
+      govmomi'nin kendi `soap.Client.SetThumbprint` mekanizması kullanılarak
+      düzeltildi (govc/terraform-provider-vsphere'in de kullandığı, olgun
+      bir mekanizma — kaynak koddan okunarak keşfedildi). Hem GUI
+      (`ConnectionViewModel`) hem CLI (`vlensCLI/main.swift`) artık gerçek
+      bağlantıdan önce pinlenmiş fingerprint'i zorunlu kılıyor — yoksa
+      bağlanmayı reddediyor. (3) **Sağlıklı bir multipath her zaman kırmızı
+      işaretleniyordu** — Go tarafı `ScsiLun.OperationalState`'i (LUN
+      seviyesi: "ok"/"degraded" vb.) gönderiyordu ama Swift tarafı bunu
+      path-seviyesi state sanıp sadece "active"/"standby"'ı sağlıklı
+      sayıyordu. Düzeltildi + iki mevcut test yanlış vocabulary kullandığı
+      için düzeltildi. (4) **Snapshot deposu cross-process kilitlemeye
+      sahip değildi** — GUI ve zamanlanmış CLI aynı anda
+      `inventory-snapshots.json`'a yazabilir, biri diğerinin yazdığını
+      sessizce kaybedebilirdi; bozuk bir dosya da sessizce boş sayılıp bir
+      sonraki yazmada üzerine yazılabilirdi. `flock` ile cross-process
+      kilitleme eklendi; mutation path'i artık bozuk dosyada sessizce boş
+      saymak yerine hata fırlatıyor (salt-okunur `loadAll()` hâlâ nazik
+      davranıyor). 3 yeni eşzamanlılık/bozukluk testi
+      (`concurrentAddsDoNotLoseWrites` — 20 eşzamanlı writer, hiçbiri
+      kaybolmuyor). Ayrıca ilişkili bir P2 bulgusu da düzeltildi: (7)
+      **Helper'ın gerçek hata mesajları kayboluyordu** — Go helper stdout'a
+      açıklayıcı bir JSON hata yazıyordu ama Swift sadece exit code≠0'da
+      stderr'i okuyordu; artık önce stdout'u `HelperResponse` olarak decode
+      etmeyi deniyor, sadece o başarısız olursa stderr'e düşüyor (geçici
+      bir test dosyasıyla gerçek Go hatasının artık doğru yüzeye çıktığı
+      canlı doğrulandı, sonra silindi). Kalan 8 P2 bulgusu (refresh/disconnect
+      eksikliği, sıfır-VM ekranı, performans toplama partial-failure/metrik
+      çakışması, launchd durum kontrolü + profil-adı-yerine-UUID riski, CSV
+      formula injection, XLSX sayı-gibi-metin dönüşümü, VM ID çakışması) ve
+      mesajlaşma/mimari eleştirileri (README tutarsızlığı, "historical
+      trends"/"VM Changes" çerçevelemesi, export'un UI sıralamasını
+      taşımaması) bilinçli olarak backlog'da bırakıldı — sadece P1'ler +
+      #7 onay kapsamındaydı. `swift build`/`swift test` temiz (62/62, +3
+      yeni test).
 - [x] **(2026-09-05) Help ▸ What's New render'ı düzeltildi (v1.2.3)** —
       kullanıcı "text'ler çok kötü" diye geri bildirdi. Kök neden:
       `AttributedString(markdown:)` ile tüm CHANGELOG'u tek bir `Text`'e
