@@ -107,7 +107,12 @@ final class ConnectionViewModel {
     private let credentialStore: CredentialStoreProtocol = KeychainCredentialStore()
     private let certificateTrustStore: CertificateTrustStoreProtocol = LocalJSONCertificateTrustStore()
     private let healthCheckPreferencesStore = HealthCheckPreferencesStore()
-    private let snapshotStore = SnapshotStore()
+    /// Recomputed each access (cheap — `SnapshotStore` just wraps a URL) so
+    /// a location change in Preferences takes effect immediately, no
+    /// invalidation needed.
+    private var snapshotStore: SnapshotStore {
+        SnapshotStore(fileURL: SnapshotStore.url(inDirectory: snapshotPreferencesStore.customStorageDirectory))
+    }
     private let snapshotPreferencesStore = SnapshotPreferencesStore()
     private let vmsaClient = VMSAClient()
 
@@ -377,13 +382,37 @@ final class ConnectionViewModel {
             .sorted { $0.takenAt > $1.takenAt }
     }
 
+    /// Where `inventory-snapshots.json` currently lives — shown in
+    /// Preferences with a "Reveal in Finder" button.
+    var snapshotStorageURL: URL { snapshotStore.url }
+
+    /// Switches where snapshot history is read/written. Migrates by
+    /// **copying** the existing file to the new location (never moving —
+    /// the old file stays as a safety net) only when the new location
+    /// doesn't already have one, so switching back and forth never clobbers
+    /// data. See Preferences' "Snapshot Storage" section.
+    func changeSnapshotStorageDirectory(to directory: URL?) {
+        let oldURL = snapshotStore.url
+        let newURL = SnapshotStore.url(inDirectory: directory)
+        if oldURL != newURL, FileManager.default.fileExists(atPath: oldURL.path),
+            !FileManager.default.fileExists(atPath: newURL.path) {
+            try? FileManager.default.createDirectory(at: newURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try? FileManager.default.copyItem(at: oldURL, to: newURL)
+        }
+        snapshotPreferencesStore.customStorageDirectory = directory
+        loadSnapshotHistory()
+    }
+
     /// Computes metrics from whatever's already loaded — no vCenter call.
-    func takeSnapshot(label: String?) {
+    func takeSnapshot(label: String?, includeFullDetail: Bool = false) {
         let metrics = InventorySnapshotMetrics.compute(
             vms: vms, hosts: hosts, clusters: clusters, datastores: datastores,
             snapshots: snapshots, tools: tools, healthChecks: healthChecks
         )
-        let snapshot = InventorySnapshot(vCenterHost: currentSnapshotHost, label: label, metrics: metrics)
+        let snapshot = InventorySnapshot(
+            vCenterHost: currentSnapshotHost, label: label, metrics: metrics,
+            fullVMList: includeFullDetail ? vms : nil
+        )
         try? snapshotStore.add(snapshot)
         loadSnapshotHistory()
     }

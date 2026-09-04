@@ -13,11 +13,27 @@ public struct SnapshotStore: Sendable {
         self.fileURL = fileURL
     }
 
-    public static var defaultURL: URL {
+    /// Exposed for "Reveal in Finder" and location-migration in
+    /// Preferences — see `SnapshotPreferencesStore.customStorageDirectory`.
+    public var url: URL { fileURL }
+
+    public static let fileName = "inventory-snapshots.json"
+
+    public static var defaultDirectory: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
-        let dir = base.appendingPathComponent("vLens", isDirectory: true)
-        return dir.appendingPathComponent("inventory-snapshots.json")
+        return base.appendingPathComponent("vLens", isDirectory: true)
+    }
+
+    public static var defaultURL: URL {
+        defaultDirectory.appendingPathComponent(fileName)
+    }
+
+    /// `directory` is `SnapshotPreferencesStore.customStorageDirectory` —
+    /// `nil` resolves to `defaultURL`.
+    public static func url(inDirectory directory: URL?) -> URL {
+        guard let directory else { return defaultURL }
+        return directory.appendingPathComponent(fileName)
     }
 
     public func loadAll() -> [InventorySnapshot] {

@@ -12,13 +12,24 @@ public struct InventorySnapshot: Codable, Identifiable, Sendable {
     /// wherever it's empty/nil.
     public let label: String?
     public let metrics: InventorySnapshotMetrics
+    /// Opt-in, off by default — see `SnapshotsTabView`'s "Include full VM
+    /// inventory" checkbox. `nil` for every snapshot taken without it
+    /// (including all pre-existing snapshots, which decode fine since this
+    /// is optional). Only used for the Compare panel's "VM Changes"
+    /// added/removed section — deliberately not a field-by-field diff of
+    /// every VM, just membership by `vmUUID`.
+    public let fullVMList: [VirtualMachineInfo]?
 
-    public init(id: UUID = UUID(), vCenterHost: String, takenAt: Date = Date(), label: String?, metrics: InventorySnapshotMetrics) {
+    public init(
+        id: UUID = UUID(), vCenterHost: String, takenAt: Date = Date(), label: String?,
+        metrics: InventorySnapshotMetrics, fullVMList: [VirtualMachineInfo]? = nil
+    ) {
         self.id = id
         self.vCenterHost = vCenterHost
         self.takenAt = takenAt
         self.label = label
         self.metrics = metrics
+        self.fullVMList = fullVMList
     }
 
     /// Display label wherever a UI needs one — the user's note if they gave

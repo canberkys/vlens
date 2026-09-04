@@ -23,7 +23,23 @@ public struct SnapshotPreferencesStore: @unchecked Sendable {
         defaults.set(Array(enabledMetricKeys), forKey: Keys.enabledMetrics)
     }
 
+    /// User-chosen directory for `inventory-snapshots.json` — `nil` means
+    /// "use `SnapshotStore.defaultURL`'s directory." Stored as a plain path
+    /// string, not a security-scoped bookmark: vLens isn't sandboxed
+    /// (`Resources/vLens.entitlements`), so a bookmark's extra complexity
+    /// buys nothing here.
+    public var customStorageDirectory: URL? {
+        get {
+            guard let path = defaults.string(forKey: Keys.customStorageDirectory) else { return nil }
+            return URL(fileURLWithPath: path, isDirectory: true)
+        }
+        nonmutating set {
+            defaults.set(newValue?.path, forKey: Keys.customStorageDirectory)
+        }
+    }
+
     private enum Keys {
         static let enabledMetrics = "com.vlens.snapshot.enabledMetricKeys"
+        static let customStorageDirectory = "com.vlens.snapshot.customStorageDirectory"
     }
 }

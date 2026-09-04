@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import vLensCore
 
@@ -93,6 +94,39 @@ struct PreferencesView: View {
                 }
             }
 
+            Section("Snapshot storage") {
+                LabeledContent("Location") {
+                    Text(viewModel.snapshotStorageURL.deletingLastPathComponent().path)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.head)
+                }
+                HStack {
+                    Button("Reveal in Finder") {
+                        NSWorkspace.shared.activateFileViewerSelecting([viewModel.snapshotStorageURL])
+                    }
+                    Button("Change Location…") {
+                        let panel = NSOpenPanel()
+                        panel.canChooseFiles = false
+                        panel.canChooseDirectories = true
+                        panel.allowsMultipleSelection = false
+                        panel.prompt = "Choose"
+                        if panel.runModal() == .OK, let url = panel.url {
+                            viewModel.changeSnapshotStorageDirectory(to: url)
+                        }
+                    }
+                    if viewModel.snapshotStorageURL.deletingLastPathComponent() != SnapshotStore.defaultDirectory {
+                        Button("Reset to Default") {
+                            viewModel.changeSnapshotStorageDirectory(to: nil)
+                        }
+                    }
+                }
+                Text("Where inventory-snapshots.json is stored — useful for pointing it at a shared folder. Switching copies the existing file to the new location; the old one is left in place.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Tutorials") {
                 Button("Reset Tutorials") {
                     TutorialStore().resetAll(ids: TutorialID.all)
@@ -103,7 +137,7 @@ struct PreferencesView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 620)
+        .frame(width: 460, height: 720)
     }
 }
 

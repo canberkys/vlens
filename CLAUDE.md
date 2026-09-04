@@ -105,7 +105,7 @@ vLens/
 ├── Tests/vLensCoreTests/    # decode + HealthCheckEngine + CSVWriter + XLSXWriter +
 │                             # FieldComparator + Searchable + ConnectionProfileStore +
 │                             # CertificateTrust + HealthCheckPreferencesStore + SnapshotStore +
-│                             # InventorySnapshotMetrics + TutorialStore + VMSAClient testleri (52 test)
+│                             # InventorySnapshotMetrics + TutorialStore + VMSAClient testleri (58 test)
 ├── docs/vLens-Reference.md  # RVTools PDF'i tarzında kapsamlı proje referansı
 └── helper/                 # Go module (govmomi)
     ├── go.mod
@@ -140,6 +140,26 @@ go build -o vcsim/vcsim ./vcsim && ./vcsim/vcsim
 
 ## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) Faz 9 tamamlandı — Snapshot depolama konumu + basic/full-detail
+      seçimi** (geri bildirim maddeleri 6 ve 6.1, ertelenen 3 mimari kararın ilk
+      ikisi). **9A**: `SnapshotPreferencesStore.customStorageDirectory` (düz path,
+      UserDefaults — sandbox olmadığı için security-scoped bookmark gerekmiyor),
+      `SnapshotStore.url(inDirectory:)`, `ConnectionViewModel.changeSnapshotStorageDirectory(to:)`
+      (kopyalar, asla taşımaz/silmez). Preferences'a yeni bir "Snapshot storage"
+      bölümü: mevcut konum, Reveal in Finder, Change Location… (`NSOpenPanel`),
+      Reset to Default. **9B**: `InventorySnapshot.fullVMList: [VirtualMachineInfo]?`
+      (varsayılan `nil`, eski snapshot'lar sorunsuz decode oluyor), Take Snapshot
+      satırında "Include full VM inventory" checkbox'ı (varsayılan **kapalı**).
+      İki karşılaştırılan snapshot'ın ikisi de full detail taşıyorsa Compare
+      panelinde yeni bir "VM Changes" bölümü — eklenen/çıkarılan VM'ler,
+      `vmUUID`'ye göre basit bir set farkı (her alanın diff'lenmesi kasıtlı
+      olarak kapsam dışı). **Aynı turda ayrıca**: Snapshot liste satırlarının alt
+      satırı artık relative time gösteriyor (`RelativeDateTimeFormatter`) —
+      önceki turda düzeltilen "aynı dakika-hassasiyetli tarih iki kez" bug'ının
+      devamı, tutarlı hale getirildi. 6 yeni test (`SnapshotStoreTests.swift`) —
+      gerçek `vlens-helper collectAll` çıktısının JSON şekli (vcsim'e karşı canlı
+      çalıştırılarak) `fullVMList`'in decode edeceği şekille birebir doğrulandı.
+      **Ertelenen üçüncü madde (8, rapor/snapshot zamanlayıcısı) artık Faz 10**.
 - [x] **(2026-09-04) 9 maddelik kullanıcı geri bildirimi — 7'si hemen
       uygulandı** — mesajlaşma düzeltmesi ("alternative to RVTools" değil,
       "esinlenildi + kendine özgü özellikler"), Snapshot metriklerine (i) info

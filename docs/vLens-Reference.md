@@ -715,6 +715,30 @@ for that specific metric, not just its sign — e.g. more active snapshots is
 red, more free datastore space is green, more total VMs is neutral (growth
 isn't inherently good or bad).
 
+**(v1.1, 2026-09-04) Storage location is user-configurable**:
+`SnapshotPreferencesStore.customStorageDirectory` (plain path string in
+UserDefaults, not a security-scoped bookmark — vLens isn't sandboxed, so the
+extra complexity buys nothing) overrides where `inventory-snapshots.json`
+lives; `nil` (the default) resolves to `SnapshotStore.defaultDirectory`
+(Application Support). Set from Preferences → "Snapshot storage" (current
+path, Reveal in Finder, Change Location…, Reset to Default). Switching
+**copies** the existing file into the new location (never moves — the old
+file is left in place as a safety net) only when the new location doesn't
+already have one. No concurrent-write protection is provided if two vLens
+instances point at the same shared folder simultaneously — documented
+single-writer assumption, not a real sync mechanism.
+
+**(v1.1, 2026-09-04) Optional full VM inventory + "VM Changes" diff**: the
+"Take Snapshot" row has an "Include full VM inventory" checkbox (default
+**off** — keeps the lightweight-by-default behavior, especially once a
+scheduler is taking snapshots unattended). When on, `InventorySnapshot.fullVMList`
+embeds the current `[VirtualMachineInfo]` array. When **both** snapshots being
+compared have a `fullVMList`, the Compare panel adds a "VM Changes" section
+below the metrics table — VMs added/removed, matched by `vmUUID` (a simple
+set difference, not a field-by-field diff of every VM's CPU/memory/etc. —
+deliberately out of scope, a much bigger feature). Snapshots list rows show a
+small icon next to entries that carry full detail.
+
 ---
 
 ## 5. vHealth rule status

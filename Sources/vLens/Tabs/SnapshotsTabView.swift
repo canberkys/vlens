@@ -22,6 +22,7 @@ struct SnapshotsTabView: View {
     let rows: [InventorySnapshot]
 
     @State private var newSnapshotLabel = ""
+    @State private var includeFullDetail = false
     @State private var baselineID: UUID?
     @State private var currentID: UUID?
 
@@ -42,12 +43,17 @@ struct SnapshotsTabView: View {
 
     private var snapshotList: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                TextField("Label (optional)", text: $newSnapshotLabel)
-                Button("Take Snapshot") {
-                    viewModel.takeSnapshot(label: newSnapshotLabel.isEmpty ? nil : newSnapshotLabel)
-                    newSnapshotLabel = ""
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    TextField("Label (optional)", text: $newSnapshotLabel)
+                    Button("Take Snapshot") {
+                        viewModel.takeSnapshot(label: newSnapshotLabel.isEmpty ? nil : newSnapshotLabel, includeFullDetail: includeFullDetail)
+                        newSnapshotLabel = ""
+                    }
                 }
+                Toggle("Include full VM inventory", isOn: $includeFullDetail)
+                    .toggleStyle(.checkbox)
+                    .help("Also stores every VM's vInfo data with this snapshot, so Compare can show which VMs were added or removed — not just aggregate counts. Off by default: larger file, not needed for routine tracking.")
             }
             .padding(8)
 
@@ -63,7 +69,15 @@ struct SnapshotsTabView: View {
                 List(rows) { snapshot in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(snapshot.displayLabel).fontWeight(.medium)
+                            HStack(spacing: 4) {
+                                Text(snapshot.displayLabel).fontWeight(.medium)
+                                if snapshot.fullVMList != nil {
+                                    Image(systemName: "doc.text.magnifyingglass")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .help("Includes full VM inventory")
+                                }
+                            }
                             Text(subtitle(for: snapshot))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -122,8 +136,65 @@ struct SnapshotsTabView: View {
                 Divider()
 
                 if let baseline, let current {
-                    compareTable(baseline: baseline, current: current)
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 0) {
+                            compareTable(baseline: baseline, current: current)
+                            if let changes = vmChanges(baseline: baseline, current: current) {
+                                vmChangesSection(changes)
+                            }
+                        }
+                    }
                 }
+            }
+        }
+    }
+
+    private struct VMChanges {
+        let added: [String]
+        let removed: [String]
+    }
+
+    /// `nil` unless **both** compared snapshots opted into "Include full VM
+    /// inventory" — a snapshot taken without it simply can't answer "what
+    /// changed," so the section doesn't appear rather than showing a
+    /// misleadingly empty diff.
+    private func vmChanges(baseline: InventorySnapshot, current: InventorySnapshot) -> VMChanges? {
+        guard let baselineVMs = baseline.fullVMList, let currentVMs = current.fullVMList else { return nil }
+        let baselineIDs = Set(baselineVMs.map(\.vmUUID))
+        let currentIDs = Set(currentVMs.map(\.vmUUID))
+        let added = currentVMs.filter { !baselineIDs.contains($0.vmUUID) }.map(\.name).sorted()
+        let removed = baselineVMs.filter { !currentIDs.contains($0.vmUUID) }.map(\.name).sorted()
+        return VMChanges(added: added, removed: removed)
+    }
+
+    private func vmChangesSection(_ changes: VMChanges) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("VM Changes").fontWeight(.semibold).padding(.horizontal, 8).padding(.top, 12)
+            if changes.added.isEmpty && changes.removed.isEmpty {
+                Text("No VMs added or removed.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+            } else {
+                if !changes.added.isEmpty {
+                    vmChangeList(title: "Added (\(changes.added.count))", names: changes.added, color: .green, symbol: "plus.circle")
+                }
+                if !changes.removed.isEmpty {
+                    vmChangeList(title: "Removed (\(changes.removed.count))", names: changes.removed, color: .red, symbol: "minus.circle")
+                }
+            }
+        }
+        .padding(.bottom, 12)
+    }
+
+    private func vmChangeList(title: String, names: [String], color: Color, symbol: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.caption).fontWeight(.semibold).foregroundStyle(color).padding(.horizontal, 8)
+            ForEach(names, id: \.self) { name in
+                Label(name, systemImage: symbol)
+                    .font(.callout)
+                    .foregroundStyle(color)
+                    .padding(.horizontal, 8)
             }
         }
     }
@@ -155,31 +226,29 @@ struct SnapshotsTabView: View {
     private func compareTable(baseline: InventorySnapshot, current: InventorySnapshot) -> some View {
         let descriptors = SnapshotMetricDescriptor.all.filter { viewModel.enabledSnapshotMetricKeys.contains($0.key) }
 
-        return ScrollView {
-            VStack(spacing: 0) {
+        return VStack(spacing: 0) {
+            HStack {
+                Text("Metric").fontWeight(.semibold).frame(maxWidth: .infinity, alignment: .leading)
+                Text("Baseline").fontWeight(.semibold).frame(width: 90, alignment: .trailing)
+                Text("Current").fontWeight(.semibold).frame(width: 90, alignment: .trailing)
+                Text("Δ").fontWeight(.semibold).frame(width: 70, alignment: .trailing)
+            }
+            .padding(.horizontal, 8).padding(.vertical, 6)
+            Divider()
+
+            ForEach(descriptors, id: \.key) { descriptor in
+                let before = descriptor.value(baseline.metrics)
+                let after = descriptor.value(current.metrics)
                 HStack {
-                    Text("Metric").fontWeight(.semibold).frame(maxWidth: .infinity, alignment: .leading)
-                    Text("Baseline").fontWeight(.semibold).frame(width: 90, alignment: .trailing)
-                    Text("Current").fontWeight(.semibold).frame(width: 90, alignment: .trailing)
-                    Text("Δ").fontWeight(.semibold).frame(width: 70, alignment: .trailing)
+                    Text(descriptor.label).frame(maxWidth: .infinity, alignment: .leading)
+                    Text(before.map(formatMetric) ?? "—").frame(width: 90, alignment: .trailing)
+                    Text(after.map(formatMetric) ?? "—").frame(width: 90, alignment: .trailing)
+                    Text(deltaText(before: before, after: after))
+                        .foregroundStyle(deltaColor(before: before, after: after, direction: descriptor.direction))
+                        .frame(width: 70, alignment: .trailing)
                 }
                 .padding(.horizontal, 8).padding(.vertical, 6)
                 Divider()
-
-                ForEach(descriptors, id: \.key) { descriptor in
-                    let before = descriptor.value(baseline.metrics)
-                    let after = descriptor.value(current.metrics)
-                    HStack {
-                        Text(descriptor.label).frame(maxWidth: .infinity, alignment: .leading)
-                        Text(before.map(formatMetric) ?? "—").frame(width: 90, alignment: .trailing)
-                        Text(after.map(formatMetric) ?? "—").frame(width: 90, alignment: .trailing)
-                        Text(deltaText(before: before, after: after))
-                            .foregroundStyle(deltaColor(before: before, after: after, direction: descriptor.direction))
-                            .frame(width: 70, alignment: .trailing)
-                    }
-                    .padding(.horizontal, 8).padding(.vertical, 6)
-                    Divider()
-                }
             }
         }
     }
