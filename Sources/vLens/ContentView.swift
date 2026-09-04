@@ -67,49 +67,67 @@ struct ContentView: View {
     // MARK: - Connect form
 
     private var connectForm: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("vLens").font(.largeTitle.bold())
-            Text("Connect to vCenter").font(.headline)
+        VStack(spacing: 0) {
+            Spacer(minLength: 16)
 
-            if !viewModel.savedProfiles.isEmpty {
-                savedProfilesMenu
+            VStack(spacing: 6) {
+                AppIconImage.image
+                    .resizable()
+                    .frame(width: 72, height: 72)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                Text("vLens").font(.largeTitle.bold())
+                Text("vCenter/ESXi inventory, built for Mac")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
 
-            TextField("vCenter host (e.g. vcenter.local)", text: $viewModel.host)
-                .textFieldStyle(.roundedBorder)
-            TextField("Username", text: $viewModel.username)
-                .textFieldStyle(.roundedBorder)
-            SecureField("Password", text: $viewModel.password)
-                .textFieldStyle(.roundedBorder)
-            Toggle("Save this connection to Keychain", isOn: $viewModel.saveCredentials)
+            Spacer(minLength: 24)
 
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
-                    .foregroundStyle(.red)
-                    .font(.callout)
-            }
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Connect to vCenter").font(.headline)
 
-            HStack {
-                Button("Try demo mode") {
-                    viewModel.loadDemoData()
+                if !viewModel.savedProfiles.isEmpty {
+                    savedProfilesMenu
                 }
-                .buttonStyle(.link)
-                .disabled(viewModel.isConnecting)
 
-                Spacer()
-                Button {
-                    Task { await viewModel.connectAndListVMs() }
-                } label: {
-                    if viewModel.isConnecting {
-                        ProgressView().controlSize(.small)
-                    } else {
-                        Text("Connect")
+                TextField("vCenter host (e.g. vcenter.local)", text: $viewModel.host)
+                    .textFieldStyle(.roundedBorder)
+                TextField("Username", text: $viewModel.username)
+                    .textFieldStyle(.roundedBorder)
+                SecureField("Password", text: $viewModel.password)
+                    .textFieldStyle(.roundedBorder)
+                Toggle("Save this connection to Keychain", isOn: $viewModel.saveCredentials)
+
+                if let errorMessage = viewModel.errorMessage {
+                    Text(errorMessage)
+                        .foregroundStyle(.red)
+                        .font(.callout)
+                }
+
+                HStack {
+                    Button("Try demo mode") {
+                        viewModel.loadDemoData()
                     }
+                    .buttonStyle(.link)
+                    .disabled(viewModel.isConnecting)
+
+                    Spacer()
+                    Button {
+                        Task { await viewModel.connectAndListVMs() }
+                    } label: {
+                        if viewModel.isConnecting {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Text("Connect")
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(viewModel.isConnecting)
                 }
-                .buttonStyle(.borderedProminent)
-                .keyboardShortcut(.defaultAction)
-                .disabled(viewModel.isConnecting)
             }
+
+            Spacer(minLength: 24)
         }
         .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -6,17 +6,10 @@ import SwiftUI
 struct AboutView: View {
     var body: some View {
         VStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(LinearGradient(
-                        colors: [Color(red: 0.16, green: 0.32, blue: 0.62), Color(red: 0.08, green: 0.16, blue: 0.36)],
-                        startPoint: .top, endPoint: .bottom
-                    ))
-                    .frame(width: 96, height: 96)
-                Image(systemName: "server.rack")
-                    .font(.system(size: 44, weight: .medium))
-                    .foregroundStyle(.white)
-            }
+            AppIconImage.image
+                .resizable()
+                .frame(width: 96, height: 96)
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
 
             Text("vLens")
                 .font(.title.bold())
