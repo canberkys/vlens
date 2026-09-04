@@ -197,8 +197,11 @@ case "snapshot":
         healthChecks: healthChecks
     )
     let fullDetail = opts.has("full-detail")
+    // The CLI always snapshots data it just collected in this same run —
+    // never stale, unlike the GUI's refresh-can-fail-and-keep-old-data path
+    // (see InventorySnapshot.dataCollectedAt) — so both timestamps are "now".
     let snapshot = InventorySnapshot(
-        vCenterHost: profile.host, label: opts["label"], metrics: metrics,
+        vCenterHost: profile.host, dataCollectedAt: Date(), label: opts["label"], metrics: metrics,
         fullVMList: fullDetail ? inventory.vms : nil
     )
     let snapshotPrefs = SnapshotPreferencesStore(defaults: sharedDefaults())

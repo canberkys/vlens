@@ -209,3 +209,52 @@ private func makeVM(name: String, uuid: String) -> VirtualMachineInfo {
 
     #expect(store.loadAll().isEmpty)
 }
+
+// `dataCollectedAt` (added alongside the connection-lifecycle refresh
+// feature, see ConnectionViewModel.isDataStale) is deliberately separate
+// from `takenAt` — a refresh can fail and leave stale data on screen, and a
+// snapshot taken of that data should honestly record how old it really is.
+
+@Test func effectiveDataCollectedAtFallsBackToTakenAtWhenNil() {
+    let takenAt = Date()
+    let snapshot = InventorySnapshot(vCenterHost: "vcenter.local", takenAt: takenAt, label: nil, metrics: makeMetrics())
+    #expect(snapshot.dataCollectedAt == nil)
+    #expect(snapshot.effectiveDataCollectedAt == takenAt)
+}
+
+@Test func effectiveDataCollectedAtUsesExplicitValueWhenSet() {
+    let takenAt = Date()
+    let collectedAt = takenAt.addingTimeInterval(-600)
+    let snapshot = InventorySnapshot(
+        vCenterHost: "vcenter.local", takenAt: takenAt, dataCollectedAt: collectedAt, label: nil, metrics: makeMetrics()
+    )
+    #expect(snapshot.effectiveDataCollectedAt == collectedAt)
+}
+
+/// A snapshot saved by an older build (before `dataCollectedAt` existed)
+/// has no such key in its JSON at all — must still decode cleanly with
+/// `dataCollectedAt == nil`, matching the existing `fullVMList` precedent.
+@Test func decodingOlderSnapshotJSONWithoutDataCollectedAtSucceeds() throws {
+    let store = makeStore()
+    try FileManager.default.createDirectory(at: store.url.deletingLastPathComponent(), withIntermediateDirectories: true)
+    let legacyJSON = """
+    [{
+        "id": "\(UUID().uuidString)",
+        "vCenterHost": "vcenter.local",
+        "takenAt": 700000000.0,
+        "label": "pre-upgrade snapshot",
+        "metrics": {
+            "vmCountTotal": 5, "vmCountPoweredOn": 5, "vmCountPoweredOff": 0,
+            "hostCount": 1, "clusterCount": 1, "datastoreCount": 1,
+            "datastoreMinFreePercent": 50.0, "activeSnapshotCount": 0,
+            "toolsNotOKCount": 0, "vHealthRedCount": 0, "vHealthYellowCount": 0
+        }
+    }]
+    """
+    try Data(legacyJSON.utf8).write(to: store.url)
+
+    let loaded = store.loadAll()
+    #expect(loaded.count == 1)
+    #expect(loaded.first?.dataCollectedAt == nil)
+    #expect(loaded.first?.label == "pre-upgrade snapshot")
+}

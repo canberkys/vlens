@@ -18,6 +18,13 @@ final class ConnectionViewModel {
     /// satisfy, incorrectly bouncing the user back to the connect screen.
     var isConnected: Bool = false
     var lastRefreshedAt: Date?
+    var isRefreshing: Bool = false
+    /// Set when a refresh (not the initial connect) fails — the previous
+    /// successful collection is kept on screen rather than cleared (see
+    /// `performCollection`'s catch block), but the UI should say so rather
+    /// than silently implying the data is as fresh as `lastRefreshedAt`
+    /// claims. Cleared on the next successful collection.
+    var isDataStale: Bool = false
     var searchText: String = ""
 
     /// Set when `fetchCertificate` returns a certificate this host has never
@@ -229,10 +236,40 @@ final class ConnectionViewModel {
         loadSnapshotHistory()
     }
 
-    func exitDemoMode() {
+    func exitDemoMode() { disconnect() }
+
+    /// General-purpose disconnect — works for both a real connection and
+    /// demo mode. This is also what "switch to a different saved
+    /// connection" is built on: once `isConnected` is false the connect
+    /// screen reappears, and it already lets you pick a different saved
+    /// profile. `password` is cleared from memory (never leave a stale
+    /// plaintext credential around once not connected); `host`/`username`
+    /// are left as-is as a small convenience for reconnecting to the same
+    /// target.
+    func disconnect() {
         isDemoMode = false
         isConnected = false
+        isDataStale = false
+        password = ""
         clearAllTabs()
+    }
+
+    /// Re-runs the collection against the currently-connected host —
+    /// demo mode just regenerates mock data (there's nothing to actually go
+    /// stale). A failed refresh keeps whatever was already on screen (see
+    /// `performCollection`'s failure paths) rather than clearing it, but
+    /// flips `isDataStale` so the UI can say so instead of silently
+    /// implying the old data is as current as `lastRefreshedAt` claims.
+    func refresh() async {
+        guard isConnected else { return }
+        if isDemoMode {
+            loadDemoData()
+            return
+        }
+        isRefreshing = true
+        errorMessage = nil
+        await performCollection(sdkURL: normalizedSDKURL())
+        isRefreshing = false
     }
 
     private func clearAllTabs() {
@@ -379,8 +416,15 @@ final class ConnectionViewModel {
     }
 
     private func performCollection(sdkURL: String) async {
+        // Captured before any state changes below — `isConnected` already
+        // being true means this call is a refresh of an existing
+        // connection, not the initial connect, which is what decides
+        // whether a failure here should mark existing data stale (there's
+        // nothing to go stale on a first connect that never had data).
+        let isRefreshOfExistingConnection = isConnected
         guard let expectedFingerprint = pinnedFingerprint() else {
             errorMessage = "No pinned certificate found for this host — please reconnect to re-verify it."
+            if isRefreshOfExistingConnection { isDataStale = true }
             return
         }
         do {
@@ -423,6 +467,7 @@ final class ConnectionViewModel {
             recomputeHealthChecks()
             isDemoMode = false
             isConnected = true
+            isDataStale = false
             lastRefreshedAt = Date()
             loadSnapshotHistory()
             if saveCredentials {
@@ -430,6 +475,7 @@ final class ConnectionViewModel {
             }
         } catch {
             errorMessage = Self.describe(error)
+            if isRefreshOfExistingConnection { isDataStale = true }
         }
     }
 
@@ -484,7 +530,7 @@ final class ConnectionViewModel {
             snapshots: snapshots, tools: tools, healthChecks: healthChecks
         )
         let snapshot = InventorySnapshot(
-            vCenterHost: currentSnapshotHost, label: label, metrics: metrics,
+            vCenterHost: currentSnapshotHost, dataCollectedAt: lastRefreshedAt, label: label, metrics: metrics,
             fullVMList: includeFullDetail ? vms : nil
         )
         try? snapshotStore.add(snapshot)
