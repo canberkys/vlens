@@ -77,8 +77,13 @@ type helperResponse struct {
 	Partitions    []partitionInfo      `json:"partitions"`
 	Networks      []vmNetworkInfo      `json:"networks"`
 	Performance   []vmPerformanceInfo  `json:"performance"`
-	VCenter       *vCenterInfo         `json:"vCenter"`
-	Certificate   *certificateInfo     `json:"certificate"`
+	// Present whenever `Performance` is, so the caller can tell "collected
+	// every powered-on VM" apart from "collected some, then a batch failed"
+	// apart from "the very first batch failed" instead of all three looking
+	// like an equally clean (if possibly empty) result.
+	PerformanceCoverage *performanceCoverage `json:"performanceCoverage,omitempty"`
+	VCenter             *vCenterInfo         `json:"vCenter"`
+	Certificate         *certificateInfo     `json:"certificate"`
 }
 
 // certificateInfo backs trust-on-first-use (see Sources/vLensCore/CertificateTrust.swift).
@@ -396,6 +401,20 @@ type vmPerformanceInfo struct {
 	MaxRAMUsagePercent  *float64  `json:"maxRamUsagePercent"`
 	MaxReadIOSizeBytes  *int64    `json:"maxReadIOSizeBytes"`
 	MaxWriteIOSizeBytes *int64    `json:"maxWriteIOSizeBytes"`
+}
+
+// performanceCoverage tells the caller exactly how much of the requested
+// performance collection actually completed — `Complete: true` means every
+// powered-on VM was sampled; `false` means a batch failed partway through
+// (`CollectedVMCount` says how many VMs got data before that happened, and
+// `Error` carries the real reason). Without this, a batch failure and a
+// fully successful-but-empty collection were indistinguishable from the
+// caller's side — both just returned a plain (possibly empty) list.
+type performanceCoverage struct {
+	RequestedVMCount int     `json:"requestedVMCount"`
+	CollectedVMCount int     `json:"collectedVMCount"`
+	Complete         bool    `json:"complete"`
+	Error            *string `json:"error,omitempty"`
 }
 
 // ---------- main ----------
@@ -776,12 +795,12 @@ func collectPerformanceAction(req helperRequest) (helperResponse, error) {
 	}
 	defer client.Logout(ctx)
 
-	perf, err := collectPerformance(ctx, client, req.PerfIntervalMinutes)
+	perf, coverage, err := collectPerformance(ctx, client, req.PerfIntervalMinutes)
 	if err != nil {
 		return helperResponse{}, fmt.Errorf("performance collection failed: %w", err)
 	}
 
-	return helperResponse{OK: true, Performance: perf}, nil
+	return helperResponse{OK: true, Performance: perf, PerformanceCoverage: &coverage}, nil
 }
 
 // perfSamplingParameters mirrors AWS's export-for-vcenter tool's own
@@ -804,12 +823,31 @@ func perfSamplingParameters(intervalMins int) (samples int, intervalID int32) {
 	}
 }
 
+// perfSampler abstracts one batched QueryPerf round-trip (SampleByName +
+// ToMetricSeries) so tests can inject a failure on a specific batch — the
+// first, a later one, or none — without a live vCenter/vcsim connection.
+type perfSampler interface {
+	sampleBatch(ctx context.Context, spec types.PerfQuerySpec, metricNames []string, batch []types.ManagedObjectReference) ([]performance.EntityMetric, error)
+}
+
+type govmomiPerfSampler struct {
+	manager *performance.Manager
+}
+
+func (s *govmomiPerfSampler) sampleBatch(ctx context.Context, spec types.PerfQuerySpec, metricNames []string, batch []types.ManagedObjectReference) ([]performance.EntityMetric, error) {
+	series, err := s.manager.SampleByName(ctx, spec, metricNames, batch)
+	if err != nil {
+		return nil, err
+	}
+	return s.manager.ToMetricSeries(ctx, series)
+}
+
 // collectPerformance samples CPU/RAM usage and disk IOPS size for every
 // powered-on VM over the requested time window. Only powered-on VMs are
 // queried — powered-off VMs have no live performance samples. Chunked into
 // batches (not one call per VM, not all VMs in a single call) to keep each
 // QueryPerf request bounded in very large environments.
-func collectPerformance(ctx context.Context, client *govmomi.Client, intervalMins int) ([]vmPerformanceInfo, error) {
+func collectPerformance(ctx context.Context, client *govmomi.Client, intervalMins int) ([]vmPerformanceInfo, performanceCoverage, error) {
 	if intervalMins <= 0 {
 		intervalMins = 60
 	}
@@ -818,13 +856,13 @@ func collectPerformance(ctx context.Context, client *govmomi.Client, intervalMin
 	m := view.NewManager(client.Client)
 	cv, err := m.CreateContainerView(ctx, client.Client.ServiceContent.RootFolder, []string{"VirtualMachine"}, true)
 	if err != nil {
-		return nil, err
+		return nil, performanceCoverage{}, err
 	}
 	defer cv.Destroy(ctx)
 
 	var vms []mo.VirtualMachine
 	if err := cv.Retrieve(ctx, []string{"VirtualMachine"}, []string{"name", "runtime.powerState", "config.uuid"}, &vms); err != nil {
-		return nil, err
+		return nil, performanceCoverage{}, err
 	}
 
 	var refs []types.ManagedObjectReference
@@ -840,16 +878,34 @@ func collectPerformance(ctx context.Context, client *govmomi.Client, intervalMin
 		idByRef[ref] = vmID(vm)
 	}
 	if len(refs) == 0 {
-		return nil, nil
+		return nil, performanceCoverage{Complete: true}, nil
 	}
 
-	perfManager := performance.NewManager(client.Client)
+	spec := types.PerfQuerySpec{MaxSample: int32(samples), IntervalId: intervalID}
+	sampler := &govmomiPerfSampler{manager: performance.NewManager(client.Client)}
+	result, coverage := samplePerformanceBatches(ctx, sampler, refs, nameByRef, idByRef, spec, intervalMins)
+	return result, coverage, nil
+}
+
+// samplePerformanceBatches drives the batched QueryPerf loop against
+// `sampler` — factored out of collectPerformance purely so a fake sampler
+// can exercise "the first batch fails" separately from "a later batch fails
+// after earlier ones already succeeded" (see main_test.go). A batch failure
+// stops the loop (some environments, and vcsim, don't support QueryPerf for
+// every counter) but — unlike before — is no longer silent: `Complete` is
+// false and `Error` carries the real reason, so "0 of 400 VMs, first batch
+// failed" and "250 of 400, a later batch failed" are each visible as
+// incomplete instead of looking like a clean result.
+func samplePerformanceBatches(
+	ctx context.Context, sampler perfSampler, refs []types.ManagedObjectReference,
+	nameByRef, idByRef map[types.ManagedObjectReference]string, spec types.PerfQuerySpec, intervalMins int,
+) ([]vmPerformanceInfo, performanceCoverage) {
 	metricNames := []string{
 		"cpu.usage.average", "mem.usage.average",
 		"virtualDisk.readIOSize.latest", "virtualDisk.writeIOSize.latest",
 	}
-	spec := types.PerfQuerySpec{MaxSample: int32(samples), IntervalId: intervalID}
 	now := time.Now().UTC()
+	coverage := performanceCoverage{RequestedVMCount: len(refs)}
 
 	const batchSize = 50
 	var result []vmPerformanceInfo
@@ -860,50 +916,65 @@ func collectPerformance(ctx context.Context, client *govmomi.Client, intervalMin
 		}
 		batch := refs[i:end]
 
-		series, err := perfManager.SampleByName(ctx, spec, metricNames, batch)
+		entityMetrics, err := sampler.sampleBatch(ctx, spec, metricNames, batch)
 		if err != nil {
-			// Some environments (and vcsim) don't support QueryPerf for
-			// every counter — degrade to "no performance data" rather than
-			// failing the whole request, same tolerance as collectLicenses.
-			return result, nil
+			msg := err.Error()
+			coverage.Error = &msg
+			coverage.CollectedVMCount = len(result)
+			return result, coverage
 		}
-		entityMetrics, err := perfManager.ToMetricSeries(ctx, series)
-		if err != nil {
-			return result, nil
-		}
-
 		for _, em := range entityMetrics {
-			info := vmPerformanceInfo{
-				ID:              idByRef[em.Entity],
-				VMName:          nameByRef[em.Entity],
-				IntervalMinutes: intervalMins,
-				CollectedAt:     now,
-			}
-			for _, ms := range em.Value {
-				avg, max, ok := averageMax(ms.Value)
-				if !ok {
-					continue
-				}
-				switch ms.Name {
-				case "cpu.usage.average":
-					a, mx := avg/100.0, max/100.0
-					info.AvgCPUUsagePercent, info.MaxCPUUsagePercent = &a, &mx
-				case "mem.usage.average":
-					a, mx := avg/100.0, max/100.0
-					info.AvgRAMUsagePercent, info.MaxRAMUsagePercent = &a, &mx
-				case "virtualDisk.readIOSize.latest":
-					mx := int64(max)
-					info.MaxReadIOSizeBytes = &mx
-				case "virtualDisk.writeIOSize.latest":
-					mx := int64(max)
-					info.MaxWriteIOSizeBytes = &mx
-				}
-			}
-			result = append(result, info)
+			result = append(result, buildPerformanceInfo(em, nameByRef, idByRef, intervalMins, now))
 		}
 	}
 
-	return result, nil
+	coverage.Complete = true
+	coverage.CollectedVMCount = len(result)
+	return result, coverage
+}
+
+// buildPerformanceInfo maps one entity's sampled counters to a single
+// vmPerformanceInfo. A VM with multiple disks gets one PerfMetricSeries per
+// disk instance (e.g. "scsi0:0", "scsi0:1") for both
+// virtualDisk.readIOSize.latest and .writeIOSize.latest — merged here by
+// taking the largest single-disk peak, rather than the previous behavior of
+// letting whichever disk's series was processed last silently overwrite the
+// others.
+func buildPerformanceInfo(em performance.EntityMetric, nameByRef, idByRef map[types.ManagedObjectReference]string, intervalMins int, now time.Time) vmPerformanceInfo {
+	info := vmPerformanceInfo{
+		ID:              idByRef[em.Entity],
+		VMName:          nameByRef[em.Entity],
+		IntervalMinutes: intervalMins,
+		CollectedAt:     now,
+	}
+	var maxRead, maxWrite *int64
+	for _, ms := range em.Value {
+		avg, max, ok := averageMax(ms.Value)
+		if !ok {
+			continue
+		}
+		switch ms.Name {
+		case "cpu.usage.average":
+			a, mx := avg/100.0, max/100.0
+			info.AvgCPUUsagePercent, info.MaxCPUUsagePercent = &a, &mx
+		case "mem.usage.average":
+			a, mx := avg/100.0, max/100.0
+			info.AvgRAMUsagePercent, info.MaxRAMUsagePercent = &a, &mx
+		case "virtualDisk.readIOSize.latest":
+			mx := int64(max)
+			if maxRead == nil || mx > *maxRead {
+				maxRead = &mx
+			}
+		case "virtualDisk.writeIOSize.latest":
+			mx := int64(max)
+			if maxWrite == nil || mx > *maxWrite {
+				maxWrite = &mx
+			}
+		}
+	}
+	info.MaxReadIOSizeBytes = maxRead
+	info.MaxWriteIOSizeBytes = maxWrite
+	return info
 }
 
 // averageMax ignores negative values — vCenter uses -1 to mean "no data for

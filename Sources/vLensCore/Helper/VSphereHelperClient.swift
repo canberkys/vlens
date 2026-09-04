@@ -66,9 +66,13 @@ public struct VSphereHelperClient: Sendable {
     /// Its own login/logout, so it can be re-run from the vPerformance tab's
     /// own refresh control with a different time window without re-collecting
     /// everything else.
+    /// Returns the samples collected plus a `PerformanceCoverage` describing
+    /// whether every powered-on VM was actually reached — see that type's
+    /// doc comment. Distinct from throwing: a partial result is still a
+    /// successful helper response (`ok: true`), just an incomplete one.
     public func collectPerformance(
         url: String, username: String, password: String, expectedFingerprint: String, intervalMinutes: Int
-    ) async throws -> [VMPerformanceInfo] {
+    ) async throws -> (metrics: [VMPerformanceInfo], coverage: PerformanceCoverage?) {
         let request = HelperRequest(
             action: .collectPerformance, url: url, username: username, password: password,
             insecure: true, expectedFingerprint: expectedFingerprint, perfIntervalMinutes: intervalMinutes
@@ -77,7 +81,7 @@ public struct VSphereHelperClient: Sendable {
         guard response.ok else {
             throw HelperClientError.helperReportedError(response.error ?? "unknown helper error")
         }
-        return response.performance ?? []
+        return (response.performance ?? [], response.performanceCoverage)
     }
 
     /// Raw TLS certificate fetch — no login. Always passes `insecure: true`

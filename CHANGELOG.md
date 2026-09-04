@@ -3,6 +3,31 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.3.2] - 2026-09-05 (+03)
+
+### Fixed
+- **Performance collection could silently return a partial result.** A
+  batched `QueryPerf` request failing partway through (a real vCenter
+  timeout, a permissions gap, vcsim's limited counter support) used to
+  degrade to whatever data had been gathered so far with no signal that
+  anything was missing — indistinguishable from a genuinely complete,
+  if small, result. The Go helper now reports a `performanceCoverage`
+  (requested vs. collected VM count, `complete`, and the real error when
+  incomplete) alongside every collection; vPerformance surfaces it as
+  "Collected N of M VMs — the request failed partway through: ...".
+- **A VM with multiple disks could have its IOPS metrics overwritten.**
+  `virtualDisk.readIOSize.latest`/`writeIOSize.latest` return one series
+  per disk instance — the code kept whichever disk's series it processed
+  last, silently discarding the others' peaks. Now merges by taking the
+  largest single-disk peak across all of a VM's disks.
+
+Both were reproduced and fixed with new Go unit tests (`helper/main_test.go`,
+this project's first) rather than only against vcsim, which doesn't support
+per-disk IOPS counters at all — a first-batch failure, a later-batch
+failure after some data was already collected, and the multi-disk merge are
+each exercised directly with a fake performance sampler. The full-success
+path was additionally confirmed live against vcsim.
+
 ## [1.3.1] - 2026-09-05 (+03)
 
 ### Fixed
