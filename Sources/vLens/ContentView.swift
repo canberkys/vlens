@@ -38,7 +38,7 @@ struct ContentView: View {
         Group {
             if viewModel.vms.isEmpty {
                 connectForm
-                    .frame(width: 480, height: 580)
+                    .frame(width: 420, height: 480)
                     .onAppear {
                         // Re-checked (not just computed once at init) so
                         // Preferences' "Reset Tutorials" takes effect without
@@ -92,27 +92,30 @@ struct ContentView: View {
     // MARK: - Connect form
 
     private var connectForm: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 16)
-
-            VStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 20) {
+            // One compact header instead of a hero title stacked above a
+            // second "Connect to vCenter" headline — the form itself makes
+            // the purpose obvious, a second headline was redundant weight.
+            HStack(spacing: 12) {
                 AppIconImage.image
                     .resizable()
-                    .frame(width: 72, height: 72)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                Text("vLens").font(.largeTitle.bold())
-                Text("vCenter/ESXi inventory, built for Mac")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .frame(width: 48, height: 48)
+                    .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("vLens").font(.title2.bold())
+                    Text("vCenter/ESXi inventory, built for Mac")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
             }
 
-            Spacer(minLength: 24)
-
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Connect to vCenter").font(.headline)
-
+            VStack(alignment: .leading, spacing: 10) {
                 if !viewModel.savedProfiles.isEmpty {
-                    savedProfilesMenu
+                    HStack {
+                        Spacer()
+                        savedProfilesMenu
+                    }
                 }
 
                 TextField("vCenter host (e.g. vcenter.local)", text: $viewModel.host)
@@ -129,35 +132,39 @@ struct ContentView: View {
                         .font(.callout)
                 }
 
-                HStack {
-                    Button("Try demo mode") {
-                        viewModel.loadDemoData()
-                    }
-                    .buttonStyle(.link)
-                    .disabled(viewModel.isConnecting)
-
-                    Spacer()
-                    Button {
-                        Task { await viewModel.connectAndListVMs() }
-                    } label: {
+                Button {
+                    Task { await viewModel.connectAndListVMs() }
+                } label: {
+                    Group {
                         if viewModel.isConnecting {
                             ProgressView().controlSize(.small)
                         } else {
                             Text("Connect")
                         }
                     }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(viewModel.isConnecting)
+                    .frame(maxWidth: .infinity)
                 }
-            }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+                .disabled(viewModel.isConnecting)
 
-            Spacer(minLength: 24)
+                // Secondary escape hatch, not a co-equal action next to
+                // Connect — smaller, muted, below the primary button.
+                Button("Try demo mode") {
+                    viewModel.loadDemoData()
+                }
+                .buttonStyle(.link)
+                .font(.footnote)
+                .disabled(viewModel.isConnecting)
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
         }
-        .padding(32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(28)
     }
 
+    /// Tied visually to the host field it populates (small, right-aligned,
+    /// directly above it) rather than a standalone row that used to read
+    /// like a stray toolbar button.
     private var savedProfilesMenu: some View {
         Menu {
             ForEach(viewModel.savedProfiles) { profile in
@@ -168,7 +175,8 @@ struct ContentView: View {
                 Button("Delete: \(profile.name)", role: .destructive) { viewModel.deleteSavedProfile(profile) }
             }
         } label: {
-            Label("Saved connections", systemImage: "clock.arrow.circlepath")
+            Label("Recent", systemImage: "clock.arrow.circlepath")
+                .font(.caption)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()

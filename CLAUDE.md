@@ -160,6 +160,18 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) Connect ekranı `macos-ui-ux` agent'ının bulgularına göre
+      yeniden tasarlandı (v1.1.2)** — iki ayrı üst üste başlık (icon+"vLens"+tagline
+      bloğu VE "Connect to vCenter" headline'ı) tek kompakt bir yatay header'a
+      indirildi (icon solda, başlık+tagline sağda); kayıtlı bağlantılar menüsü
+      artık host alanının hemen üstünde, ona bitişik (eskiden başıboş bir
+      satır gibiydi); "Try demo mode" artık Connect butonunun altında, ayrı
+      ve sönük (eskiden Connect ile aynı satırda eşit ağırlıktaydı); pencere
+      480×580'den 420×480'e küçültüldü (3 esnek Spacer yerine sabit
+      padding/spacing kullanıldı — içerik artık boşlukta yüzmüyor). `swift
+      build`/`swift test` temiz (58/58). **Not**: GUI ekran görüntüsü
+      otomasyonu bu turda tekrar denendi, yine yanlış pencere yakaladı
+      (ilgisiz bir başka uygulama) — görsel doğrulama kullanıcıya bırakıldı.
 - [x] **(2026-09-04) Sidebar navigasyonu resize sırasında tamamen kaybolabiliyordu
       (v1.1.1)** — kullanıcı canlı olarak yakaladı: 2 snapshot alıp Snapshots
       tab'ındayken pencereyi yeniden boyutlandırınca sidebar (27 tab'lık liste)

@@ -3,6 +3,17 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.1.2] - 2026-09-04 16:42 (+03)
+
+### Changed
+- Connect screen redesigned again per a UI/UX audit's concrete feedback:
+  one compact icon+title header instead of two stacked headlines, the
+  saved-connections menu moved inline above the host field instead of
+  floating as a standalone row, "Try demo mode" demoted below the primary
+  Connect button instead of sharing its row, and the window shrunk from
+  480×580 to 420×480 to match the now-tighter content instead of leaving
+  it to expand into flexible spacers.
+
 ## [1.1.1] - 2026-09-04 16:32 (+03)
 
 ### Fixed
