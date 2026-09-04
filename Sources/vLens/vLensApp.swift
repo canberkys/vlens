@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Sparkle
 
 @main
 struct vLensApp: App {
@@ -23,6 +24,9 @@ struct vLensApp: App {
             CommandGroup(replacing: .appInfo) {
                 Button("About vLens") {
                     openWindow(id: "about")
+                }
+                Button("Check for Updates…") {
+                    appDelegate.updaterController.checkForUpdates(nil)
                 }
             }
             // Replaces the default (empty) Help menu item — native in-app
@@ -65,7 +69,17 @@ struct vLensApp: App {
 /// window can appear in front while keystrokes still go to the terminal
 /// that launched it. Force activation on launch so this stays a non-issue
 /// during development; a real notarized .app bundle won't need this.
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// `startingUpdater: true` begins Sparkle's own background schedule
+    /// immediately (per `SUScheduledCheckInterval`/`SUEnableAutomaticChecks`
+    /// in `Resources/Info.plist`) — silent unless it actually finds a newer
+    /// version, at which point it shows its own native update sheet.
+    /// `swift run`/dev builds have no real Info.plist (no `SUFeedURL`), so
+    /// this silently no-ops there rather than erroring — only meaningful in
+    /// a packaged, signed `.app`.
+    let updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)

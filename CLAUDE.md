@@ -160,6 +160,30 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) Sparkle auto-update entegre edildi, Faz 3 tamamen kapandı
+      (v1.2.0)** — `Package.swift`'e Sparkle SPM dependency'si (2.9.6),
+      `vLensApp.swift`'e `SPUStandardUpdaterController` (`AppDelegate`
+      artık `@MainActor` — Sparkle'ın init'i main-actor izole, Swift 6 strict
+      concurrency bunu zorunlu kıldı) + "Check for Updates…" menü öğesi.
+      `generate_keys` ile gerçek bir EdDSA anahtar çifti üretildi (private key
+      sadece bu makinenin Keychain'inde), public key `Info.plist`'e
+      (`SUPublicEDKey`) yazıldı, `SUFeedURL` `https://raw.githubusercontent.com/canberkys/vlens/main/appcast.xml`'e
+      işaret ediyor. **Gerçek bir mimari bulgu**: SwiftPM'in varsayılan rpath'i
+      (`@loader_path`) framework'ü `Contents/MacOS/` yanında arıyor, standart
+      `Contents/Frameworks/` konumu değil — `Package.swift`'e
+      `@executable_path/../Frameworks` rpath'i linker flag'i olarak eklendi.
+      `scripts/release.sh`: Sparkle.framework artık `.app` içine gömülüp
+      içeriden dışarıya doğru imzalanıyor (Autoupdate → Updater.app → 2 XPC
+      servisi → framework'ün kendisi — hepsi XCFramework'te ad-hoc imzalı
+      geliyor, gerçek Developer ID ile yeniden imzalanması gerekiyordu), DMG
+      paketlendikten sonra `sign_update` ile EdDSA imzası alınıp `appcast.xml`
+      yazılıyor. **Gerçek bir mimari karar (kullanıcı onayı, AskUserQuestion
+      ile)**: Sparkle'ın arka plan güncelleme kontrolü kimlik doğrulama
+      taşıyamıyor — private repo'da GitHub Pages/raw content/release asset'lerin
+      hepsi auth istiyor. Kullanıcı **repoyu public yapmayı** seçti — public
+      yapılmadan önce tüm commit geçmişi gerçek bir secret/credential sızıntısı
+      için tarandı (temiz çıktı). Repo artık `github.com/canberkys/vlens`
+      (public). `swift build`/`swift test` temiz (59/59).
 - [x] **(2026-09-04) Snapshots tab'ına toplu seç/sil eklendi (v1.1.3)** —
       kullanıcı isteği: 10 snapshot'tan 4'ünü seçip birlikte silebilme.
       `List(rows, selection: $selectedSnapshotIDs)` ile çoklu seçim; seçim
