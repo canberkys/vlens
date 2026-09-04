@@ -160,6 +160,23 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) Help ▸ What's New render'ı düzeltildi (v1.2.3)** —
+      kullanıcı "text'ler çok kötü" diye geri bildirdi. Kök neden:
+      `AttributedString(markdown:)` ile tüm CHANGELOG'u tek bir `Text`'e
+      basmak hiçbir başlık/liste görsel hiyerarşisi uygulamıyordu (her satır
+      aynı boyutta body text, versiyonlar arası boşluk yok). `HelpView.swift`'e
+      elle yazılmış bir parser (`ChangelogEntry`/`ChangelogSection`) +
+      gerçek SwiftUI VStack/HStack render'ı eklendi — versiyon başlıkları
+      `.title3.bold()`, bölüm başlıkları `.subheadline.bold()`, madde
+      imleri düzgün girinti/boşlukla. Tek satırlık madde içindeki
+      `**bold**`/`` `code` `` için native markdown parser hâlâ kullanılıyor
+      (o dar kapsamda iyi çalışıyor). **Gerçek bir ikinci bug bulundu ve
+      düzeltildi doğrulama sırasında**: parser, `### ` başlığı olmadan gelen
+      madde imlerini (v1.0.0'ın tek satırlık özeti gibi) sessizce
+      düşürüyordu — standalone bir Swift script ile gerçek CHANGELOG.md'ye
+      karşı çalıştırılıp yakalandı, düzeltildi, tekrar doğrulandı (9/9
+      versiyon artık doğru parse ediliyor). `swift build`/`swift test`
+      temiz (59/59).
 - [x] **(2026-09-05) "What's New" ve Sparkle release notes eklendi (v1.2.2)**
       — kullanıcı Sparkle güncellemesini gerçekten test edip ("vov çalıştı!")
       sonra "kullanıcı update etti ama yenilikleri bilmiyor, rahatsız etmeden
