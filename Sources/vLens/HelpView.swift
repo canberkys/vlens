@@ -196,7 +196,7 @@ struct HelpView: View {
     /// applied to a single bullet's text, so `changelogInlineText(_:)`
     /// still uses it for that narrower purpose.
     private static var changelogEntries: [ChangelogEntry] {
-        guard let url = Bundle.module.url(forResource: "CHANGELOG", withExtension: "md"),
+        guard let url = AppResourceLocator.resourceBundle().url(forResource: "CHANGELOG", withExtension: "md"),
             let raw = try? String(contentsOf: url, encoding: .utf8)
         else { return [] }
         return parseChangelog(raw)

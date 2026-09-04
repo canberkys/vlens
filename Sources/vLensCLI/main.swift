@@ -115,7 +115,11 @@ func normalizedSDKURL(_ host: String) -> String {
 /// `ConnectionViewModel.ensureCertificateTrusted`, but `.unknown` fails
 /// instead of pausing for a GUI approval sheet the CLI has no way to show —
 /// trust-on-first-use still requires a human, just via the app, not here.
-func ensureCertificateTrusted(helperClient: VSphereHelperClient, host: String, sdkURL: String) async {
+/// Returns the verified fingerprint's `displayValue` so the caller can pass
+/// it to `collectAll`/`collectPerformance` — the Go helper binds the actual
+/// login connection to it via thumbprint pinning (see `helper/main.go`'s
+/// `newPinnedClient`), rather than the two being unrelated TLS connections.
+func ensureCertificateTrusted(helperClient: VSphereHelperClient, host: String, sdkURL: String) async -> String {
     let trustStore = LocalJSONCertificateTrustStore()
     let cert: HelperCertificateInfo
     do {
@@ -127,7 +131,7 @@ func ensureCertificateTrusted(helperClient: VSphereHelperClient, host: String, s
 
     switch trustStore.decision(for: host, fingerprint: fingerprint) {
     case .trusted:
-        return
+        return fingerprint.displayValue
     case .unknown:
         fail("Certificate for \(host) isn't trusted yet. Connect once via the vLens app to review and approve it, then retry.")
     case .mismatch(let expected):
@@ -139,13 +143,9 @@ func ensureCertificateTrusted(helperClient: VSphereHelperClient, host: String, s
 func collect(profile: ConnectionProfile, password: String) async -> CollectedInventory {
     let helperClient = VSphereHelperClient(helperURL: CLIHelperLocator.resolve())
     let sdkURL = normalizedSDKURL(profile.host)
-    await ensureCertificateTrusted(helperClient: helperClient, host: profile.host, sdkURL: sdkURL)
+    let expectedFingerprint = await ensureCertificateTrusted(helperClient: helperClient, host: profile.host, sdkURL: sdkURL)
     do {
-        // Always `insecure: true` at the transport layer — same reasoning as
-        // ConnectionViewModel.performCollection: standard CA validation is
-        // superseded by the fingerprint pinning ensureCertificateTrusted
-        // just confirmed.
-        return try await helperClient.collectAll(url: sdkURL, username: profile.username, password: password, insecure: true)
+        return try await helperClient.collectAll(url: sdkURL, username: profile.username, password: password, expectedFingerprint: expectedFingerprint)
     } catch {
         fail("Collection failed: \(error)")
     }

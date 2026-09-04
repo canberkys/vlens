@@ -3,6 +3,50 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.3.0] - 2026-09-05 (+03)
+
+### Fixed
+- **Packaged app crashed on launch on any Mac other than the one it was
+  built on.** SwiftPM's generated resource bundle accessor (`Bundle.module`)
+  was never actually copied into the `.app` by `scripts/release.sh` — its
+  only fallback was an absolute path into the build machine's own
+  `.build/` directory, so every prior release crashed with a `fatalError`
+  for anyone who downloaded it. Fixed by copying the resource bundle into
+  the conventional `Contents/Resources/` location (a new
+  `AppResourceLocator.swift` looks there first, falling back to
+  `Bundle.module` for unsigned dev builds) — `Contents/` is required
+  because `codesign` rejects anything placed at the `.app` bundle root.
+- **Certificate pinning wasn't actually binding the real data connection.**
+  The trust-on-first-use fingerprint was verified against one throwaway
+  TLS probe, but the actual credentialed session (inventory collection,
+  performance collection) connected with `insecure: true` and no link to
+  that fingerprint — a MITM able to pass the first check could still
+  intercept the second. Now uses govmomi's own thumbprint-pinning
+  mechanism (`soap.Client.SetThumbprint`) so the real connection fails
+  closed unless its certificate matches the one the user approved.
+- **A healthy multipath was always flagged red.** The health check
+  compared `ScsiLun.OperationalState` (LUN-level values like `"ok"`/
+  `"degraded"`) against the vocabulary for per-path state
+  (`"active"`/`"standby"`) — every LUN reporting its normal `"ok"` state
+  failed the rule. Now checks for the correct LUN-level vocabulary.
+- **Snapshot writes could race and silently lose data.** The GUI and a
+  scheduled `vlens-cli` run could both read-modify-write
+  `inventory-snapshots.json` at once with no coordination, and a corrupt
+  file was silently treated as empty on the next write. Added
+  cross-process file locking (`flock`) around every write, and mutation
+  now fails loudly on an unreadable file instead of overwriting it
+  (read-only display still degrades gracefully to an empty list).
+- **Real helper errors were discarded on failure.** The Go helper writes
+  a descriptive JSON error to stdout even on failure, but the Swift
+  client only read stderr — surfacing a generic, unhelpful message.
+  Now decodes stdout first and only falls back to stderr if that fails.
+
+Found by an external code review of the full codebase; each fix was
+verified against live behavior (a real crash reproduction, a real vcsim
+connection, live vcsim TLS probes with correct/incorrect/missing
+fingerprints, and concurrent-write stress tests) rather than just
+compiling cleanly.
+
 ## [1.2.3] - 2026-09-05 (+03)
 
 ### Fixed

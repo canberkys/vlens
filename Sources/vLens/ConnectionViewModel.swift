@@ -353,15 +353,32 @@ final class ConnectionViewModel {
         }
     }
 
+    /// The pinned fingerprint for the current `host`, read fresh from the
+    /// trust store — `performCollection`/`collectPerformance` are only ever
+    /// called after `ensureCertificateTrusted`/`approvePendingCertificate`
+    /// has established one, so this should never be nil in practice. `nil`
+    /// (a defensive case, not an expected one) means the actual login
+    /// connection has nothing to pin against — refuse rather than let the
+    /// helper fall back to an unverified connection.
+    private func pinnedFingerprint() -> String? {
+        guard let trusted = try? certificateTrustStore.trustedCertificate(for: host) else { return nil }
+        return trusted.fingerprint.displayValue
+    }
+
     private func performCollection(sdkURL: String) async {
+        guard let expectedFingerprint = pinnedFingerprint() else {
+            errorMessage = "No pinned certificate found for this host — please reconnect to re-verify it."
+            return
+        }
         do {
-            // Always `insecure: true` at the transport layer — standard CA
-            // validation is superseded by the fingerprint pinning that just
-            // happened in ensureCertificateTrusted/approvePendingCertificate.
-            // By the time we get here, the certificate has already been
-            // explicitly trusted (either previously, or just now by the user).
+            // `insecure: true` no longer means "skip verification" for this
+            // call — the Go helper binds the connection to
+            // `expectedFingerprint` via govmomi's own thumbprint pinning
+            // instead of standard CA validation (which on-prem vCenter's
+            // self-signed/internal-CA certs would fail anyway). See
+            // `helper/main.go`'s `newPinnedClient`.
             let inventory = try await helperClient.collectAll(
-                url: sdkURL, username: username, password: password, insecure: true
+                url: sdkURL, username: username, password: password, expectedFingerprint: expectedFingerprint
             )
             vms = inventory.vms
             cpus = inventory.cpus
@@ -479,12 +496,16 @@ final class ConnectionViewModel {
             performanceMetrics = DemoData.performanceMetrics(for: vms, intervalMinutes: intervalMinutes)
             return
         }
+        guard let expectedFingerprint = pinnedFingerprint() else {
+            performanceErrorMessage = "No pinned certificate found for this host — please reconnect to re-verify it."
+            return
+        }
         isCollectingPerformance = true
         performanceErrorMessage = nil
         do {
             performanceMetrics = try await helperClient.collectPerformance(
-                url: normalizedSDKURL(), username: username, password: password, insecure: true,
-                intervalMinutes: intervalMinutes
+                url: normalizedSDKURL(), username: username, password: password,
+                expectedFingerprint: expectedFingerprint, intervalMinutes: intervalMinutes
             )
         } catch {
             performanceErrorMessage = Self.describe(error)

@@ -17,8 +17,16 @@ public struct VSphereHelperClient: Sendable {
         self.helperURL = helperURL
     }
 
-    public func collectAll(url: String, username: String, password: String, insecure: Bool) async throws -> CollectedInventory {
-        let request = HelperRequest(action: .collectAll, url: url, username: username, password: password, insecure: insecure)
+    /// `expectedFingerprint` is the already-pinned `CertificateFingerprint.
+    /// displayValue` for this host — required, not optional. The Go helper
+    /// binds the actual login connection to it via `soap.Client.
+    /// SetThumbprint`, so a MITM can't pass a fingerprint check on one
+    /// connection and then intercept a different, unverified one for the
+    /// real credentials. See `helper/main.go`'s `newPinnedClient` — it
+    /// ignores the request's `insecure` flag for this action entirely, so
+    /// there's no such parameter here to be misleading about it.
+    public func collectAll(url: String, username: String, password: String, expectedFingerprint: String) async throws -> CollectedInventory {
+        let request = HelperRequest(action: .collectAll, url: url, username: username, password: password, insecure: true, expectedFingerprint: expectedFingerprint)
         let response = try await run(request)
         guard response.ok else {
             throw HelperClientError.helperReportedError(response.error ?? "unknown helper error")
@@ -59,11 +67,11 @@ public struct VSphereHelperClient: Sendable {
     /// own refresh control with a different time window without re-collecting
     /// everything else.
     public func collectPerformance(
-        url: String, username: String, password: String, insecure: Bool, intervalMinutes: Int
+        url: String, username: String, password: String, expectedFingerprint: String, intervalMinutes: Int
     ) async throws -> [VMPerformanceInfo] {
         let request = HelperRequest(
             action: .collectPerformance, url: url, username: username, password: password,
-            insecure: insecure, perfIntervalMinutes: intervalMinutes
+            insecure: true, expectedFingerprint: expectedFingerprint, perfIntervalMinutes: intervalMinutes
         )
         let response = try await run(request)
         guard response.ok else {
@@ -114,6 +122,24 @@ public struct VSphereHelperClient: Sendable {
         process.waitUntilExit()
 
         guard process.terminationStatus == 0 else {
+            // `helper/main.go`'s `main()` always writes a real
+            // `{"ok": false, "error": "<the actual govmomi/login error>"}`
+            // to stdout before `os.Exit(1)` — a wrong password, permission
+            // denial, or TLS failure's real explanation lives there, not in
+            // stderr (which is empty in that case). This used to only
+            // surface stderr, so none of those descriptive errors ever
+            // reached the user — confirmed by sending the helper an
+            // invalid action and observing exactly this stdout/exit-code
+            // shape. Try stdout first, only fall back to stderr (a Go
+            // panic before any JSON was written, for example) if stdout
+            // doesn't actually decode.
+            if !stdoutData.isEmpty {
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .iso8601
+                if let response = try? decoder.decode(HelperResponse.self, from: stdoutData) {
+                    throw HelperClientError.helperReportedError(response.error ?? "unknown helper error")
+                }
+            }
             let stderrData = await Self.readAll(stderr.fileHandleForReading)
             let message = String(data: stderrData, encoding: .utf8) ?? ""
             throw HelperClientError.processFailed(exitCode: process.terminationStatus, stderr: message)

@@ -25,7 +25,9 @@ import (
 	"github.com/vmware/govmomi/license"
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/property"
+	"github.com/vmware/govmomi/session"
 	"github.com/vmware/govmomi/view"
+	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
@@ -34,11 +36,16 @@ import (
 // ---------- protocol ----------
 
 type helperRequest struct {
-	Action              string `json:"action"`
-	URL                 string `json:"url"`
-	Username            string `json:"username"`
-	Password            string `json:"password"`
+	Action   string `json:"action"`
+	URL      string `json:"url"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	// Kept only for `getCertificate` (a raw, credential-free TLS probe that
+	// has nothing to pin against yet — see fetchCertificate). `collectAll`/
+	// `collectPerformance` ignore this and always require ExpectedFingerprint
+	// instead; see newPinnedClient's doc comment for why.
 	Insecure            bool   `json:"insecure"`
+	ExpectedFingerprint string `json:"expectedFingerprint,omitempty"`
 	PerfIntervalMinutes int    `json:"perfIntervalMinutes,omitempty"`
 }
 
@@ -554,6 +561,54 @@ func fetchCertificate(req helperRequest) (*certificateInfo, error) {
 
 // ---------- collection ----------
 
+// newPinnedClient replaces the old `govmomi.NewClient(ctx, u, insecure)`
+// blanket-insecure pattern for every authenticated action. That pattern was
+// a real vulnerability: `getCertificate` fingerprints the server on one
+// throwaway TLS connection, `ConnectionViewModel` checks that fingerprint
+// against the locally pinned trust store, and then — on a completely
+// separate connection — the actual login with real credentials happened
+// with `InsecureSkipVerify: true` and no cryptographic link back to the
+// fingerprint that was just "verified". A MITM only needs to let the first
+// probe through untouched and can freely intercept the second.
+//
+// This builds the soap/vim25 client by hand (mirrors govmomi.NewClient's
+// own body) specifically to call `soap.Client.SetThumbprint` — govmomi's
+// own first-class pinning mechanism, also used by govc/terraform-provider-
+// vsphere. Constructed with `insecure=false`, so the initial dial attempts
+// normal CA verification (expected to fail for the self-signed/internal-CA
+// certs almost every on-prem vCenter uses), and *only on that specific
+// failure* falls back to comparing the presented certificate's SHA-256/
+// SHA-1 thumbprint against the one passed in here — hard error if it
+// doesn't match, never a silent connect. ExpectedFingerprint is therefore
+// required, not optional: an authenticated connection with nothing to pin
+// against is exactly the bug being fixed.
+func newPinnedClient(ctx context.Context, u *url.URL, expectedFingerprint string) (*govmomi.Client, error) {
+	if expectedFingerprint == "" {
+		return nil, fmt.Errorf("expectedFingerprint is required — refusing to connect without certificate pinning")
+	}
+
+	soapClient := soap.NewClient(u, false)
+	soapClient.SetThumbprint(u.Host, expectedFingerprint)
+
+	vimClient, err := vim25.NewClient(ctx, soapClient)
+	if err != nil {
+		return nil, err
+	}
+
+	c := &govmomi.Client{
+		Client:         vimClient,
+		SessionManager: session.NewManager(vimClient),
+	}
+
+	if u.User != nil {
+		if err := c.Login(ctx, u.User); err != nil {
+			return nil, err
+		}
+	}
+
+	return c, nil
+}
+
 func collectAll(req helperRequest) (helperResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
@@ -564,7 +619,7 @@ func collectAll(req helperRequest) (helperResponse, error) {
 	}
 	u.User = url.UserPassword(req.Username, req.Password)
 
-	client, err := govmomi.NewClient(ctx, u, req.Insecure)
+	client, err := newPinnedClient(ctx, u, req.ExpectedFingerprint)
 	if err != nil {
 		return helperResponse{}, fmt.Errorf("login failed: %w", err)
 	}
@@ -715,7 +770,7 @@ func collectPerformanceAction(req helperRequest) (helperResponse, error) {
 	}
 	u.User = url.UserPassword(req.Username, req.Password)
 
-	client, err := govmomi.NewClient(ctx, u, req.Insecure)
+	client, err := newPinnedClient(ctx, u, req.ExpectedFingerprint)
 	if err != nil {
 		return helperResponse{}, fmt.Errorf("login failed: %w", err)
 	}
