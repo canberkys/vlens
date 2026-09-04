@@ -153,6 +153,18 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) DMG artık standart "Applications'a sürükle" düzeninde**:
+      kullanıcı gerçek indirmeyi test etti — DMG açılınca sadece `.app` tek
+      başına boş bir Finder penceresinde duruyordu, Applications kısayolu
+      yoktu (`hdiutil create -srcfolder <sadece .app>` kullanılıyordu).
+      `scripts/release.sh`'ın DMG paketleme adımı yeniden yazıldı: `.app` +
+      `/Applications` symlink'i bir staging klasörüne konup yazılabilir bir
+      DMG oluşturuluyor, `osascript`/Finder scripting ile iki ikon yan yana
+      diziliyor (pencere boyutu, ikon boyutu/konumları), sonra salt-okunur
+      sıkıştırılmış DMG'ye dönüştürülüyor. Gerçekten mount edilip Finder'da
+      doğru göründüğü doğrulandı (ekran görüntüsüyle). GitHub Release'deki
+      DMG asset'i güncellenmiş haliyle değiştirildi (`gh release upload
+      --clobber`).
 - [x] **(2026-09-04) Gerçek app icon + ilk GitHub Release**: kullanıcı server
       rack + magnifying glass temalı, düz macOS-stili bir icon tasarladı
       (placeholder SF Symbol'ün yerine) — `Resources/AppIcon.icns`/`.iconset`
