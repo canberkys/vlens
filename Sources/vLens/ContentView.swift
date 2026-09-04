@@ -10,6 +10,23 @@ struct ContentView: View {
     @State private var showAdvisories = false
     @FocusState private var isSearchFocused: Bool
 
+    /// Sidebar navigation (vInfo, vCPU, ... the 27-tab list) is this app's
+    /// only way to switch tabs — there's no menu-bar equivalent — so it must
+    /// never fully disappear. Left as system `.automatic`, `NavigationSplitView`
+    /// can (and, per a real user report, did) auto-collapse the sidebar
+    /// column into a hidden/overlay state during an interactive window
+    /// resize, even though the window's `.frame(minWidth: 1000)` comfortably
+    /// exceeds the sidebar+detail minimums (160+440≈600pt). Once collapsed,
+    /// there was no way back — this app's "toolbar" (below) is a plain
+    /// `HStack` inside the content area, not a real `.toolbar()`, so none of
+    /// the automatic sidebar-toggle affordances SwiftUI normally adds to a
+    /// window's titlebar toolbar ever appear. Binding `columnVisibility`
+    /// explicitly to `.all` (rather than leaving it to the opaque
+    /// system-automatic default) plus `.navigationSplitViewStyle(.balanced)`
+    /// (see `body`) keeps the sidebar a real, always-present column instead
+    /// of a collapsible overlay.
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+
     /// `List(selection:)` wants `Binding<AppTab?>`; the rest of this file
     /// switches on plain `AppTab` (simpler, and a sidebar row is never
     /// truly "no selection" once connected) — this just bridges the two.
@@ -36,7 +53,7 @@ struct ContentView: View {
                         }
                     }
             } else {
-                NavigationSplitView {
+                NavigationSplitView(columnVisibility: $columnVisibility) {
                     sidebar
                 } detail: {
                     VStack(spacing: 0) {
@@ -51,6 +68,13 @@ struct ContentView: View {
                         statusBar
                     }
                 }
+                // `.balanced` keeps the sidebar as a genuinely-present,
+                // width-shared column. The alternative macOS can pick under
+                // `.automatic` — `.prominentDetail` — is the style that turns
+                // narrow-width handling into hiding the sidebar behind an
+                // overlay toggle, which is the exact "sidebar just vanished"
+                // failure mode this fixes.
+                .navigationSplitViewStyle(.balanced)
                 .frame(minWidth: 1000, minHeight: 640)
             }
         }
@@ -234,6 +258,19 @@ struct ContentView: View {
 
     private var toolbar: some View {
         HStack {
+            // Safety-net sidebar toggle: this app's chrome is a plain HStack,
+            // not a real `.toolbar()`, so SwiftUI never adds its automatic
+            // sidebar-restore button to the window titlebar. Without this,
+            // if `columnVisibility` (see its declaration for the collapse
+            // bug this guards against) is ever driven to `.detailOnly` by
+            // anything other than this button, the sidebar has no way back.
+            Button {
+                columnVisibility = columnVisibility == .all ? .detailOnly : .all
+            } label: {
+                Image(systemName: "sidebar.leading")
+            }
+            .help("Toggle Sidebar")
+
             Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
             TextField("Search (VM, host, cluster...)", text: $viewModel.searchText)
                 .textFieldStyle(.plain)

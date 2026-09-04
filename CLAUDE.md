@@ -160,6 +160,21 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) Sidebar navigasyonu resize sırasında tamamen kaybolabiliyordu
+      (v1.1.1)** — kullanıcı canlı olarak yakaladı: 2 snapshot alıp Snapshots
+      tab'ındayken pencereyi yeniden boyutlandırınca sidebar (27 tab'lık liste)
+      tamamen görünmez oldu, geri getirecek hiçbir yol yoktu. Yeni kurulan
+      `macos-ui-ux` sub-agent'ına kök neden bulup düzeltmesi için verildi.
+      Kök neden: `NavigationSplitView` sistem `.automatic` stilinde
+      bırakılmıştı — bu, belirli genişlik koşullarında sidebar'ı sessizce
+      gizli bir overlay'e çeviriyor; app'in kendi "toolbar"ı gerçek bir
+      `.toolbar()` olmadığı için SwiftUI'ın otomatik sidebar-geri-getirme
+      butonu da hiç eklenmiyordu. Düzeltme (`ContentView.swift`):
+      `columnVisibility` artık `.all`'a sabitlenmiş bir `@State` ile açıkça
+      bağlanıyor, `.navigationSplitViewStyle(.balanced)` ekleniyor (collapse
+      davranışına sahip `.prominentDetail`'in alternatifi), ve toolbar'a
+      güvenlik ağı olarak manuel bir sidebar toggle butonu eklendi.
+      `swift build`/`swift test` temiz (58/58).
 - [x] **(2026-09-04) Faz 10B tamamlandı — Scheduler UI + launchd (v1.1.0)**:
       Preferences'a yeni "Automation" bölümü — aç/kapa toggle, kayıtlı
       bağlantı picker'ı, aksiyon picker'ı (Snapshot/Export CSV/Export XLSX,

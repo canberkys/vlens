@@ -3,6 +3,19 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.1.1] - 2026-09-04 16:32 (+03)
+
+### Fixed
+- Sidebar navigation could disappear entirely during an interactive window
+  resize (reported live: take 2 snapshots, resize the window on the
+  Snapshots tab). `NavigationSplitView` was left on system `.automatic`
+  styling, which can silently collapse the sidebar into a hidden overlay
+  under certain width conditions — and since this app's chrome isn't a
+  real `.toolbar()`, none of SwiftUI's automatic sidebar-restore controls
+  ever appeared, so there was no way back. Now binds `columnVisibility`
+  explicitly to `.all`, forces `.navigationSplitViewStyle(.balanced)`, and
+  adds a manual sidebar-toggle button as a safety net.
+
 ## [1.1.0] - 2026-09-04 16:15 (+03)
 
 ### Added
