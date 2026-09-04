@@ -120,6 +120,21 @@ enum HelpTopic: String, CaseIterable, Identifiable {
     }
 }
 
+/// One `## [version] - date` block from `CHANGELOG.md`.
+private struct ChangelogEntry: Identifiable {
+    let id = UUID()
+    let version: String
+    let dateText: String
+    let sections: [ChangelogSection]
+}
+
+/// One `### Added`/`### Changed`/`### Fixed` block within a version.
+private struct ChangelogSection: Identifiable {
+    let id = UUID()
+    let heading: String
+    let bullets: [String]
+}
+
 struct HelpView: View {
     @State private var selectedTopic: HelpTopic = .gettingStarted
 
@@ -143,15 +158,16 @@ struct HelpView: View {
                             .font(.title.bold())
                     }
                     if selectedTopic == .whatsNew {
-                        if let changelog = Self.changelogText {
-                            Text(changelog)
-                                .font(.body)
-                                .lineSpacing(3)
-                                .textSelection(.enabled)
-                                .fixedSize(horizontal: false, vertical: true)
-                        } else {
+                        let entries = Self.changelogEntries
+                        if entries.isEmpty {
                             Text("Changelog unavailable.")
                                 .foregroundStyle(.secondary)
+                        } else {
+                            VStack(alignment: .leading, spacing: 22) {
+                                ForEach(entries) { entry in
+                                    changelogEntryView(entry)
+                                }
+                            }
                         }
                     } else {
                         Text(selectedTopic.body)
@@ -169,18 +185,115 @@ struct HelpView: View {
     }
 
     /// The bundled `CHANGELOG.md` (`Package.swift` copies it into this
-    /// target's resources — see the comment on `Resources/CHANGELOG.md`)
-    /// rendered as Markdown via Foundation's native parser, no third-party
-    /// dependency. `.full` interpretation is what makes `##` headers and
-    /// `-` bullet lists actually render as headers/bullets rather than
-    /// literal text.
-    private static var changelogText: AttributedString? {
+    /// target's resources — see the comment on `Resources/CHANGELOG.md`),
+    /// parsed by hand into `ChangelogEntry`/`ChangelogSection` and laid out
+    /// as real SwiftUI views below. Dumping the whole file through
+    /// Foundation's `AttributedString(markdown:)` into one `Text` was tried
+    /// first — it doesn't apply any heading/list visual hierarchy on its
+    /// own (every line renders as same-size body text with no spacing
+    /// between entries), which looked bad in practice. Inline styling
+    /// (`**bold**`, `` `code` ``) *does* work well through that API when
+    /// applied to a single bullet's text, so `changelogInlineText(_:)`
+    /// still uses it for that narrower purpose.
+    private static var changelogEntries: [ChangelogEntry] {
         guard let url = Bundle.module.url(forResource: "CHANGELOG", withExtension: "md"),
             let raw = try? String(contentsOf: url, encoding: .utf8)
-        else { return nil }
-        var options = AttributedString.MarkdownParsingOptions()
-        options.interpretedSyntax = .full
-        return try? AttributedString(markdown: raw, options: options)
+        else { return [] }
+        return parseChangelog(raw)
+    }
+
+    private static func parseChangelog(_ text: String) -> [ChangelogEntry] {
+        var entries: [ChangelogEntry] = []
+        var version: String?
+        var dateText = ""
+        var sections: [ChangelogSection] = []
+        var heading: String?
+        var bullets: [String] = []
+
+        func flushSection() {
+            // A version can have bullets with no preceding "### " heading
+            // at all (e.g. 1.0.0's single-line summary) — `heading == nil`
+            // must still flush those bullets under an empty heading rather
+            // than silently dropping them, which the first version of this
+            // parser did.
+            if heading != nil || !bullets.isEmpty {
+                sections.append(ChangelogSection(heading: heading ?? "", bullets: bullets))
+            }
+            heading = nil
+            bullets = []
+        }
+        func flushEntry() {
+            flushSection()
+            if let version {
+                entries.append(ChangelogEntry(version: version, dateText: dateText, sections: sections))
+            }
+            sections = []
+        }
+
+        for line in text.components(separatedBy: "\n") {
+            if line.hasPrefix("## ["), let close = line.firstIndex(of: "]") {
+                flushEntry()
+                let versionStart = line.index(line.startIndex, offsetBy: 4)
+                version = String(line[versionStart..<close])
+                let rest = line[line.index(after: close)...]
+                dateText = rest.trimmingCharacters(in: CharacterSet(charactersIn: " -"))
+            } else if line.hasPrefix("### ") {
+                flushSection()
+                heading = String(line.dropFirst(4))
+            } else if line.hasPrefix("- ") {
+                bullets.append(String(line.dropFirst(2)))
+            } else {
+                // A wrapped continuation line (CHANGELOG.md's own
+                // convention: an indented line right after a "- " bullet,
+                // no marker of its own) — fold it into the previous bullet
+                // instead of dropping it or treating it as a new item.
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                if !trimmed.isEmpty, !bullets.isEmpty {
+                    bullets[bullets.count - 1] += " " + trimmed
+                }
+            }
+        }
+        flushEntry()
+        return entries
+    }
+
+    private func changelogEntryView(_ entry: ChangelogEntry) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("Version \(entry.version)")
+                    .font(.title3.bold())
+                Text(entry.dateText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(entry.sections) { section in
+                VStack(alignment: .leading, spacing: 6) {
+                    if !section.heading.isEmpty {
+                        Text(section.heading)
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(section.bullets, id: \.self) { bullet in
+                        HStack(alignment: .top, spacing: 6) {
+                            Text("•").foregroundStyle(.secondary)
+                            Self.changelogInlineText(bullet)
+                        }
+                    }
+                }
+            }
+            Divider()
+        }
+    }
+
+    /// Renders a single bullet's inline Markdown (`**bold**`, `` `code` ``)
+    /// — unlike whole-document parsing, this narrow case works well with
+    /// Foundation's native parser since there's no block-level structure to
+    /// get lost, just character-level styling within one line.
+    private static func changelogInlineText(_ raw: String) -> Text {
+        if let attributed = try? AttributedString(markdown: raw, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
+            return Text(attributed)
+        }
+        return Text(raw)
     }
 
     private func iconBadge(for topic: HelpTopic, size: CGFloat, iconSize: CGFloat) -> some View {

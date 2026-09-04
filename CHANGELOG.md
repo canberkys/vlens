@@ -3,6 +3,17 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.2.3] - 2026-09-05 (+03)
+
+### Fixed
+- Help ▸ What's New rendered poorly — dumping the whole `CHANGELOG.md`
+  through Foundation's `AttributedString(markdown:)` into a single `Text`
+  applied no heading/list visual hierarchy at all. Now parsed by hand into
+  per-version, per-section views (proper title sizing, bullet spacing)
+  matching the rest of Help's styling; inline `**bold**`/`` `code` ``
+  within a bullet still uses the native Markdown parser, which handles
+  that narrower case well.
+
 ## [1.2.2] - 2026-09-05 (+03)
 
 ### Added
