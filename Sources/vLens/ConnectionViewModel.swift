@@ -77,6 +77,10 @@ final class ConnectionViewModel {
     var performanceMetrics: [VMPerformanceInfo] = []
     var isCollectingPerformance = false
     var performanceErrorMessage: String?
+    /// Set alongside `performanceMetrics` after a successful (possibly
+    /// partial) collection — `nil` only before the first collection or in
+    /// demo mode (mock data has nothing to be incomplete about).
+    var performanceCoverage: PerformanceCoverage?
 
     /// Local, persisted history for the currently-connected vCenter host —
     /// see `SnapshotsTabView`/`InventorySnapshot`. Reloaded (filtered by
@@ -218,6 +222,7 @@ final class ConnectionViewModel {
         usbs = DemoData.usbs(for: vms)
         partitions = DemoData.partitions(for: vms)
         performanceMetrics = DemoData.performanceMetrics(for: vms, intervalMinutes: 60)
+        performanceCoverage = nil
         vCenterInfo = VCenterInfo(fullName: "VMware vCenter Server 8.0.3 build-24022515", version: "8.0.3", build: "24022515", apiVersion: "8.0.3.0")
         recomputeHealthChecks()
         lastRefreshedAt = Date()
@@ -256,6 +261,7 @@ final class ConnectionViewModel {
         usbs = []
         partitions = []
         performanceMetrics = []
+        performanceCoverage = nil
         healthChecks = []
         vCenterInfo = nil
         lastRefreshedAt = nil
@@ -412,6 +418,7 @@ final class ConnectionViewModel {
             usbs = inventory.usbs
             partitions = inventory.partitions
             performanceMetrics = [] // separate action, doesn't carry over from a previous connection
+            performanceCoverage = nil
             vCenterInfo = inventory.vCenter
             recomputeHealthChecks()
             isDemoMode = false
@@ -502,6 +509,7 @@ final class ConnectionViewModel {
     func collectPerformance(intervalMinutes: Int) async {
         guard !isDemoMode else {
             performanceMetrics = DemoData.performanceMetrics(for: vms, intervalMinutes: intervalMinutes)
+            performanceCoverage = nil
             return
         }
         guard let expectedFingerprint = pinnedFingerprint() else {
@@ -511,10 +519,19 @@ final class ConnectionViewModel {
         isCollectingPerformance = true
         performanceErrorMessage = nil
         do {
-            performanceMetrics = try await helperClient.collectPerformance(
+            let (metrics, coverage) = try await helperClient.collectPerformance(
                 url: normalizedSDKURL(), username: username, password: password,
                 expectedFingerprint: expectedFingerprint, intervalMinutes: intervalMinutes
             )
+            performanceMetrics = metrics
+            performanceCoverage = coverage
+            // A partial collection isn't a thrown error (the helper call
+            // itself succeeded) — surface it the same way so the tab's
+            // existing error-message UI shows it without a separate banner.
+            if let coverage, !coverage.complete {
+                performanceErrorMessage =
+                    "Collected \(coverage.collectedVMCount) of \(coverage.requestedVMCount) VMs — the request failed partway through" + (coverage.error.map { ": \($0)" } ?? ".")
+            }
         } catch {
             performanceErrorMessage = Self.describe(error)
         }

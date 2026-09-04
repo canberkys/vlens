@@ -78,8 +78,23 @@ public struct HelperResponse: Codable, Sendable {
     public let partitions: [PartitionInfo]?
     public let networks: [VMNetworkInfo]?
     public let performance: [VMPerformanceInfo]?
+    public let performanceCoverage: PerformanceCoverage?
     public let vCenter: VCenterInfo?
     public let certificate: HelperCertificateInfo?
+}
+
+/// Whether `collectPerformance` actually reached every powered-on VM.
+/// `complete == false` means a batched QueryPerf request failed partway
+/// through — `collectedVMCount` says how many VMs got data before that
+/// (0 if the very first batch failed), and `error` carries the real reason.
+/// Without this, a batch failure and a fully-successful-but-empty
+/// collection used to be indistinguishable — both just looked like a plain,
+/// possibly-empty list.
+public struct PerformanceCoverage: Codable, Sendable {
+    public let requestedVMCount: Int
+    public let collectedVMCount: Int
+    public let complete: Bool
+    public let error: String?
 }
 
 /// Wire shape for `getCertificate` — a raw TLS-layer fingerprint fetch, no

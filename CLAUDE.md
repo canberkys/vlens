@@ -160,6 +160,33 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) #8: Performans toplama artık kapsamını raporluyor +
+      çoklu disk metrikleri tanımlı bir kuralla birleştiriliyor (v1.3.2)** —
+      kullanıcı kalan 4 P2 için veri doğruluğuna öncelik veren bir sıra
+      önerdi ("kullanıcıya başarılı görünen ama eksik/değiştirilmiş veri
+      sunmaları" nedeniyle önce bunlar); #8 ile başlandı. Batched `QueryPerf`
+      bir batch'te başarısız olduğunda o ana kadar toplanan sonuç sessizce
+      "tam sonuç" gibi dönüyordu — artık her `collectPerformance`
+      çağrısında yeni bir `performanceCoverage` (requested/collected VM
+      sayısı, `complete`, ve tamamlanmadıysa gerçek hata) dönüyor,
+      vPerformance tab'ı bunu "Collected N of M VMs — request failed
+      partway through: ..." olarak gösteriyor. Ayrıca çok disklı bir VM'in
+      IOPS metrikleri (`readIOSize`/`writeIOSize`, disk başına ayrı bir seri)
+      son işlenen diskin üzerine yazması yerine artık diskler arası en
+      büyük tekil pike göre birleştiriliyor. **Proje ilk kez Go unit
+      testleri aldı** (`helper/main_test.go`) — batch sampling mantığı
+      `perfSampler` arayüzü arkasına alınıp sahte bir sampler'la ilk-batch
+      başarısızlığı, sonraki-batch başarısızlığı, ve çoklu-disk birleştirme
+      kuralı vcsim'e ihtiyaç duymadan doğrudan test edildi (vcsim zaten
+      disk IOPS sayaçlarını hiç desteklemiyor, bu üçünü canlı reproduce
+      etmek mümkün değildi). Tam-başarı yolu ayrıca canlı vcsim'e karşı da
+      doğrulandı (`performanceCoverage: {requested:10, collected:10,
+      complete:true}`). `go test` (5 yeni test) + `swift build`/`swift
+      test` temiz (63/63). **Sırada #11 (XLSX hücre tipleri), sonra #5
+      (bağlantı yaşam döngüsü), sonra #9 (otomasyon)** — kullanıcının
+      belirlediği sıra. Snapshot boyutunun disk delta'larını içermediği
+      açıklaması ayrı, küçük bir düzeltme olarak bekliyor (bu turla
+      bilinçli olarak birleştirilmedi).
 - [x] **(2026-09-05) Aynı review'ın 4 P2 bulgusu daha düzeltildi (v1.3.1)** —
       kullanıcı "diğer bulgularımız için aksiyonun nedir" diye sordu; kalan
       8 P2 bulgusunu efor/etkiye göre gruplayıp bir sıra önerdim, en ucuz/net
