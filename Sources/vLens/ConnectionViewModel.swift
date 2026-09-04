@@ -90,6 +90,13 @@ final class ConnectionViewModel {
     var savedProfiles: [ConnectionProfile] = []
     private var activeProfileID: UUID?
 
+    /// Faz 10B — Preferences' "Automation" section. `nil` means no schedule
+    /// configured; a non-nil schedule with `enabled == false` means the
+    /// user configured one but toggled it off (the launchd job stays torn
+    /// down either way — see `saveAutomationSchedule`).
+    var automationSchedule: AutomationSchedule?
+    var automationError: String?
+
     /// RVTools' equivalent is its Health Properties panel. Changing this
     /// (from `PreferencesView`, the app's Settings scene) re-evaluates
     /// vHealth immediately against whatever's already collected — no
@@ -114,12 +121,47 @@ final class ConnectionViewModel {
         SnapshotStore(fileURL: SnapshotStore.url(inDirectory: snapshotPreferencesStore.customStorageDirectory))
     }
     private let snapshotPreferencesStore = SnapshotPreferencesStore()
+    private let automationPreferencesStore = AutomationPreferencesStore()
     private let vmsaClient = VMSAClient()
 
     init() {
         savedProfiles = profileStore.loadAll()
         healthCheckThresholds = healthCheckPreferencesStore.load()
         enabledSnapshotMetricKeys = snapshotPreferencesStore.loadEnabledMetricKeys()
+        automationSchedule = automationPreferencesStore.load()
+    }
+
+    /// Persists the schedule and (re)installs the launchd job — called from
+    /// Preferences' "Automation" section on Save. `LaunchdScheduler.install`
+    /// throws (e.g. missing `vlens-cli` in a dev build, or a `launchctl`
+    /// failure) — surfaced via `automationError` rather than silently no-op'd,
+    /// since a schedule that looks saved but never actually runs would be a
+    /// real, confusing footgun.
+    func saveAutomationSchedule(_ schedule: AutomationSchedule) {
+        automationError = nil
+        guard let profile = savedProfiles.first(where: { $0.id == schedule.profileID }) else {
+            automationError = "Selected connection no longer exists."
+            return
+        }
+        automationSchedule = schedule
+        automationPreferencesStore.save(schedule)
+
+        guard schedule.enabled else {
+            LaunchdScheduler.uninstall()
+            return
+        }
+        do {
+            try LaunchdScheduler.install(schedule: schedule, profile: profile)
+        } catch {
+            automationError = error.localizedDescription
+        }
+    }
+
+    func removeAutomationSchedule() {
+        automationError = nil
+        automationSchedule = nil
+        automationPreferencesStore.save(nil)
+        LaunchdScheduler.uninstall()
     }
 
     /// Fills the form from a saved profile and tries to recall its password

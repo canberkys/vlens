@@ -17,13 +17,24 @@ import vLensCore
 
 /// Every `*PreferencesStore` in vLensCore defaults to `UserDefaults.standard`,
 /// which is fine for the GUI app (its real bundle ID, `com.canberkki.vlens`,
-/// names the domain) but wrong for this bare executable — `.standard` would
-/// resolve to a domain keyed off the process name instead, silently missing
-/// whatever the GUI has configured (snapshot storage location, vHealth
-/// thresholds). Sharing this explicit suite keeps both processes reading
-/// and writing the exact same preferences.
+/// names the domain) but wrong for this bare executable in **dev** mode
+/// (`swift run vlens-cli` has no bundle ID at all, so `.standard` would
+/// resolve to a domain keyed off the process name, silently missing
+/// whatever the GUI has configured). In the **packaged** app, though,
+/// `vlens-cli` sits at `Contents/MacOS/vlens-cli` right next to `vLens`'s
+/// own `Contents/Info.plist` — `Bundle.main` resolution walks up from the
+/// executable looking for a nearby Info.plist, so it picks up the *same*
+/// bundle identifier as the GUI, meaning `.standard` already targets the
+/// right domain there. Passing `suiteName: "com.canberkki.vlens"` in that
+/// case is a documented no-op (macOS logs "using your own bundle
+/// identifier as a suite name does not make sense") — harmless, but noisy
+/// — so only use the explicit suite when the bundle ID doesn't already
+/// match (confirmed against a real packaged build, Faz 10B).
 nonisolated func sharedDefaults() -> UserDefaults {
-    UserDefaults(suiteName: "com.canberkki.vlens") ?? .standard
+    if Bundle.main.bundleIdentifier == "com.canberkki.vlens" {
+        return .standard
+    }
+    return UserDefaults(suiteName: "com.canberkki.vlens") ?? .standard
 }
 
 func fail(_ message: String) -> Never {

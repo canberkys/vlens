@@ -92,6 +92,10 @@ vLens/
 │       ├── HealthCheckPreferencesStore.swift  # eşikleri UserDefaults'a kaydeder
 │       ├── SnapshotStore.swift     # InventorySnapshot geçmişi, Application Support'ta JSON
 │       ├── SnapshotPreferencesStore.swift  # Compare panelinde hangi metriklerin gösterileceği
+│       ├── AutomationSchedule.swift  # Faz 10B — tek bir zamanlama (profil/aksiyon/gün/saat) +
+│       │                               # AutomationPreferencesStore (UserDefaults'ta JSON)
+│       ├── ExportTab.swift         # tab anahtarı → CollectedInventory alanı eşlemesi + CSV/XLSX
+│       │                            # render (vlens-cli VE Preferences'ın Automation picker'ı paylaşıyor)
 │       ├── TutorialStore.swift     # hangi tutorial/coachmark'ların gösterildiği (UserDefaults)
 │       ├── VMSAClient.swift        # Broadcom'un resmi güvenlik danışmanlığı JSON API'si (Go helper'a gitmiyor)
 │       ├── CertificateTrust.swift  # trust-on-first-use (Docky'nin HostKeyTrust'ından uyarlandı)
@@ -104,10 +108,13 @@ vLens/
 │       └── FieldComparator.swift   # sıralama comparator'ı (app değil Core'da — sadece
 │                                     # Foundation'a bağımlı, SwiftUI değil, bu yüzden test edilebilir)
 ├── Sources/vLens/ExportPanel.swift  # NSSavePanel ile CSV/XLSX kaydetme (app layer, @MainActor)
+├── Sources/vLens/LaunchdScheduler.swift    # Faz 10B — AutomationSchedule'ı gerçek bir launchd
+│                                             # plist'ine çevirip yükler/kaldırır (launchctl bootstrap/bootout)
+├── Sources/vLens/AutomationCLILocator.swift  # HelperLocator'la aynı desen — paketlenmiş .app'te
+│                                               # Contents/MacOS/vlens-cli'ı bulur
 ├── Sources/vLensCLI/        # `vlens-cli` — headless snapshot/export (Faz 10A)
 │   ├── main.swift                # komutlar: list-profiles, list-tabs, snapshot, export
-│   ├── CLIHelperLocator.swift    # HelperLocator'ın bare-executable versiyonu (Bundle.main yok)
-│   └── ExportTab.swift           # tab anahtarı → CollectedInventory alanı eşlemesi
+│   └── CLIHelperLocator.swift    # HelperLocator'ın bare-executable versiyonu (Bundle.main yok)
 ├── Tests/vLensCoreTests/    # decode + HealthCheckEngine + CSVWriter + XLSXWriter +
 │                             # FieldComparator + Searchable + ConnectionProfileStore +
 │                             # CertificateTrust + HealthCheckPreferencesStore + SnapshotStore +
@@ -153,6 +160,41 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) Faz 10B tamamlandı — Scheduler UI + launchd (v1.1.0)**:
+      Preferences'a yeni "Automation" bölümü — aç/kapa toggle, kayıtlı
+      bağlantı picker'ı, aksiyon picker'ı (Snapshot/Export CSV/Export XLSX,
+      export seçilirse tab picker'ı da çıkıyor), gün/saat seçici
+      (`DatePicker(.hourAndMinute)`), Save/Remove butonları, gerçek zamanda
+      "Scheduled and active" / hata durumu göstergesi. Yeni
+      `Sources/vLens/LaunchdScheduler.swift` — `AutomationSchedule`'ı gerçek
+      bir `~/Library/LaunchAgents/com.canberkki.vlens.scheduler.plist`'e
+      çevirip `launchctl bootstrap`/`bootout` ile yüklüyor (eski `load`/`unload`
+      değil, güncel API). `Sources/vLens/AutomationCLILocator.swift` —
+      `HelperLocator`'la aynı desen, paketlenmiş `.app`'te
+      `Contents/MacOS/vlens-cli`'ı buluyor. `scripts/release.sh` artık
+      `vlens-cli`'ı da build edip `.app` içine kopyalayıp imzalıyor (nested
+      code sırası: helper → vlens-cli → dış app).
+      **Gerçek mimari düzeltme**: `ExportTab`/`ExportFormat`/`exportData(...)`
+      (Faz 10A'da `Sources/vLensCLI` içindeydi) `vLensCore`'a taşındı — hem
+      CLI hem Preferences'ın export-tab picker'ı artık aynı tek listeyi
+      paylaşıyor, iki ayrı yerde string listesi kopyalanmıyor.
+      **Gerçek bir bulgu**: paketlenmiş `.app` içinde `vlens-cli`,
+      `vLens`'in `Contents/Info.plist`'ine dizin-komşuluğu sayesinde aynı
+      bundle ID'yi devralıyor — bu da Faz 10A'nın `UserDefaults(suiteName:
+      "com.canberkki.vlens")` çağrısını macOS'un "kendi bundle ID'ni suite
+      olarak kullanmak anlamsız" diye logladığı (ama sessizce zararsız kalan)
+      bir duruma sokuyordu; `sharedDefaults()` artık bundle ID zaten eşleşiyorsa
+      `.standard`'a düşüyor, gürültü gitti. **Uçtan uca gerçek doğrulama**:
+      `scripts/release.sh` tam çalıştırılıp `vlens-cli` gerçekten imzalanıp
+      notarize edildi; ikinci bir vcsim + gerçek bir bağlantı/Keychain/trust
+      kaydı seed edilip, `LaunchdScheduler.install`'ın üreteceğiyle birebir
+      aynı bir plist elle yazılıp **gerçekten** `launchctl bootstrap` ile
+      yüklendi (~100 saniye sonrası için zamanlanmış) — launchd gerçekten
+      zamanında tetikledi, `vlens-cli` gerçekten vcsim'e bağlanıp bir
+      snapshot kaydetti, log dosyasında ve `inventory-snapshots.json`'da
+      doğrulandı. Tüm test verisi sonrasında temizlendi. `docs/vLens-Reference.md`
+      §10'un "Automation" notu güncellendi, versiyon **1.1.0**'a yükseltildi,
+      `CHANGELOG.md`'ye eklendi.
 - [x] **(2026-09-04) DMG artık standart "Applications'a sürükle" düzeninde**:
       kullanıcı gerçek indirmeyi test etti — DMG açılınca sadece `.app` tek
       başına boş bir Finder penceresinde duruyordu, Applications kısayolu
