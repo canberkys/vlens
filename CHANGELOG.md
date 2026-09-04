@@ -3,6 +3,12 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.2.1] - 2026-09-05 (+03)
+
+### Added
+- Preferences → Snapshot comparison metrics: "Select All" / "Select None"
+  instead of only toggling each of the 11 metrics one at a time.
+
 ## [1.2.0] - 2026-09-04 17:10 (+03)
 
 ### Added
