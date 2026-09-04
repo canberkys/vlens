@@ -98,10 +98,16 @@ vLens/
 │       ├── Searchable.swift      # her model için searchableText + .matches(query)
 │       ├── CSVExport.swift       # her model için CSVExportable + CSVWriter
 │       ├── XLSXExport.swift      # ZIPFoundation üzerine minimal OOXML writer
-│       ├── ConnectionProfileStore.swift  # kayıtlı bağlantılar (host/user), parola Keychain'de
+│       ├── ConnectionProfileStore.swift  # kayıtlı bağlantılar (host/user), parola Keychain'de —
+│       │                                  # ConnectionProfile.keychainReferenceID(for:) burada,
+│       │                                  # GUI ve vlens-cli'ın Keychain'de aynı girdiyi bulması için
 │       └── FieldComparator.swift   # sıralama comparator'ı (app değil Core'da — sadece
 │                                     # Foundation'a bağımlı, SwiftUI değil, bu yüzden test edilebilir)
 ├── Sources/vLens/ExportPanel.swift  # NSSavePanel ile CSV/XLSX kaydetme (app layer, @MainActor)
+├── Sources/vLensCLI/        # `vlens-cli` — headless snapshot/export (Faz 10A)
+│   ├── main.swift                # komutlar: list-profiles, list-tabs, snapshot, export
+│   ├── CLIHelperLocator.swift    # HelperLocator'ın bare-executable versiyonu (Bundle.main yok)
+│   └── ExportTab.swift           # tab anahtarı → CollectedInventory alanı eşlemesi
 ├── Tests/vLensCoreTests/    # decode + HealthCheckEngine + CSVWriter + XLSXWriter +
 │                             # FieldComparator + Searchable + ConnectionProfileStore +
 │                             # CertificateTrust + HealthCheckPreferencesStore + SnapshotStore +
@@ -132,6 +138,13 @@ go build -o vlens-helper .
 
 # Yerel vCenter simülatörü (VPN/gerçek vCenter gerekmez)
 go build -o vcsim/vcsim ./vcsim && ./vcsim/vcsim
+
+# CLI (Faz 10A) — kayıtlı bir bağlantı gerektirir (GUI'de bir kere
+# "Save this connection to Keychain" ile bağlanılmış ve sertifikası
+# onaylanmış olmalı)
+swift run vlens-cli list-profiles
+swift run vlens-cli snapshot --profile <ad> [--label <metin>] [--full-detail]
+swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/Desktop/vinfo.csv
 ```
 
 `ConnectionViewModel` helper binary'yi şu sırayla arıyor: app bundle Resources →
@@ -140,6 +153,37 @@ go build -o vcsim/vcsim ./vcsim && ./vcsim/vcsim
 
 ## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) Faz 10A tamamlandı — `vlens-cli` (headless snapshot/export)**:
+      yeni `.executableTarget("vlens-cli")`, `Sources/vLensCLI/` (`main.swift`,
+      `CLIHelperLocator.swift`, `ExportTab.swift`). Komutlar: `list-profiles`,
+      `list-tabs`, `snapshot --profile <ad> [--label] [--full-detail]`,
+      `export --profile <ad> --tab <anahtar> --format csv|xlsx --output <path>`.
+      `vLensCore`'daki her şey (Keychain, kayıtlı bağlantılar, sertifika
+      trust store, helper client, snapshot store, vHealth engine, CSV/XLSX
+      writer) sıfır değişiklikle doğrudan kullanıldı. İki gerçek mimari
+      düzeltme yapıldı: (1) `ConnectionViewModel`'in özel
+      `keychainReferenceID(for:)`'ı `vLensCore`'a taşındı
+      (`ConnectionProfile.keychainReferenceID`) — GUI ve CLI artık aynı
+      Keychain girdisini aynı formülle buluyor, format drift riski kalmadı;
+      (2) CLI, `*PreferencesStore`'ları `UserDefaults(suiteName:
+      "com.canberkki.vlens")` ile inşa ediyor — düz bir executable'ın
+      `UserDefaults.standard`'ı GUI'nin gerçek bundle ID'sinden farklı bir
+      domain'e düşer, bu paylaşılan suite olmasa CLI'nin aldığı snapshot
+      GUI'nin ayarladığı depolama konumunu (Faz 9A) hiç görmezdi — canlı
+      olarak test edilip doğrulandı. Sertifika: CLI bir onay sheet'i
+      gösteremediği için bilinmeyen bir sertifikada **başarısız olur** (net
+      mesaj + non-zero exit code), önceden pinlenmiş bir sertifikaya karşı
+      sessizce güvenmez. **Uçtan uca gerçek doğrulama**: ikinci bir vcsim
+      instance'ı ayağa kaldırılıp gerçek bir `ConnectionProfile`/Keychain
+      girdisi/trust kaydı seed edildi (GUI'nin normalde ürettiğinin birebir
+      aynı şeması); `snapshot`/`export` gerçekten çalıştırılıp üretilen
+      dosyalar (gerçek VM verisi, gerçek XLSX arşivi) doğrulandı, özel
+      depolama konumu gerçek bir `defaults write` ile ayarlanıp CLI'nin onu
+      gerçekten kullandığı görüldü, bilinmeyen sertifika ve erişilemeyen
+      host senaryolarının ikisi de net hata + exit code 1 ile başarısız
+      oldu. Tüm test verisi sonrasında temizlendi. **Kapsam dışı
+      (bilinçli)**: PDF rapor export'u. **Sırada Faz 10B**: Preferences'a
+      "Automation" bölümü + launchd zamanlayıcı.
 - [x] **(2026-09-04) Faz 3 tamamlandı — ilk imzalı/notarize/DMG'lenmiş sürüm**:
       kullanıcı Apple ID'siyle bir app-specific şifre üretip
       `xcrun notarytool store-credentials` adımını tamamladı (Keychain'deki

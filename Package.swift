@@ -7,6 +7,7 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .executable(name: "vLens", targets: ["vLens"]),
+        .executable(name: "vlens-cli", targets: ["vlens-cli"]),
         .library(name: "vLensCore", targets: ["vLensCore"])
     ],
     dependencies: [
@@ -17,6 +18,14 @@ let package = Package(
             name: "vLens",
             dependencies: ["vLensCore"],
             path: "Sources/vLens",
+            swiftSettings: [
+                .unsafeFlags(["-strict-concurrency=complete"])
+            ]
+        ),
+        .executableTarget(
+            name: "vlens-cli",
+            dependencies: ["vLensCore"],
+            path: "Sources/vLensCLI",
             swiftSettings: [
                 .unsafeFlags(["-strict-concurrency=complete"])
             ]

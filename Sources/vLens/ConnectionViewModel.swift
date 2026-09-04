@@ -129,12 +129,12 @@ final class ConnectionViewModel {
         username = profile.username
         activeProfileID = profile.id
         saveCredentials = true
-        password = (try? credentialStore.readSecret(for: Self.keychainReferenceID(for: profile.id))) ?? ""
+        password = (try? credentialStore.readSecret(for: ConnectionProfile.keychainReferenceID(for: profile.id))) ?? ""
     }
 
     func deleteSavedProfile(_ profile: ConnectionProfile) {
         try? profileStore.delete(id: profile.id)
-        try? credentialStore.deleteSecret(for: Self.keychainReferenceID(for: profile.id))
+        try? credentialStore.deleteSecret(for: ConnectionProfile.keychainReferenceID(for: profile.id))
         savedProfiles = profileStore.loadAll()
         if activeProfileID == profile.id { activeProfileID = nil }
     }
@@ -450,7 +450,7 @@ final class ConnectionViewModel {
         let profile = ConnectionProfile(id: id, name: host, host: host, username: username)
         do {
             try profileStore.upsert(profile)
-            try credentialStore.saveSecret(password, for: Self.keychainReferenceID(for: id))
+            try credentialStore.saveSecret(password, for: ConnectionProfile.keychainReferenceID(for: id))
             savedProfiles = profileStore.loadAll()
         } catch {
             // Non-fatal: the connection itself already succeeded, only the
@@ -458,10 +458,6 @@ final class ConnectionViewModel {
             // clear the data that's already on screen.
             errorMessage = "Couldn't save connection: \(error.localizedDescription)"
         }
-    }
-
-    private static func keychainReferenceID(for profileID: UUID) -> String {
-        "profile.\(profileID.uuidString).password"
     }
 
     private static func describe(_ error: Error) -> String {

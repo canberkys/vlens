@@ -977,9 +977,23 @@ for the full table.
 (one-page management summary, not a tab data dump) is also done, see §6's "PDF
 report" note — RVTools itself doesn't have anything like it.
 
-**Automation**: a CLI target sharing `vLensCore`, driven by `launchd` (the macOS
-analogue of the Windows Task Scheduler workflows RVTools users lean on for scheduled
-headless exports). Not started.
+**Automation**: `vlens-cli` (2026-09-04) — a headless CLI target sharing every
+non-UI piece of `vLensCore` unchanged (Keychain, saved connections, certificate
+trust store, snapshot store, vHealth engine, CSV/XLSX writers). Commands:
+`list-profiles`, `list-tabs`, `snapshot --profile <name> [--label] [--full-detail]`,
+`export --profile <name> --tab <key> --format csv|xlsx --output <path>`. Requires
+a connection already saved (Keychain) and trusted (certificate) via the GUI app
+first — the CLI can't show an approval sheet, so an unknown/mismatched
+certificate is a hard failure with a clear message, never a silent trust.
+Reads/writes the same preferences the GUI does via an explicit
+`UserDefaults(suiteName: "com.canberkki.vlens")` (a bare executable's
+`UserDefaults.standard` would otherwise resolve to a different domain and miss
+the GUI's snapshot storage location, vHealth thresholds, etc.). PDF report
+export is out of scope (headless `ImageRenderer` reliability untested). Still
+missing — driven by `launchd` (the macOS analogue of the Windows Task Scheduler
+workflows RVTools users lean on for scheduled headless exports): a Preferences
+"Automation" section to configure a recurring schedule and generate/load the
+launch agent plist.
 
 **Multi-vCenter merge**: RVTools ships a separate `RVToolsMergeExcelFiles` utility.
 vLens's MVP supports one active connection at a time, switchable. Not started.

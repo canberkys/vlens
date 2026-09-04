@@ -19,4 +19,13 @@ public struct ConnectionProfile: Codable, Identifiable, Sendable, Hashable {
         self.host = host
         self.username = username
     }
+
+    /// `CredentialStoreProtocol.saveSecret`/`readSecret` reference ID for
+    /// this profile's saved password. Shared between the GUI app
+    /// (`ConnectionViewModel`) and `vlens-cli` so both resolve the exact
+    /// same Keychain entry — kept here, not duplicated, so the format can't
+    /// drift between the two call sites.
+    public static func keychainReferenceID(for profileID: UUID) -> String {
+        "profile.\(profileID.uuidString).password"
+    }
 }
