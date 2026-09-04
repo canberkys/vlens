@@ -160,6 +160,42 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) #5: Refresh, Disconnect ve bağlantı değiştirme eklendi
+      (v1.4.0)** — kullanıcının sıralamasında #8/#11'den sonraki adım, ilk
+      kez yeni bir kullanıcı özelliği (önceki 3 tur sadece düzeltmeydi).
+      Önceden veriyi yenilemenin veya başka bir bağlantıya geçmenin tek yolu
+      uygulamayı kapatıp yeniden açmaktı. Toolbar'a **Refresh** (mevcut
+      envanteri yeniden toplar) ve **Disconnect** (connect ekranına döner,
+      oradan farklı bir kayıtlı bağlantı seçilebilir) butonları eklendi.
+      `ConnectionViewModel`'e yeni `isConnected`'tan ayrı `isRefreshing`/
+      `isDataStale` state'i + genel amaçlı bir `disconnect()` (eski
+      `exitDemoMode()` artık ona sarmalıyor, `clearAllTabs()`'ı hem demo hem
+      gerçek bağlantı için kullanıyor) + `refresh()` eklendi.
+      **Kullanıcının açıkça istediği davranış**: "Yenileme başarısız
+      olduğunda önceki veri korunmalı ama eski olduğu belirtilmeli" —
+      `performCollection`'ın catch/guard bloklarında `isConnected` zaten
+      true ise (yani bu ilk bağlanma değil bir refresh ise) `isDataStale =
+      true` işaretleniyor, eski veri hiç temizlenmiyor (zaten `do` bloğu
+      içindeki atamalar başarısız olmadıkça hiç çalışmıyordu, bu davranış
+      zaten doğruydu, sadece görünür hale getirildi). Status bar'da turuncu
+      bir "Refresh failed — data may be stale" etiketi (hover'da gerçek hata
+      mesajı) çıkıyor. **Snapshot'ta kayıt zamanı/veri toplama zamanı
+      ayrımı**: `InventorySnapshot`'a yeni `dataCollectedAt: Date?` alanı
+      (eski snapshot'lar için `nil`, `effectiveDataCollectedAt` ile
+      `takenAt`'e düşüyor) — `takeSnapshot()` artık `lastRefreshedAt`'i
+      oraya geçiriyor, `vlens-cli`'ın snapshot komutu da `Date()` geçiyor
+      (CLI'da her zaman taze, staleness kavramı yok). Snapshot liste
+      satırına, veri gerçek toplanma zamanı `takenAt`'ten >60sn eskiyse
+      (yani stale veriden alınmış bir snapshot'sa) turuncu bir uyarı ikonu
+      eklendi (hover'da gerçek toplanma zamanını gösteriyor). 3 yeni test
+      (`effectiveDataCollectedAt` fallback/explicit + eski JSON'un
+      `dataCollectedAt` alanı hiç olmadan temiz decode olduğu). `swift
+      build`/`swift test` temiz (68/68, +3 yeni test); `ConnectionViewModel`
+      `Sources/vLens`'te olduğu için (test target'ı yok, sadece
+      `vLensCoreTests` var) GUI click-through kullanıcı tarafından manuel
+      doğrulanmalı — sadece `swift run vLens`'in çöküp çökmediği (çökmedi)
+      doğrulandı. **Sırada #9 (otomasyon: profil UUID + launchd doğrulanmış
+      durum + son çalışma sonucu)** — kullanıcının belirlediği son madde.
 - [x] **(2026-09-05) #11: XLSX hücre tipi artık kolon tanımından geliyor,
       değerden sniff edilmiyor (v1.3.3)** — kullanıcının sıralamasında #8'den
       sonraki adım. Eski kod "değer Int/Double olarak parse oluyor mu"

@@ -105,6 +105,12 @@ struct SnapshotsTabView: View {
                                         .foregroundStyle(.secondary)
                                         .help("Includes full VM inventory")
                                 }
+                                if isFromStaleData(snapshot) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(.orange)
+                                        .help("Underlying data was actually collected \(snapshot.effectiveDataCollectedAt.formatted(date: .abbreviated, time: .shortened)) — a refresh had failed when this snapshot was taken.")
+                                }
                             }
                             Text(subtitle(for: snapshot))
                                 .font(.caption)
@@ -350,6 +356,19 @@ struct SnapshotsTabView: View {
         let relative = Self.relativeFormatter.localizedString(for: snapshot.takenAt, relativeTo: Date())
         guard let label = snapshot.label, !label.isEmpty else { return relative }
         return "\(snapshot.takenAt.formatted(date: .abbreviated, time: .shortened)) · \(relative)"
+    }
+
+    /// True when this snapshot's underlying data was collected meaningfully
+    /// earlier than when the snapshot record itself was taken — i.e. it was
+    /// captured while a refresh had failed and the previous, now-stale,
+    /// collection was still on screen (see `ConnectionViewModel.isDataStale`
+    /// and `InventorySnapshot.dataCollectedAt`). A minute-plus threshold
+    /// (rather than any nonzero gap) avoids flagging the ordinary few-
+    /// millisecond difference between "data collected" and "Take Snapshot
+    /// button processed" on every single normal snapshot.
+    private func isFromStaleData(_ snapshot: InventorySnapshot) -> Bool {
+        guard let dataCollectedAt = snapshot.dataCollectedAt else { return false }
+        return snapshot.takenAt.timeIntervalSince(dataCollectedAt) > 60
     }
 
     private static let relativeFormatter: RelativeDateTimeFormatter = {

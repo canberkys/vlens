@@ -3,6 +3,25 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.4.0] - 2026-09-05 (+03)
+
+### Added
+- **Refresh, Disconnect, and switching connections.** Previously the only
+  way to get new data or connect somewhere else was quitting and
+  relaunching the app. The toolbar now has a Refresh button (re-collects
+  the current inventory) and a Disconnect button (returns to the connect
+  screen, from which a different saved connection can be picked).
+- **Stale data is now visible instead of silent.** If a refresh fails, the
+  previously-collected data stays on screen — it's never cleared — but the
+  status bar now shows "Refresh failed — data may be stale" (hover for the
+  real error) instead of quietly leaving an old "Last refreshed" time as
+  the only, easy-to-miss signal.
+- **A snapshot now records when its data was actually collected, separately
+  from when the snapshot itself was taken.** Taking a snapshot while
+  showing stale data (a prior refresh had failed) used to timestamp it as
+  if the data were as fresh as that instant — the Snapshots tab now flags
+  such a snapshot and shows the real collection time on hover.
+
 ## [1.3.3] - 2026-09-05 (+03)
 
 ### Fixed

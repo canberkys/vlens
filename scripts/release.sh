@@ -10,7 +10,7 @@ set -euo pipefail
 # (also SwiftPM-only, also signed/notarized this way).
 
 APP_NAME="vLens"
-VERSION="1.3.3"
+VERSION="1.4.0"
 SIGN_IDENTITY="Developer ID Application: Canberk KILIÇARSLAN (9QB26WKA4K)"
 NOTARY_PROFILE="vlens-notary"
 

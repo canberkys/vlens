@@ -315,6 +315,27 @@ struct ContentView: View {
             }
 
             Button {
+                Task { await viewModel.refresh() }
+            } label: {
+                if viewModel.isRefreshing {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Label("Refresh", systemImage: "arrow.clockwise")
+                }
+            }
+            .disabled(viewModel.isRefreshing)
+            .help("Re-collect the current inventory from vCenter. If this fails, the data already on screen is kept and marked as possibly stale rather than cleared.")
+
+            if !viewModel.isDemoMode {
+                Button(role: .destructive) {
+                    viewModel.disconnect()
+                } label: {
+                    Label("Disconnect", systemImage: "xmark.circle")
+                }
+                .help("Disconnect and return to the connect screen — from there you can connect to a different saved connection.")
+            }
+
+            Button {
                 generateReport()
             } label: {
                 Label("Report", systemImage: "doc.richtext")
@@ -380,6 +401,12 @@ struct ContentView: View {
             if let refreshed = viewModel.lastRefreshedAt {
                 Divider().frame(height: 12)
                 Text("Last refreshed: \(refreshed.formatted(date: .omitted, time: .shortened))")
+            }
+            if viewModel.isDataStale {
+                Divider().frame(height: 12)
+                Label("Refresh failed — data may be stale", systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                    .help(viewModel.errorMessage ?? "The last refresh attempt failed; showing the previous successful collection.")
             }
             Spacer()
         }
