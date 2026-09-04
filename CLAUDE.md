@@ -160,6 +160,16 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) Snapshots tab'ına toplu seç/sil eklendi (v1.1.3)** —
+      kullanıcı isteği: 10 snapshot'tan 4'ünü seçip birlikte silebilme.
+      `List(rows, selection: $selectedSnapshotIDs)` ile çoklu seçim; seçim
+      boş değilken listenin üstünde "N selected" + Deselect All + Delete
+      Selected barı çıkıyor, tek bir onay diyaloğuyla hepsi birden siliniyor.
+      `SnapshotStore.delete(ids: Set<UUID>)` eklendi — tek satırı N kere
+      `delete(id:)` çağırıp N kere dosyayı yeniden yükleyip yazmak yerine
+      tek bir load/persist round trip. 1 yeni test
+      (`bulkDeleteRemovesOnlyTheMatchingSnapshots`). `swift build`/`swift
+      test` temiz (59/59).
 - [x] **(2026-09-04) Connect ekranı `macos-ui-ux` agent'ının bulgularına göre
       yeniden tasarlandı (v1.1.2)** — iki ayrı üst üste başlık (icon+"vLens"+tagline
       bloğu VE "Connect to vCenter" headline'ı) tek kompakt bir yatay header'a
