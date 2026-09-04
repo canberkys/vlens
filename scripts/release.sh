@@ -10,7 +10,7 @@ set -euo pipefail
 # (also SwiftPM-only, also signed/notarized this way).
 
 APP_NAME="vLens"
-VERSION="1.1.3"
+VERSION="1.2.0"
 SIGN_IDENTITY="Developer ID Application: Canberk KILIÇARSLAN (9QB26WKA4K)"
 NOTARY_PROFILE="vlens-notary"
 
@@ -28,7 +28,7 @@ VLENS_CLI_BIN="$BIN_PATH/vlens-cli"
 
 echo "==> Constructing .app bundle at $APP_BUNDLE"
 rm -rf "$APP_BUNDLE"
-mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
+mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources" "$APP_BUNDLE/Contents/Frameworks"
 
 cp "$VLENS_BIN" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
 # vlens-cli sits alongside vLens itself (a real executable target, not a
@@ -39,6 +39,18 @@ cp "$ROOT_DIR/helper/vlens-helper" "$APP_BUNDLE/Contents/Resources/vlens-helper"
 cp "$ROOT_DIR/Resources/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 cp "$ROOT_DIR/Resources/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
 printf 'APPL????' > "$APP_BUNDLE/Contents/PkgInfo"
+
+# Sparkle.framework (Faz 3 auto-update) — embedded at the conventional
+# Contents/Frameworks location, matching Package.swift's linker rpath
+# (@executable_path/../Frameworks). SPM's artifact checkout path is
+# deterministic given Package.resolved, but found via `find` rather than
+# hardcoded so a future Sparkle version bump can't silently break this.
+SPARKLE_FRAMEWORK="$(find "$ROOT_DIR/.build/artifacts/sparkle" -type d -name "Sparkle.framework" -path "*/macos-*" 2>/dev/null | head -1)"
+if [ -z "$SPARKLE_FRAMEWORK" ]; then
+    echo "Sparkle.framework not found under .build/artifacts — run 'swift build' first" >&2
+    exit 1
+fi
+cp -R "$SPARKLE_FRAMEWORK" "$APP_BUNDLE/Contents/Frameworks/Sparkle.framework"
 
 # Apple's timestamp authority occasionally hiccups on a single request
 # (observed directly while building this script — the second of two
@@ -62,11 +74,39 @@ codesign_with_retry() {
     return 1
 }
 
+# Sparkle's own nested helpers (Autoupdate, Updater.app, two XPC services)
+# ship ad-hoc signed in the distributed XCFramework — they need our real
+# Developer ID before notarization, but (per Sparkle's own packaging
+# instructions) without our app's entitlements, which don't apply to them.
+codesign_bare_with_retry() {
+    local target="$1"
+    local attempt
+    for attempt in 1 2 3; do
+        if codesign --force --options runtime --timestamp \
+            --sign "$SIGN_IDENTITY" \
+            "$target"; then
+            return 0
+        fi
+        echo "    (codesign attempt $attempt failed, retrying...)"
+        sleep 2
+    done
+    echo "    codesign failed after 3 attempts for $target" >&2
+    return 1
+}
+
 echo "==> Signing embedded helper binary (nested code must be signed first)"
 codesign_with_retry "$APP_BUNDLE/Contents/Resources/vlens-helper"
 
 echo "==> Signing embedded vlens-cli (nested code must be signed first)"
 codesign_with_retry "$APP_BUNDLE/Contents/MacOS/vlens-cli"
+
+echo "==> Signing Sparkle.framework's nested code (inside out, per Sparkle's packaging instructions)"
+SPARKLE_EMBEDDED="$APP_BUNDLE/Contents/Frameworks/Sparkle.framework"
+codesign_bare_with_retry "$SPARKLE_EMBEDDED/Versions/B/Autoupdate"
+codesign_bare_with_retry "$SPARKLE_EMBEDDED/Versions/B/Updater.app"
+codesign_bare_with_retry "$SPARKLE_EMBEDDED/Versions/B/XPCServices/Downloader.xpc"
+codesign_bare_with_retry "$SPARKLE_EMBEDDED/Versions/B/XPCServices/Installer.xpc"
+codesign_bare_with_retry "$SPARKLE_EMBEDDED"
 
 echo "==> Signing app bundle"
 codesign_with_retry "$APP_BUNDLE"
@@ -134,6 +174,49 @@ OSA
     hdiutil convert "$DMG_TEMP" -format UDZO -imagekey zlib-level=9 -ov -o "$DMG_PATH"
     rm -f "$DMG_TEMP"
     echo "==> Done: $DMG_PATH"
+
+    echo "==> Signing DMG for Sparkle and writing appcast.xml"
+    SPARKLE_SIGN_UPDATE="$(find "$ROOT_DIR/.build/artifacts/sparkle/Sparkle/bin" -maxdepth 1 -name "sign_update" -type f 2>/dev/null | head -1)"
+    if [ -z "$SPARKLE_SIGN_UPDATE" ]; then
+        echo "    sign_update tool not found — skipping appcast.xml (run 'swift build' first to fetch Sparkle)" >&2
+    else
+        SIGNATURE_OUTPUT="$("$SPARKLE_SIGN_UPDATE" "$DMG_PATH")"
+        ED_SIGNATURE="$(echo "$SIGNATURE_OUTPUT" | grep -o 'sparkle:edSignature="[^"]*"' | cut -d'"' -f2)"
+        DMG_LENGTH="$(echo "$SIGNATURE_OUTPUT" | grep -o 'length="[^"]*"' | cut -d'"' -f2)"
+        BUILD_NUMBER="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$ROOT_DIR/Resources/Info.plist")"
+        PUB_DATE="$(date -u "+%a, %d %b %Y %H:%M:%S +0000")"
+        APPCAST_PATH="$ROOT_DIR/appcast.xml"
+
+        # Single-item feed — Sparkle only needs the latest version to decide
+        # "is there something newer than what's installed," it doesn't need
+        # full history. The enclosure URL must exactly match where this DMG
+        # ends up as a GitHub Release asset (v$VERSION tag, same filename).
+        cat > "$APPCAST_PATH" << XML
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel>
+        <title>vLens</title>
+        <link>https://raw.githubusercontent.com/canberkys/vlens/main/appcast.xml</link>
+        <description>vLens release updates</description>
+        <language>en</language>
+        <item>
+            <title>Version $VERSION</title>
+            <pubDate>$PUB_DATE</pubDate>
+            <sparkle:version>$BUILD_NUMBER</sparkle:version>
+            <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure
+                url="https://github.com/canberkys/vlens/releases/download/v$VERSION/$APP_NAME-$VERSION.dmg"
+                length="$DMG_LENGTH"
+                type="application/octet-stream"
+                sparkle:edSignature="$ED_SIGNATURE" />
+        </item>
+    </channel>
+</rss>
+XML
+        echo "==> Wrote $APPCAST_PATH — commit + push to main (SUFeedURL reads it from raw.githubusercontent.com),"
+        echo "    and publish DMG_PATH as a GitHub Release asset at tag v$VERSION with this exact filename."
+    fi
 else
     echo "==> Skipping notarization — no stored credentials for profile '$NOTARY_PROFILE'."
     echo "    One-time setup: xcrun notarytool store-credentials \"$NOTARY_PROFILE\" \\"

@@ -3,6 +3,26 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.2.0] - 2026-09-04 17:10 (+03)
+
+### Added
+- Automatic update checks via Sparkle — vLens now checks a public appcast
+  feed on a schedule (and via a new "Check for Updates…" menu item) and
+  shows Sparkle's own native update sheet when a newer signed build is
+  available. Updates are EdDSA-signed (`sign_update`/`generate_keys`) —
+  the private key never leaves this machine's Keychain.
+- `scripts/release.sh` now embeds and signs `Sparkle.framework` inside the
+  `.app` (inside-out nested signing: Autoupdate, Updater.app, two XPC
+  services, then the framework itself) and writes `appcast.xml` with the
+  new release's EdDSA signature after packaging the DMG.
+
+### Changed
+- **The `vLens` repository is now public.** Sparkle's background update
+  check can't carry authentication, so the appcast feed and release
+  assets need to be reachable from a plain, unauthenticated HTTPS request
+  — not possible from a private repo. Commit history was checked first;
+  no credentials or secrets were ever committed.
+
 ## [1.1.3] - 2026-09-04 16:52 (+03)
 
 ### Added
