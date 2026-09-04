@@ -87,6 +87,15 @@ struct PreferencesView: View {
                 Text("Which rows the Snapshots tab's Compare panel shows. Every metric is always recorded — this only controls what's displayed.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                HStack {
+                    Button("Select All") {
+                        viewModel.enabledSnapshotMetricKeys = Set(SnapshotMetricDescriptor.all.map(\.key))
+                    }
+                    Button("Select None") {
+                        viewModel.enabledSnapshotMetricKeys = []
+                    }
+                }
+                .font(.caption)
                 ForEach(SnapshotMetricDescriptor.all, id: \.key) { descriptor in
                     HStack(spacing: 4) {
                         Toggle(descriptor.label, isOn: Binding(

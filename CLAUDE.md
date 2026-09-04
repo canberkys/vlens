@@ -158,8 +158,14 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 `VLENS_HELPER_PATH` env var → dev fallback (`helper/vlens-helper`, proje kökünde
 `go build` ile üretilmiş olmalı).
 
-## Durum (2026-09-03, son maddeler 2026-09-04)
+## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) Preferences'a Snapshot metrikleri için Select All/None
+      eklendi (v1.2.1)** — kullanıcı Sparkle'ın "Check for Updates"
+      akışını gerçek bir sürüm artışıyla test etmek istedi, Faz 7 backlog'undan
+      küçük/bağımsız bir madde seçildi. `swift build`/`swift test` temiz
+      (59/59). Bu sürüm aynı zamanda Sparkle'ın 1.2.0'dan 1.2.1'e gerçek bir
+      güncelleme akışını da doğrulamak için kullanılıyor.
 - [x] **(2026-09-04) Sparkle auto-update entegre edildi, Faz 3 tamamen kapandı
       (v1.2.0)** — `Package.swift`'e Sparkle SPM dependency'si (2.9.6),
       `vLensApp.swift`'e `SPUStandardUpdaterController` (`AppDelegate`
