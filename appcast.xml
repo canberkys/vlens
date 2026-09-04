@@ -6,16 +6,23 @@
         <description>vLens release updates</description>
         <language>en</language>
         <item>
-            <title>Version 1.2.1</title>
-            <pubDate>Fri, 04 Sep 2026 22:15:47 +0000</pubDate>
-            <sparkle:version>8</sparkle:version>
-            <sparkle:shortVersionString>1.2.1</sparkle:shortVersionString>
+            <title>Version 1.2.2</title>
+            <pubDate>Fri, 04 Sep 2026 22:32:38 +0000</pubDate>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>1.2.2</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+<h4>Added</h4>
+<ul>
+<li>Help ▸ What&#x27;s New: the full changelog, right in the app, rendered from the same <code>CHANGELOG.md</code> that ships with every release.</li>
+<li>Sparkle&#x27;s update dialog now shows that release&#x27;s notes inline (pulled from <code>CHANGELOG.md</code> at release time) instead of just a bare version number — no separate popup, it&#x27;s part of the update prompt you already see.</li>
+</ul>
+            ]]></description>
             <enclosure
-                url="https://github.com/canberkys/vlens/releases/download/v1.2.1/vLens-1.2.1.dmg"
-                length="12140444"
+                url="https://github.com/canberkys/vlens/releases/download/v1.2.2/vLens-1.2.2.dmg"
+                length="12139644"
                 type="application/octet-stream"
-                sparkle:edSignature="UZe4UjvtLUR6s022KGfM0IzJ4vnQuu4fI84bsjcqhYNeXged8tGfEihNxymUHwzPzfFp6rrB3pn3kaVHUvNWAg==" />
+                sparkle:edSignature="Iwy/zfvWEcZpZ1kkagFd4VtZpwgHTAeaRG5IZ8hXXWP683SNcLPk+R8dirJ5ezHmcaZ7ga0mRQDOM90FpHrJDg==" />
         </item>
     </channel>
 </rss>
