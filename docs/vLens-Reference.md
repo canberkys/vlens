@@ -986,14 +986,23 @@ a connection already saved (Keychain) and trusted (certificate) via the GUI app
 first — the CLI can't show an approval sheet, so an unknown/mismatched
 certificate is a hard failure with a clear message, never a silent trust.
 Reads/writes the same preferences the GUI does via an explicit
-`UserDefaults(suiteName: "com.canberkki.vlens")` (a bare executable's
-`UserDefaults.standard` would otherwise resolve to a different domain and miss
-the GUI's snapshot storage location, vHealth thresholds, etc.). PDF report
-export is out of scope (headless `ImageRenderer` reliability untested). Still
-missing — driven by `launchd` (the macOS analogue of the Windows Task Scheduler
-workflows RVTools users lean on for scheduled headless exports): a Preferences
-"Automation" section to configure a recurring schedule and generate/load the
-launch agent plist.
+`UserDefaults(suiteName: "com.canberkki.vlens")` when the process's own bundle
+ID doesn't already match (in the packaged app, `vlens-cli` inherits the GUI's
+bundle ID by directory proximity to its `Info.plist`, so `.standard` already
+resolves correctly there — the explicit suite is only needed in `swift run`
+dev mode, where there's no bundle ID at all). PDF report export is out of
+scope (headless `ImageRenderer` reliability untested).
+
+**Scheduling** (2026-09-04, Faz 10B) — Preferences' "Automation" section
+configures one recurring schedule (connection, action — Snapshot or Export
+CSV/XLSX with a tab picker, day of week, time) and generates/loads a real
+`launchd` agent (`~/Library/LaunchAgents/com.canberkki.vlens.scheduler.plist`,
+`launchctl bootstrap`/`bootout` — the modern verbs, not the deprecated
+`load`/`unload`) that runs `vlens-cli` unattended. `ProgramArguments` points
+at `Contents/MacOS/vlens-cli` inside the packaged `.app` — a `swift run` dev
+build has no such stable path, so scheduling only works from a real signed
+build, same constraint the CLI itself doesn't have. v1 supports exactly one
+active schedule, not a list.
 
 **Multi-vCenter merge**: RVTools ships a separate `RVToolsMergeExcelFiles` utility.
 vLens's MVP supports one active connection at a time, switchable. Not started.

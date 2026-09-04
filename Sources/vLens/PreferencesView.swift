@@ -9,6 +9,18 @@ import vLensCore
 struct PreferencesView: View {
     @Bindable var viewModel: ConnectionViewModel
 
+    private enum AutomationActionKind: Hashable {
+        case snapshot, exportCSV, exportXLSX
+    }
+
+    @State private var automationEnabled = false
+    @State private var automationProfileID: UUID?
+    @State private var automationActionKind: AutomationActionKind = .snapshot
+    @State private var automationFullDetail = false
+    @State private var automationTab: ExportTab = .vinfo
+    @State private var automationWeekday = 2 // Monday
+    @State private var automationTime = Date()
+
     var body: some View {
         Form {
             Section("vHealth thresholds") {
@@ -127,6 +139,80 @@ struct PreferencesView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Automation") {
+                if viewModel.savedProfiles.isEmpty {
+                    Text("Save a connection (with \"Save this connection to Keychain\" enabled) to schedule automated snapshots or exports.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Toggle("Enable scheduled automation", isOn: $automationEnabled)
+
+                    Picker("Connection", selection: $automationProfileID) {
+                        ForEach(viewModel.savedProfiles) { profile in
+                            Text(profile.name).tag(Optional(profile.id))
+                        }
+                    }
+                    .disabled(!automationEnabled)
+
+                    Picker("Action", selection: $automationActionKind) {
+                        Text("Take Snapshot").tag(AutomationActionKind.snapshot)
+                        Text("Export CSV").tag(AutomationActionKind.exportCSV)
+                        Text("Export XLSX").tag(AutomationActionKind.exportXLSX)
+                    }
+                    .disabled(!automationEnabled)
+
+                    if automationActionKind == .snapshot {
+                        Toggle("Include full VM inventory", isOn: $automationFullDetail)
+                            .disabled(!automationEnabled)
+                    } else {
+                        Picker("Tab", selection: $automationTab) {
+                            ForEach(ExportTab.allCases, id: \.self) { tab in
+                                Text(tab.label).tag(tab)
+                            }
+                        }
+                        .disabled(!automationEnabled)
+                    }
+
+                    Picker("Day", selection: $automationWeekday) {
+                        ForEach(1...7, id: \.self) { day in
+                            Text(Calendar.current.weekdaySymbols[day - 1]).tag(day)
+                        }
+                    }
+                    .disabled(!automationEnabled)
+
+                    DatePicker("Time", selection: $automationTime, displayedComponents: .hourAndMinute)
+                        .disabled(!automationEnabled)
+
+                    HStack {
+                        Button("Save") { saveAutomation() }
+                            .disabled(automationEnabled && automationProfileID == nil)
+                        if viewModel.automationSchedule != nil {
+                            Button("Remove", role: .destructive) {
+                                viewModel.removeAutomationSchedule()
+                                automationEnabled = false
+                            }
+                        }
+                    }
+
+                    if let error = viewModel.automationError {
+                        Text(error).foregroundStyle(.red).font(.caption)
+                    }
+
+                    if let schedule = viewModel.automationSchedule, schedule.enabled {
+                        Label(
+                            LaunchdScheduler.isInstalled ? "Scheduled and active" : "Not active — see error above",
+                            systemImage: LaunchdScheduler.isInstalled ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
+                        )
+                        .foregroundStyle(LaunchdScheduler.isInstalled ? .green : .orange)
+                        .font(.caption)
+                    }
+
+                    Text("Runs vlens-cli in the background at the scheduled time via launchd — only works from a packaged .app build (a stable path launchd can point at), not swift run.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Section("Tutorials") {
                 Button("Reset Tutorials") {
                     TutorialStore().resetAll(ids: TutorialID.all)
@@ -137,7 +223,45 @@ struct PreferencesView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 720)
+        .frame(width: 460, height: 860)
+        .onAppear(perform: syncAutomationForm)
+    }
+
+    private func syncAutomationForm() {
+        guard let schedule = viewModel.automationSchedule else {
+            automationProfileID = viewModel.savedProfiles.first?.id
+            return
+        }
+        automationEnabled = schedule.enabled
+        automationProfileID = schedule.profileID
+        switch schedule.action {
+        case .snapshot(let fullDetail):
+            automationActionKind = .snapshot
+            automationFullDetail = fullDetail
+        case .export(let tab, let format):
+            automationActionKind = format == .csv ? .exportCSV : .exportXLSX
+            automationTab = tab
+        }
+        automationWeekday = schedule.weekday
+        var components = DateComponents()
+        components.hour = schedule.hour
+        components.minute = schedule.minute
+        automationTime = Calendar.current.date(from: components) ?? Date()
+    }
+
+    private func saveAutomation() {
+        guard let profileID = automationProfileID else { return }
+        let action: AutomationAction = switch automationActionKind {
+        case .snapshot: .snapshot(fullDetail: automationFullDetail)
+        case .exportCSV: .export(tab: automationTab, format: .csv)
+        case .exportXLSX: .export(tab: automationTab, format: .xlsx)
+        }
+        let time = Calendar.current.dateComponents([.hour, .minute], from: automationTime)
+        let schedule = AutomationSchedule(
+            enabled: automationEnabled, profileID: profileID, action: action,
+            weekday: automationWeekday, hour: time.hour ?? 9, minute: time.minute ?? 0
+        )
+        viewModel.saveAutomationSchedule(schedule)
     }
 }
 

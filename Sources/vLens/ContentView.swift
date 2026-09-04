@@ -46,6 +46,7 @@ struct ContentView: View {
                         toolbar
                         Divider()
                         tabContent
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                         Divider()
                         statusBar
                     }

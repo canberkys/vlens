@@ -10,7 +10,7 @@ set -euo pipefail
 # (also SwiftPM-only, also signed/notarized this way).
 
 APP_NAME="vLens"
-VERSION="1.0.1"
+VERSION="1.1.0"
 SIGN_IDENTITY="Developer ID Application: Canberk KILIÇARSLAN (9QB26WKA4K)"
 NOTARY_PROFILE="vlens-notary"
 
@@ -21,7 +21,9 @@ APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
 echo "==> Building release binaries"
 cd "$ROOT_DIR"
 swift build -c release
-VLENS_BIN="$(swift build -c release --show-bin-path)/$APP_NAME"
+BIN_PATH="$(swift build -c release --show-bin-path)"
+VLENS_BIN="$BIN_PATH/$APP_NAME"
+VLENS_CLI_BIN="$BIN_PATH/vlens-cli"
 (cd helper && go build -o vlens-helper .)
 
 echo "==> Constructing .app bundle at $APP_BUNDLE"
@@ -29,6 +31,10 @@ rm -rf "$APP_BUNDLE"
 mkdir -p "$APP_BUNDLE/Contents/MacOS" "$APP_BUNDLE/Contents/Resources"
 
 cp "$VLENS_BIN" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
+# vlens-cli sits alongside vLens itself (a real executable target, not a
+# bundled tool like vlens-helper) — LaunchdScheduler/AutomationCLILocator
+# point at Contents/MacOS/vlens-cli for a stable launchd path (Faz 10B).
+cp "$VLENS_CLI_BIN" "$APP_BUNDLE/Contents/MacOS/vlens-cli"
 cp "$ROOT_DIR/helper/vlens-helper" "$APP_BUNDLE/Contents/Resources/vlens-helper"
 cp "$ROOT_DIR/Resources/AppIcon.icns" "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
 cp "$ROOT_DIR/Resources/Info.plist" "$APP_BUNDLE/Contents/Info.plist"
@@ -58,6 +64,9 @@ codesign_with_retry() {
 
 echo "==> Signing embedded helper binary (nested code must be signed first)"
 codesign_with_retry "$APP_BUNDLE/Contents/Resources/vlens-helper"
+
+echo "==> Signing embedded vlens-cli (nested code must be signed first)"
+codesign_with_retry "$APP_BUNDLE/Contents/MacOS/vlens-cli"
 
 echo "==> Signing app bundle"
 codesign_with_retry "$APP_BUNDLE"
