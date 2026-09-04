@@ -140,6 +140,22 @@ go build -o vcsim/vcsim ./vcsim && ./vcsim/vcsim
 
 ## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) Faz 3 tamamlandı — ilk imzalı/notarize/DMG'lenmiş sürüm**:
+      kullanıcı Apple ID'siyle bir app-specific şifre üretip
+      `xcrun notarytool store-credentials` adımını tamamladı (Keychain'deki
+      `vlens-notary` profili), ardından `./scripts/release.sh` uçtan uca
+      çalıştırıldı — build → `.app` bundle → codesign (önce helper, sonra app)
+      → notarization (Apple'a submit edildi, "Accepted" döndü) → staple →
+      Gatekeeper doğrulaması → DMG. Üç ayrı gerçek doğrulama yapıldı (sahte
+      değil): `xcrun stapler validate` → "The validate action worked!",
+      `spctl -a -vvv --type exec` → "accepted, source=Notarized Developer ID",
+      ve `vLens-1.0.0.dmg` (~9.4 MB) diskte gerçekten oluştu. vLens artık
+      temiz bir Mac'e indirilip doğrudan açılabilecek ilk gerçek sürümüne
+      sahip. **Kalan**: bu DMG'yi bir GitHub Release'e eklemek (kullanıcı
+      onayı gerektiriyor — repo private olsa da bir Release oluşturmak
+      görünür/paylaşılan bir aksiyon), ve Sparkle auto-update entegrasyonu
+      (Faz 3'ün planlanan ama henüz yapılmamış son parçası — appcast.xml +
+      `SPUStandardUpdaterController`).
 - [x] **(2026-09-04) 2 gerçek UI bug'ı düzeltildi — kullanıcının canlı kullanımında
       yakalandı**: (1) Snapshots tab'ına girildiğinde sidebar navigasyonu aşırı
       daraltılıyordu (etiketler baştan değil sondan görünür hale geliyordu,
