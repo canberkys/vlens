@@ -6,16 +6,16 @@
         <description>vLens release updates</description>
         <language>en</language>
         <item>
-            <title>Version 1.2.0</title>
-            <pubDate>Fri, 04 Sep 2026 22:08:03 +0000</pubDate>
-            <sparkle:version>7</sparkle:version>
-            <sparkle:shortVersionString>1.2.0</sparkle:shortVersionString>
+            <title>Version 1.2.1</title>
+            <pubDate>Fri, 04 Sep 2026 22:15:47 +0000</pubDate>
+            <sparkle:version>8</sparkle:version>
+            <sparkle:shortVersionString>1.2.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <enclosure
-                url="https://github.com/canberkys/vlens/releases/download/v1.2.0/vLens-1.2.0.dmg"
-                length="12137084"
+                url="https://github.com/canberkys/vlens/releases/download/v1.2.1/vLens-1.2.1.dmg"
+                length="12140444"
                 type="application/octet-stream"
-                sparkle:edSignature="l7Ii2pjnh4+QWlpSnjnHQEh8VbAXp3oqw2Io6Jf5FoXThwBHiZ7PQKk5vtw6Y36+mx/9QV8qRz0PnUlYCgSmDQ==" />
+                sparkle:edSignature="UZe4UjvtLUR6s022KGfM0IzJ4vnQuu4fI84bsjcqhYNeXged8tGfEihNxymUHwzPzfFp6rrB3pn3kaVHUvNWAg==" />
         </item>
     </channel>
 </rss>
