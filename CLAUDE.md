@@ -140,6 +140,25 @@ go build -o vcsim/vcsim ./vcsim && ./vcsim/vcsim
 
 ## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) 2 gerçek UI bug'ı düzeltildi — kullanıcının canlı kullanımında
+      yakalandı**: (1) Snapshots tab'ına girildiğinde sidebar navigasyonu aşırı
+      daraltılıyordu (etiketler baştan değil sondan görünür hale geliyordu,
+      örn. "vNetwork" → "rk"). Kök neden: `SnapshotsTabView`'ın `HSplitView`'ı
+      iki paneline sabit `minWidth` (260+420=680pt) veriyordu — bu, Snapshots
+      seçildiğinde `NavigationSplitView`'ın sidebar kolonunu kendi
+      `navigationSplitViewColumnWidth(min:160...)` sınırının çok altına
+      sıkıştırmasına yol açıyordu (diğer hiçbir tab bu kadar büyük bir minWidth
+      istemiyor). Düzeltme: minWidth'ler önemli ölçüde düşürüldü (180+260=440pt),
+      hâlâ makul bir varsayılan genişlik veriyor ama sidebar'ı zorlamıyor.
+      (2) Aynı saniye içinde birden fazla snapshot alındığında (gerçek bir
+      senaryo — Faz 10'un zamanlayıcısı yanlış yapılandırılırsa olabilir, bu
+      turda da yanlışlıkla test otomasyonuyla tetiklendi), List'in varsayılan
+      satır-ekleme animasyonu bazı satırları geçiş ortasında yakalayıp trash
+      ikonunun kırpılmış görünmesine yol açıyordu — satırlara sabit
+      `minHeight: 36` + `List`'e `.transaction { $0.disablesAnimations = true }`
+      eklendi. **Ayrıca kullanıcının sorusu üzerine**: Snapshot silme artık
+      onay istiyor (`.alert`) — önceden trash butonuna basınca geri dönüşü
+      olmayan bir silme anında gerçekleşiyordu.
 - [x] **(2026-09-04) Faz 9 tamamlandı — Snapshot depolama konumu + basic/full-detail
       seçimi** (geri bildirim maddeleri 6 ve 6.1, ertelenen 3 mimari kararın ilk
       ikisi). **9A**: `SnapshotPreferencesStore.customStorageDirectory` (düz path,

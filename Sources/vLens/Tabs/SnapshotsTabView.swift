@@ -25,13 +25,14 @@ struct SnapshotsTabView: View {
     @State private var includeFullDetail = false
     @State private var baselineID: UUID?
     @State private var currentID: UUID?
+    @State private var pendingDeletion: InventorySnapshot?
 
     var body: some View {
         HSplitView {
             snapshotList
-                .frame(minWidth: 260, idealWidth: 300)
+                .frame(minWidth: 180, idealWidth: 260)
             comparePanel
-                .frame(minWidth: 420)
+                .frame(minWidth: 260, idealWidth: 360)
         }
         .onAppear(perform: syncDefaultSelection)
         .onChange(of: rows.count) { _, _ in syncDefaultSelection() }
@@ -84,13 +85,38 @@ struct SnapshotsTabView: View {
                         }
                         Spacer()
                         Button(role: .destructive) {
-                            viewModel.deleteSnapshot(snapshot)
+                            pendingDeletion = snapshot
                         } label: {
                             Image(systemName: "trash")
                         }
                         .buttonStyle(.borderless)
                     }
+                    // Fixed row height (rather than letting the 2-line
+                    // label+subtitle stack size the row implicitly) — taking
+                    // several snapshots in the same second (a real scenario
+                    // once Faz 10's scheduler exists) triggered List's default
+                    // insertion animation on multiple rows at once, which
+                    // could catch a row mid-transition and render its trailing
+                    // trash icon visibly clipped.
+                    .frame(minHeight: 36)
                 }
+                .transaction { $0.disablesAnimations = true }
+            }
+        }
+        .alert(
+            "Delete this snapshot?",
+            isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } })
+        ) {
+            Button("Cancel", role: .cancel) { pendingDeletion = nil }
+            Button("Delete", role: .destructive) {
+                if let pendingDeletion {
+                    viewModel.deleteSnapshot(pendingDeletion)
+                }
+                pendingDeletion = nil
+            }
+        } message: {
+            if let pendingDeletion {
+                Text("\"\(pendingDeletion.displayLabel)\" will be permanently removed. This can't be undone.")
             }
         }
     }
