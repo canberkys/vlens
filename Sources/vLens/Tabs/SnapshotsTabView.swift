@@ -8,6 +8,9 @@ private struct CompareRow: CSVExportable {
     let delta: String
 
     static var csvHeader: [String] { ["Metric", "Baseline", "Current", "Delta"] }
+    // All four are already display-formatted strings (units baked in, e.g.
+    // "42%" or "1,024 MiB") — never real numeric cells.
+    static var xlsxColumnTypes: [XLSXColumnType] { [.text, .text, .text, .text] }
     var csvRow: [String] { [metric, baseline, current, delta] }
 }
 

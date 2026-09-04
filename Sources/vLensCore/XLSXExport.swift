@@ -1,19 +1,32 @@
 import Foundation
 import ZIPFoundation
 
+/// Whether a column should be written as a real numeric XLSX cell or as
+/// text, declared by the column's owner (`CSVExportable.xlsxColumnTypes`)
+/// rather than guessed from the string value at write time. Guessing from
+/// the value ("does this parse as Int/Double?") silently turned a VM named
+/// "00123" into the number 123 (losing the leading zero) and a two-part
+/// version string like "8.0" into a number — both real data, not edge
+/// cases, since neither looks unusual to a human reading the export.
+public enum XLSXColumnType: Sendable {
+    case text
+    case number
+}
+
 /// Minimal XLSX writer — one sheet per export, reusing each model's
 /// existing `CSVExportable` header/row data (an .xlsx is just a zip of a
 /// handful of small XML parts; no need for a full spreadsheet object model
-/// or a heavy dependency to produce one). Numeric-looking cells are written
-/// as numbers (so Excel sorts/sums them correctly); everything else as an
-/// inline string — no shared-strings table, which keeps this simple at the
-/// row counts these exports deal with.
+/// or a heavy dependency to produce one). Each column's declared
+/// `XLSXColumnType` decides real numeric cell vs. inline string — no
+/// shared-strings table, which keeps this simple at the row counts these
+/// exports deal with.
 public enum XLSXWriter {
     public static func data<T: CSVExportable>(for rows: [T], sheetName: String) throws -> Data {
-        try data(header: T.csvHeader, rows: rows.map(\.csvRow), sheetName: sheetName)
+        try data(header: T.csvHeader, columnTypes: T.xlsxColumnTypes, rows: rows.map(\.csvRow), sheetName: sheetName)
     }
 
-    public static func data(header: [String], rows: [[String]], sheetName: String) throws -> Data {
+    public static func data(header: [String], columnTypes: [XLSXColumnType], rows: [[String]], sheetName: String) throws -> Data {
+        precondition(columnTypes.count == header.count, "xlsxColumnTypes must have exactly one entry per csvHeader column")
         let archive = try Archive(accessMode: .create)
         let safeSheetName = sanitize(sheetName: sheetName)
 
@@ -21,7 +34,7 @@ public enum XLSXWriter {
         try add(rootRelsXML, to: archive, at: "_rels/.rels")
         try add(workbookXML(sheetName: safeSheetName), to: archive, at: "xl/workbook.xml")
         try add(workbookRelsXML, to: archive, at: "xl/_rels/workbook.xml.rels")
-        try add(worksheetXML(header: header, rows: rows), to: archive, at: "xl/worksheets/sheet1.xml")
+        try add(worksheetXML(header: header, columnTypes: columnTypes, rows: rows), to: archive, at: "xl/worksheets/sheet1.xml")
 
         guard let result = archive.data else {
             throw XLSXError.archiveProducedNoData
@@ -82,24 +95,27 @@ public enum XLSXWriter {
         """
     }
 
-    private static func worksheetXML(header: [String], rows: [[String]]) -> String {
+    private static func worksheetXML(header: [String], columnTypes: [XLSXColumnType], rows: [[String]]) -> String {
         var xml = #"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>"#
         xml += #"<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>"#
 
-        xml += row(index: 1, values: header)
+        // The header row is always text — a column titled "1234" isn't a
+        // number, and headers are always plain strings anyway.
+        xml += row(index: 1, values: header, columnTypes: Array(repeating: .text, count: header.count))
         for (offset, values) in rows.enumerated() {
-            xml += row(index: offset + 2, values: values)
+            xml += row(index: offset + 2, values: values, columnTypes: columnTypes)
         }
 
         xml += "</sheetData></worksheet>"
         return xml
     }
 
-    private static func row(index: Int, values: [String]) -> String {
+    private static func row(index: Int, values: [String], columnTypes: [XLSXColumnType]) -> String {
         var xml = "<row r=\"\(index)\">"
         for (col, value) in values.enumerated() {
             let ref = "\(columnLetter(col))\(index)"
-            if let number = numericValue(value) {
+            let type = col < columnTypes.count ? columnTypes[col] : .text
+            if type == .number, let number = numericCellValue(value) {
                 xml += "<c r=\"\(ref)\"><v>\(number)</v></c>"
             } else {
                 xml += "<c r=\"\(ref)\" t=\"inlineStr\"><is><t xml:space=\"preserve\">\(escapeXML(value))</t></is></c>"
@@ -111,10 +127,11 @@ public enum XLSXWriter {
 
     // MARK: - helpers
 
-    /// Only plain integers/decimals count — never touches things that
-    /// merely look numeric-ish but should stay text (UUIDs, version
-    /// strings like "8.0.3", IPs). Deliberately conservative.
-    private static func numericValue(_ s: String) -> String? {
+    /// Guards against writing an invalid `<v>` for a column that's declared
+    /// `.number` but whose value, for this particular row, is empty (an
+    /// unset optional metric) or otherwise not actually parseable —
+    /// degrades to a text cell rather than producing malformed XLSX.
+    private static func numericCellValue(_ s: String) -> String? {
         guard !s.isEmpty, s != "-" else { return nil }
         guard Int(s) != nil || Double(s) != nil else { return nil }
         return s

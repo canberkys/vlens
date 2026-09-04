@@ -3,6 +3,22 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.3.3] - 2026-09-05 (+03)
+
+### Fixed
+- **XLSX export silently converted text into numbers.** A cell's type used
+  to be guessed from its value ("does this parse as a number?"), which
+  mangled a VM literally named `00123` into the number `123` (the leading
+  zero is gone) and a two-part version string like `8.0` into the number
+  `8` — both real, unremarkable-looking data, not edge cases. Every column
+  across every exportable model now declares its own type
+  (`CSVExportable.xlsxColumnTypes`, text or number) instead of the value
+  being sniffed at write time — CPU/RAM/capacity columns stay numeric,
+  names/UUIDs/versions/IPs stay text regardless of what they look like.
+  This also gives a future combined "export everything" a single already-
+  declared source of truth for each column's type, rather than needing its
+  own type-sniffing logic.
+
 ## [1.3.2] - 2026-09-05 (+03)
 
 ### Fixed
