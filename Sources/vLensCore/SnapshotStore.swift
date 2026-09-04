@@ -53,6 +53,16 @@ public struct SnapshotStore: Sendable {
         try persist(all)
     }
 
+    /// Bulk delete — one load/persist round trip for the whole set instead
+    /// of calling `delete(id:)` in a loop (which would re-read and re-write
+    /// the file once per snapshot). Used by the Snapshots tab's multi-select
+    /// "Delete Selected" action.
+    public func delete(ids: Set<UUID>) throws {
+        var all = loadAll()
+        all.removeAll { ids.contains($0.id) }
+        try persist(all)
+    }
+
     private func persist(_ snapshots: [InventorySnapshot]) throws {
         let dir = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

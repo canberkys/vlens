@@ -26,6 +26,8 @@ struct SnapshotsTabView: View {
     @State private var baselineID: UUID?
     @State private var currentID: UUID?
     @State private var pendingDeletion: InventorySnapshot?
+    @State private var selectedSnapshotIDs: Set<UUID> = []
+    @State private var pendingBulkDeletion = false
 
     var body: some View {
         HSplitView {
@@ -67,7 +69,29 @@ struct SnapshotsTabView: View {
                     description: Text("Take a snapshot to start tracking this vCenter's inventory over time.")
                 )
             } else {
-                List(rows) { snapshot in
+                if !selectedSnapshotIDs.isEmpty {
+                    HStack {
+                        Text("\(selectedSnapshotIDs.count) selected")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Deselect All") { selectedSnapshotIDs.removeAll() }
+                            .font(.caption)
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.blue)
+                        Button(role: .destructive) {
+                            pendingBulkDeletion = true
+                        } label: {
+                            Label("Delete Selected", systemImage: "trash")
+                        }
+                        .font(.caption)
+                        .buttonStyle(.borderless)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    Divider()
+                }
+                List(rows, selection: $selectedSnapshotIDs) { snapshot in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: 4) {
@@ -110,6 +134,7 @@ struct SnapshotsTabView: View {
             Button("Cancel", role: .cancel) { pendingDeletion = nil }
             Button("Delete", role: .destructive) {
                 if let pendingDeletion {
+                    selectedSnapshotIDs.remove(pendingDeletion.id)
                     viewModel.deleteSnapshot(pendingDeletion)
                 }
                 pendingDeletion = nil
@@ -118,6 +143,18 @@ struct SnapshotsTabView: View {
             if let pendingDeletion {
                 Text("\"\(pendingDeletion.displayLabel)\" will be permanently removed. This can't be undone.")
             }
+        }
+        .alert(
+            "Delete \(selectedSnapshotIDs.count) snapshots?",
+            isPresented: $pendingBulkDeletion
+        ) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                viewModel.deleteSnapshots(ids: selectedSnapshotIDs)
+                selectedSnapshotIDs.removeAll()
+            }
+        } message: {
+            Text("This can't be undone.")
         }
     }
 

@@ -464,6 +464,12 @@ final class ConnectionViewModel {
         loadSnapshotHistory()
     }
 
+    /// Multi-select "Delete Selected" in the Snapshots tab.
+    func deleteSnapshots(ids: Set<UUID>) {
+        try? snapshotStore.delete(ids: ids)
+        loadSnapshotHistory()
+    }
+
     /// Standalone action, not part of `connectAndListVMs`/`performCollection`
     /// — see the doc comment on `collectPerformanceAction` in
     /// `helper/main.go`. Safe to call repeatedly with a different

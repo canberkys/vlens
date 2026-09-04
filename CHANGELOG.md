@@ -3,6 +3,15 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.1.3] - 2026-09-04 16:52 (+03)
+
+### Added
+- Snapshots tab: multi-select rows and delete several at once ("N
+  selected" bar with Deselect All / Delete Selected, one confirmation for
+  the whole batch) instead of only one-at-a-time via each row's trash
+  button. `SnapshotStore` gained a batch `delete(ids:)` — one load/persist
+  round trip for the whole selection instead of one per snapshot.
+
 ## [1.1.2] - 2026-09-04 16:42 (+03)
 
 ### Changed

@@ -55,6 +55,22 @@ private func makeMetrics(vmCountTotal: Int = 10) -> InventorySnapshotMetrics {
     #expect(loaded[0].id == keep.id)
 }
 
+@Test func bulkDeleteRemovesOnlyTheMatchingSnapshots() throws {
+    let store = makeStore()
+    let keep = InventorySnapshot(vCenterHost: "vcenter.local", label: "keep", metrics: makeMetrics())
+    let removeA = InventorySnapshot(vCenterHost: "vcenter.local", label: "removeA", metrics: makeMetrics())
+    let removeB = InventorySnapshot(vCenterHost: "vcenter.local", label: "removeB", metrics: makeMetrics())
+    try store.add(keep)
+    try store.add(removeA)
+    try store.add(removeB)
+
+    try store.delete(ids: [removeA.id, removeB.id])
+
+    let loaded = store.loadAll()
+    #expect(loaded.count == 1)
+    #expect(loaded[0].id == keep.id)
+}
+
 private func makeVM(name: String, uuid: String) -> VirtualMachineInfo {
     VirtualMachineInfo(
         name: name, powerState: .poweredOn, template: false, guestOSFullName: nil,
