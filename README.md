@@ -7,7 +7,7 @@
     <img src="https://img.shields.io/badge/macOS-14%2B-black?style=flat-square&logo=apple" alt="macOS 14+">
     <img src="https://img.shields.io/badge/Swift-6-FA7343?style=flat-square&logo=swift&logoColor=white" alt="Swift 6">
     <img src="https://img.shields.io/badge/Go-govmomi-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go/govmomi">
-    <img src="https://img.shields.io/badge/Status-pre--release-orange?style=flat-square" alt="Pre-release">
+    <img src="https://img.shields.io/github/v/release/canberkys/vlens?style=flat-square&label=release" alt="Latest release">
   </p>
 </div>
 
@@ -26,11 +26,13 @@ trends, point-in-time inventory snapshots you can compare, a one-page PDF
 management report, and quiet awareness of published VMware security
 advisories.
 
-**Status**: pre-release, still in active development. Signed builds exist
-(`scripts/release.sh`) but aren't notarized or distributed yet — see
-[Building from source](#building-from-source) below. Not yet validated
-against a real vCenter 7/8/9 environment (everything so far is verified
-against [vcsim](#testing-without-a-real-vcenter), govmomi's protocol-accurate
+**Status**: signed, notarized, and distributed — see
+[Releases](https://github.com/canberkys/vlens/releases) for a ready-to-run
+DMG, or [Building from source](#building-from-source) below. Sparkle checks
+that feed automatically and offers in-app updates. Still in active
+development, and not yet validated against a real vCenter 7/8/9 environment
+(everything so far is verified against
+[vcsim](#testing-without-a-real-vcenter), govmomi's protocol-accurate
 simulator).
 
 ---
@@ -146,11 +148,11 @@ draft (email or GitHub issue) that you review and send yourself.
 ## Roadmap
 
 See `CLAUDE.md` (project context/status log) for the detailed, actively
-maintained roadmap. Near-term: notarized signed releases, Sparkle-based
-auto-update, real vCenter 7/8/9 validation once VPN access allows it.
+maintained roadmap. Near-term: real vCenter 7/8/9 validation once VPN
+access allows it.
 
 ---
 
 ## License
 
-Private repository — license not yet decided.
+Public repository — license not yet decided.

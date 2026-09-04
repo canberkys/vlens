@@ -36,7 +36,7 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if viewModel.vms.isEmpty {
+            if !viewModel.isConnected {
                 connectForm
                     .frame(width: 420, height: 480)
                     .onAppear {
