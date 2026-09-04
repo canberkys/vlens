@@ -8,6 +8,7 @@ struct ContentView: View {
     private let tutorialStore = TutorialStore()
     @State private var showWelcome = false
     @State private var showAdvisories = false
+    @FocusState private var isSearchFocused: Bool
 
     /// `List(selection:)` wants `Binding<AppTab?>`; the rest of this file
     /// switches on plain `AppTab` (simpler, and a sidebar row is never
@@ -217,6 +218,13 @@ struct ContentView: View {
             Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
             TextField("Search (VM, host, cluster...)", text: $viewModel.searchText)
                 .textFieldStyle(.plain)
+                .focused($isSearchFocused)
+            // Cmd+F is the standard macOS "find/search" shortcut — this app
+            // has no menu-based Find, so without this, Cmd+F silently does
+            // nothing, which is worse than not having a shortcut at all.
+            Button("Focus Search") { isSearchFocused = true }
+                .keyboardShortcut("f", modifiers: .command)
+                .hidden()
             if !viewModel.searchText.isEmpty {
                 Button {
                     viewModel.searchText = ""

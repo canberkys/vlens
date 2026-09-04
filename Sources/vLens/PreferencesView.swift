@@ -75,16 +75,21 @@ struct PreferencesView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 ForEach(SnapshotMetricDescriptor.all, id: \.key) { descriptor in
-                    Toggle(descriptor.label, isOn: Binding(
-                        get: { viewModel.enabledSnapshotMetricKeys.contains(descriptor.key) },
-                        set: { isOn in
-                            if isOn {
-                                viewModel.enabledSnapshotMetricKeys.insert(descriptor.key)
-                            } else {
-                                viewModel.enabledSnapshotMetricKeys.remove(descriptor.key)
+                    HStack(spacing: 4) {
+                        Toggle(descriptor.label, isOn: Binding(
+                            get: { viewModel.enabledSnapshotMetricKeys.contains(descriptor.key) },
+                            set: { isOn in
+                                if isOn {
+                                    viewModel.enabledSnapshotMetricKeys.insert(descriptor.key)
+                                } else {
+                                    viewModel.enabledSnapshotMetricKeys.remove(descriptor.key)
+                                }
                             }
-                        }
-                    ))
+                        ))
+                        Image(systemName: "info.circle")
+                            .foregroundStyle(.secondary)
+                            .help(descriptor.helpText)
+                    }
                 }
             }
 

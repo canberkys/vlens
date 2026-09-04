@@ -64,7 +64,7 @@ struct SnapshotsTabView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(snapshot.displayLabel).fontWeight(.medium)
-                            Text(snapshot.takenAt.formatted(date: .abbreviated, time: .shortened))
+                            Text(subtitle(for: snapshot))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -204,6 +204,24 @@ struct SnapshotsTabView: View {
         case .lowerIsBetter: return improved ? .red : .green
         }
     }
+
+    /// When there's no custom label, `displayLabel` already shows the
+    /// absolute timestamp as the title — repeating it here would just be
+    /// noise (this is exactly the bug the user's screenshot caught: both
+    /// lines showing the same "Sep 4, 2026 at 13:33"). Show a relative time
+    /// instead; when there IS a custom label, the absolute time is new
+    /// information, so keep it alongside the relative time.
+    private func subtitle(for snapshot: InventorySnapshot) -> String {
+        let relative = Self.relativeFormatter.localizedString(for: snapshot.takenAt, relativeTo: Date())
+        guard let label = snapshot.label, !label.isEmpty else { return relative }
+        return "\(snapshot.takenAt.formatted(date: .abbreviated, time: .shortened)) · \(relative)"
+    }
+
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return formatter
+    }()
 
     /// Defaults to comparing the two most recent snapshots — `rows` is
     /// already sorted newest-first by `ConnectionViewModel.loadSnapshotHistory`.

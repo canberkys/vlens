@@ -22,9 +22,13 @@ public struct InventorySnapshot: Codable, Identifiable, Sendable {
     }
 
     /// Display label wherever a UI needs one — the user's note if they gave
-    /// one, otherwise a formatted timestamp.
+    /// one, otherwise a formatted timestamp. Uses `.standard` time style
+    /// (includes seconds) rather than `.shortened` specifically so two
+    /// unlabeled snapshots taken close together (a real, common case — e.g.
+    /// testing the Compare panel, or a scripted before/after capture) don't
+    /// render as visually identical minute-granularity timestamps.
     public var displayLabel: String {
         if let label, !label.isEmpty { return label }
-        return takenAt.formatted(date: .abbreviated, time: .shortened)
+        return takenAt.formatted(date: .abbreviated, time: .standard)
     }
 }

@@ -79,21 +79,55 @@ public struct SnapshotMetricDescriptor: Sendable {
     public let label: String
     public let direction: MetricComparisonDirection
     public let value: @Sendable (InventorySnapshotMetrics) -> Double?
+    /// Shown as a hover tooltip next to the toggle in Preferences — these
+    /// metrics have no other explanation in the UI besides the label itself.
+    public let helpText: String
 
     public static let all: [SnapshotMetricDescriptor] = [
-        SnapshotMetricDescriptor(key: "vmCountTotal", label: "Total VMs", direction: .neutral, value: { Double($0.vmCountTotal) }),
-        SnapshotMetricDescriptor(key: "vmCountPoweredOn", label: "Powered-On VMs", direction: .neutral, value: { Double($0.vmCountPoweredOn) }),
-        SnapshotMetricDescriptor(key: "vmCountPoweredOff", label: "Powered-Off VMs", direction: .neutral, value: { Double($0.vmCountPoweredOff) }),
-        SnapshotMetricDescriptor(key: "hostCount", label: "Hosts", direction: .neutral, value: { Double($0.hostCount) }),
-        SnapshotMetricDescriptor(key: "clusterCount", label: "Clusters", direction: .neutral, value: { Double($0.clusterCount) }),
-        SnapshotMetricDescriptor(key: "datastoreCount", label: "Datastores", direction: .neutral, value: { Double($0.datastoreCount) }),
+        SnapshotMetricDescriptor(
+            key: "vmCountTotal", label: "Total VMs", direction: .neutral, value: { Double($0.vmCountTotal) },
+            helpText: "Every VM registered in the vCenter, powered on or off."
+        ),
+        SnapshotMetricDescriptor(
+            key: "vmCountPoweredOn", label: "Powered-On VMs", direction: .neutral, value: { Double($0.vmCountPoweredOn) },
+            helpText: "VMs currently running."
+        ),
+        SnapshotMetricDescriptor(
+            key: "vmCountPoweredOff", label: "Powered-Off VMs", direction: .neutral, value: { Double($0.vmCountPoweredOff) },
+            helpText: "VMs currently shut down."
+        ),
+        SnapshotMetricDescriptor(
+            key: "hostCount", label: "Hosts", direction: .neutral, value: { Double($0.hostCount) },
+            helpText: "ESXi hosts managed by this vCenter."
+        ),
+        SnapshotMetricDescriptor(
+            key: "clusterCount", label: "Clusters", direction: .neutral, value: { Double($0.clusterCount) },
+            helpText: "vSphere clusters."
+        ),
+        SnapshotMetricDescriptor(
+            key: "datastoreCount", label: "Datastores", direction: .neutral, value: { Double($0.datastoreCount) },
+            helpText: "Datastores visible to this vCenter."
+        ),
         SnapshotMetricDescriptor(
             key: "datastoreMinFreePercent", label: "Lowest Datastore Free %", direction: .higherIsBetter,
-            value: { $0.datastoreMinFreePercent }
+            value: { $0.datastoreMinFreePercent },
+            helpText: "The single most-full datastore's free space % — not an average, so one nearly-full datastore can't hide behind healthy ones."
         ),
-        SnapshotMetricDescriptor(key: "activeSnapshotCount", label: "Active Snapshots", direction: .lowerIsBetter, value: { Double($0.activeSnapshotCount) }),
-        SnapshotMetricDescriptor(key: "toolsNotOKCount", label: "VMs with Tools Issues", direction: .lowerIsBetter, value: { Double($0.toolsNotOKCount) }),
-        SnapshotMetricDescriptor(key: "vHealthRedCount", label: "vHealth Red Findings", direction: .lowerIsBetter, value: { Double($0.vHealthRedCount) }),
-        SnapshotMetricDescriptor(key: "vHealthYellowCount", label: "vHealth Yellow Findings", direction: .lowerIsBetter, value: { Double($0.vHealthYellowCount) })
+        SnapshotMetricDescriptor(
+            key: "activeSnapshotCount", label: "Active Snapshots", direction: .lowerIsBetter, value: { Double($0.activeSnapshotCount) },
+            helpText: "Active vSphere VM snapshots across all VMs — the vSnapshot tab's concept, unrelated to this feature's own \"Snapshots.\""
+        ),
+        SnapshotMetricDescriptor(
+            key: "toolsNotOKCount", label: "VMs with Tools Issues", direction: .lowerIsBetter, value: { Double($0.toolsNotOKCount) },
+            helpText: "VMs where VMware Tools isn't installed, isn't running, or is out of date."
+        ),
+        SnapshotMetricDescriptor(
+            key: "vHealthRedCount", label: "vHealth Red Findings", direction: .lowerIsBetter, value: { Double($0.vHealthRedCount) },
+            helpText: "Red-severity findings on the vHealth tab at the time of the snapshot."
+        ),
+        SnapshotMetricDescriptor(
+            key: "vHealthYellowCount", label: "vHealth Yellow Findings", direction: .lowerIsBetter, value: { Double($0.vHealthYellowCount) },
+            helpText: "Yellow-severity findings on the vHealth tab at the time of the snapshot."
+        )
     ]
 }

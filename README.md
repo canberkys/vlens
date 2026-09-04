@@ -1,7 +1,7 @@
 <div align="center">
   <img src="Resources/AppIcon.iconset/icon_256x256.png" width="128" alt="vLens icon" />
   <h1>vLens</h1>
-  <p><strong>A native macOS alternative to RVTools.</strong></p>
+  <p><strong>Native macOS vCenter/ESXi inventory — inspired by RVTools, with features RVTools doesn't have.</strong></p>
 
   <p>
     <img src="https://img.shields.io/badge/macOS-14%2B-black?style=flat-square&logo=apple" alt="macOS 14+">
@@ -19,12 +19,12 @@ to CSV or XLSX. If you've used RVTools on Windows, the data will look
 familiar; the app won't. No .NET, no VM/Wine, no Windows box just to run a
 reporting tool.
 
-vLens covers essentially everything RVTools does (27 tabs total, 23 of
-RVTools' 24 documented tabs — only `vFileInfo` is missing) and adds a few
-things RVTools doesn't have: historical
-performance trends, point-in-time inventory snapshots you can compare, a
-one-page PDF management report, and quiet awareness of published VMware
-security advisories.
+It covers essentially everything RVTools does (27 tabs total, 23 of RVTools'
+24 documented tabs — only `vFileInfo` is missing) — but it isn't just a port.
+vLens adds several things RVTools doesn't have: historical performance
+trends, point-in-time inventory snapshots you can compare, a one-page PDF
+management report, and quiet awareness of published VMware security
+advisories.
 
 **Status**: pre-release, still in active development. Signed builds exist
 (`scripts/release.sh`) but aren't notarized or distributed yet — see

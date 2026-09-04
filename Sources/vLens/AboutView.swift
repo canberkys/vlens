@@ -25,7 +25,7 @@ struct AboutView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
-            Text("A native macOS alternative to RVTools.")
+            Text("Native vCenter/ESXi inventory — inspired by RVTools, with features RVTools doesn't have.")
                 .font(.callout)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)

@@ -1,9 +1,13 @@
 # vLens - Claude Code Project Context
 
 ## Proje Özeti
-RVTools'un macOS-native alternatifi. vCenter/ESXi ortamlarından envanter bilgisi
-toplayan, hızlı, modern, native SwiftUI desktop uygulaması. `~/Documents/Projects/vInventory`
-(Tauri/React, Windows-only, askıda) ile ilgisi yok — ayrı, macOS-first bir proje.
+vCenter/ESXi ortamlarından envanter bilgisi toplayan, hızlı, modern, native
+SwiftUI desktop uygulaması — RVTools'tan esinlenildi, ama sadece bir port
+değil: RVTools'ta olmayan birden fazla kendine özgü özelliği var (vPerformance,
+Snapshot/Compare, PDF rapor, VMSA farkındalığı). "RVTools'un alternatifi"
+demek yerine bu şekilde çerçevelenmeli — kullanıcı notu (2026-09-04).
+`~/Documents/Projects/vInventory` (Tauri/React, Windows-only, askıda) ile
+ilgisi yok — ayrı, macOS-first bir proje.
 
 Detaylı mimari gerekçe ve tam MVP kapsamı:
 `~/.claude/plans/swirling-painting-snail.md`
@@ -136,6 +140,20 @@ go build -o vcsim/vcsim ./vcsim && ./vcsim/vcsim
 
 ## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) 9 maddelik kullanıcı geri bildirimi — 7'si hemen
+      uygulandı** — mesajlaşma düzeltmesi ("alternative to RVTools" değil,
+      "esinlenildi + kendine özgü özellikler"), Snapshot metriklerine (i) info
+      icon, Help'in Tips.app tarzı yeniden tasarımı (renkli ikon rozetleri) +
+      2 yeni konu (Security Advisories, Feedback), Cmd+F arama kısayolı, VMSA
+      popover'ının yakınlığa göre gruplanması + etkilenen ürün tag'leri, ve
+      kullanıcının ekran görüntüsüyle yakaladığı gerçek bir bug (Snapshot liste
+      satırında label yokken başlık+alt satır aynı dakika-hassasiyetli tarihi
+      tekrarlıyordu). Detaylar `~/.claude/plans/swirling-painting-snail.md`'de.
+      **3 madde mimari karar gerektirdiği için ertelendi**: snapshot depolama
+      konumunun kullanıcı tarafından seçilebilir olması, snapshot'ın
+      basic/full-detail seçimi, ve rapor/snapshot toplama zamanlayıcısı (zaten
+      bilinen "Automation" roadmap boşluğu) — bunlar için kısa bir `/plan`
+      turu önerildi.
 - [x] **(2026-09-04) README.md + About penceresi eklendi (Faz 7)** — README
       PkgLens'in yapısıyla tutarlı ama vLens'in henüz dağıtılmamış durumuna
       uyarlandı (Download bölümü yok, lisans "henüz karar verilmedi").

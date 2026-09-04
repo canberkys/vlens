@@ -1001,10 +1001,14 @@ packaged app) and falls back to the same values hardcoded in
 **Help** (`Sources/vLens/HelpView.swift`) replaces the default Help menu item
 (`CommandGroup(replacing: .help)` in `vLensApp.swift`) rather than linking out
 to an external site. `HelpTopic` is a small enum (Getting Started, Tabs,
-Snapshots & Compare, vPerformance, Export & Reports, Preferences) with
-hand-written, user-facing copy — deliberately not a rendering of this
-reference doc, which is written for contributors, not end users. Opens as its
-own `Window` scene, Cmd+Shift+? or Help menu.
+Snapshots & Compare, vPerformance, Security Advisories, Export & Reports,
+Feedback & Bug Reports, Preferences) with hand-written, user-facing copy —
+deliberately not a rendering of this reference doc, which is written for
+contributors, not end users. Opens as its own `Window` scene, Cmd+Shift+? or
+Help menu. Styled loosely after macOS' own Tips app (user feedback,
+2026-09-04) — each topic carries an `accentColor` and renders as a colored
+`RoundedRectangle` icon badge, in both the sidebar rows and a larger version
+at the top of the detail pane, rather than a plain text list.
 
 **Onboarding** (`Sources/vLens/Tutorial.swift`, `Sources/vLensCore/TutorialStore.swift`):
 a first-run welcome (`WelcomeOverlayView`, one dismissible sheet over the
@@ -1074,6 +1078,15 @@ when the count is zero, rather than a permanently-present-but-uninformative
 indicator. Tapping it opens `SecurityAdvisoriesView`, a popover listing each
 advisory's severity, publish date, and title, linking out to Broadcom's own
 advisory page for the full text.
+
+**Grouped by recency and tagged by affected product** (user feedback,
+2026-09-04) — advisories render under section headers (New/This Month/This
+Year/Older, bucketed off `publishedDate`) instead of one flat list, and each
+row shows small tag chips parsed from `affectedProducts` (e.g. `ESXi`,
+`vCenter`, `Workstation`) so a user who doesn't run a given product can tell
+without clicking through. The API's own truncation quirk (`"VMware
+Fusion,VMware Work..."` — see above) is handled by stripping any `...`-suffixed
+fragment rather than showing a meaningless partial word as its own tag.
 
 **Tested against a real captured response** (`VMSAClientTests.swift`), not a
 guessed schema — the fixture JSON is a verbatim response from a live request
