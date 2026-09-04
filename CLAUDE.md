@@ -153,6 +153,13 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) Gerçek app icon + ilk GitHub Release**: kullanıcı server
+      rack + magnifying glass temalı, düz macOS-stili bir icon tasarladı
+      (placeholder SF Symbol'ün yerine) — `Resources/AppIcon.icns`/`.iconset`
+      güncellendi, `scripts/release.sh` yeniden çalıştırılıp gerçekten
+      imzalanıp notarize edildi (yeni ikonun pakete girdiği checksum'la
+      doğrulandı), ve `github.com/canberkys/vlens`'e (private) **v1.0.0**
+      olarak `gh release create` ile yayınlandı — DMG asset olarak ekli.
 - [x] **(2026-09-04) Faz 10A tamamlandı — `vlens-cli` (headless snapshot/export)**:
       yeni `.executableTarget("vlens-cli")`, `Sources/vLensCLI/` (`main.swift`,
       `CLIHelperLocator.swift`, `ExportTab.swift`). Komutlar: `list-profiles`,
