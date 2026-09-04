@@ -12,6 +12,11 @@ final class ConnectionViewModel {
     var isConnecting: Bool = false
     var errorMessage: String?
     var isDemoMode: Bool = false
+
+    /// Whether a connection (real or demo) has been established — distinct
+    /// from `vms.isEmpty`, which a real, healthy, zero-VM vCenter would also
+    /// satisfy, incorrectly bouncing the user back to the connect screen.
+    var isConnected: Bool = false
     var lastRefreshedAt: Date?
     var searchText: String = ""
 
@@ -187,6 +192,7 @@ final class ConnectionViewModel {
     func loadDemoData() {
         errorMessage = nil
         isDemoMode = true
+        isConnected = true
         vms = DemoData.virtualMachines()
         cpus = DemoData.cpus(for: vms)
         memory = DemoData.memory(for: vms)
@@ -220,6 +226,7 @@ final class ConnectionViewModel {
 
     func exitDemoMode() {
         isDemoMode = false
+        isConnected = false
         clearAllTabs()
     }
 
@@ -408,6 +415,7 @@ final class ConnectionViewModel {
             vCenterInfo = inventory.vCenter
             recomputeHealthChecks()
             isDemoMode = false
+            isConnected = true
             lastRefreshedAt = Date()
             loadSnapshotHistory()
             if saveCredentials {

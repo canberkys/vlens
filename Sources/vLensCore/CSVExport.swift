@@ -19,9 +19,23 @@ public enum CSVWriter {
         fields.map(escape).joined(separator: ",")
     }
 
+    /// Neutralizes CSV/formula injection: a field starting with `=`, `+`,
+    /// `-`, `@`, tab, or CR is a formula to Excel/Numbers/Sheets when the
+    /// file is opened — vCenter data (VM names, notes) is untrusted input
+    /// that could otherwise execute in the opening spreadsheet app. Prefixing
+    /// with a single quote is the standard mitigation (OWASP CSV injection);
+    /// it displays literally and doesn't affect the field's real value.
+    private static func neutralizeFormulaInjection(_ field: String) -> String {
+        guard let first = field.unicodeScalars.first else { return field }
+        let triggers: Set<Unicode.Scalar> = ["=", "+", "-", "@", "\t", "\r"]
+        guard triggers.contains(first) else { return field }
+        return "'" + field
+    }
+
     /// RFC 4180: quote any field containing a comma, quote, or newline;
     /// double up embedded quotes.
     private static func escape(_ field: String) -> String {
+        let field = neutralizeFormulaInjection(field)
         guard field.contains(where: { $0 == "," || $0 == "\"" || $0.isNewline }) else {
             return field
         }

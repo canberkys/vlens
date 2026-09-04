@@ -160,6 +160,31 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) Aynı review'ın 4 P2 bulgusu daha düzeltildi (v1.3.1)** —
+      kullanıcı "diğer bulgularımız için aksiyonun nedir" diye sordu; kalan
+      8 P2 bulgusunu efor/etkiye göre gruplayıp bir sıra önerdim, en ucuz/net
+      4 tanesini hemen düzelttim. (#10) **CSV formula injection** — `=`/`+`/
+      `-`/`@`/tab/CR ile başlayan hücreler artık tek tırnakla nötrleniyor
+      (OWASP'ın standart mitigasyonu), gerçek bir injection payload'ıyla test
+      edildi. (#12) **VM ID çakışması** — `mapVMInfo`, `Config.Uuid`'i
+      doğrudan (fallback'siz, ve sadece `Config != nil` iken) kullanıyordu;
+      artık diğer her mapper'ın kullandığı `vmID()` fallback'ini (moref'e
+      düşme) kullanıyor — bu narrow bir tutarlılık düzeltmesi, vcsim'de canlı
+      reproduce edilmedi (gerçek VM'lerde Config nil olması son derece nadir),
+      ama zaten test edilmiş paylaşılan bir fonksiyona geçiş olduğu için kod
+      incelemesiyle yeterince doğrulandı. (#6) **Sıfır-VM ortamı "bağlı değil"
+      ile aynı görünüyordu** — ana pencere `vms.isEmpty`'e bakıyordu, gerçek
+      sağlıklı bir sıfır-VM vCenter da bunu sağlıyordu; yeni bir
+      `isConnected` flag'i (`ConnectionViewModel`) bağlantı/demo başarılı
+      olunca true, demo'dan çıkılınca false oluyor, `ContentView` artık ona
+      bakıyor. (#README) **Mesajlaşma tutarsızlığı** — README hâlâ
+      "pre-release"/"not notarized"/"private repository" diyordu, bu turun
+      Faz 3/Sparkle/public-repo işinden önce yazılmış, güncellenmemiş
+      kalmıştı; badge/status paragrafı/lisans satırı gerçek duruma
+      (imzalı+notarize+public+5 gerçek GitHub Release) göre güncellendi.
+      Kalan 4 P2 (refresh/disconnect eksikliği, launchd/CLI UUID riski,
+      performans partial-failure, XLSX sayı-dönüşümü) ve mimari eleştiriler
+      hâlâ backlog'da. `swift build`/`swift test` temiz (63/63, +1 yeni test).
 - [x] **(2026-09-05) Harici bir kod review'ının 4 kritik (P1) bulgusu
       düzeltildi (v1.3.0)** — kullanıcı detaylı, dosya:satır referanslı 12
       maddelik bir profesyonel kod review'ı paylaştı, 4'ü P1/kritik

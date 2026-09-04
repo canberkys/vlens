@@ -29,3 +29,20 @@ import Testing
     let csv = CSVWriter.write([vm])
     #expect(csv.contains("web-01,poweredOn,False"))
 }
+
+@Test func csvWriterNeutralizesFormulaInjection() {
+    let vm = VirtualMachineInfo(
+        name: "=cmd|calc!A1", powerState: .poweredOn, template: false,
+        guestOSFullName: "+SUM(A1:A9)", cpuCount: 2, memoryMiB: 4096,
+        hostName: "-2+3", clusterName: "@import", resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "u1"
+    )
+
+    let csv = CSVWriter.write([vm])
+    let dataLine = csv.components(separatedBy: "\r\n")[1]
+
+    #expect(dataLine.hasPrefix("'=cmd"))
+    #expect(dataLine.contains("'+SUM(A1:A9)"))
+    #expect(dataLine.contains("'-2+3"))
+    #expect(dataLine.contains("'@import"))
+}

@@ -3,6 +3,41 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.3.1] - 2026-09-05 (+03)
+
+### Fixed
+- **CSV export was vulnerable to formula injection.** A cell starting with
+  `=`, `+`, `-`, `@`, tab, or CR (e.g. a VM named `=cmd|'/c calc'!A1`) is
+  interpreted as a formula by Excel/Numbers/Sheets when the file is opened —
+  vCenter data is untrusted input. Such fields are now prefixed with a
+  single quote (the standard OWASP mitigation), which displays literally
+  without changing the field's value.
+- **Every VM without a resolvable UUID got the same empty ID**, causing
+  collisions in the GUI and exports. `mapVMInfo` set `VMUUID` directly from
+  `vm.Config.Uuid` inside a guard that skipped it entirely when `Config`
+  was nil; now uses the same `vmID()` fallback (real UUID, or the VM's own
+  moref) every other per-VM mapper already used.
+- **A real, healthy vCenter with zero VMs looked identical to "not
+  connected."** The main window gated on `vms.isEmpty`, which a real
+  environment satisfies as easily as never having connected — bouncing the
+  user back to the connect screen instead of showing an empty inventory.
+  Now tracked by a dedicated `isConnected` flag, set on a successful
+  connection or demo load and cleared on exiting demo mode.
+- **README described a pre-release, unnotarized, private project** — badge,
+  status paragraph, and license line all predated this session's signing/
+  notarization/Sparkle/public-repo work and had gone stale. Updated to
+  reflect the real, current state (signed, notarized, public, five
+  published GitHub releases).
+
+### Changed
+- Also fixes 4 of the 12 findings from the same external code review that
+  produced 1.3.0's fixes (findings #6, #10, #12, plus the README
+  inconsistency called out in its architectural commentary) — see that
+  entry for the 4 critical fixes. The remaining P2 findings (refresh/
+  disconnect UX, performance-collection partial failures, launchd/CLI
+  profile resolution, XLSX numeric-conversion aggressiveness) remain
+  backlog for a future pass.
+
 ## [1.3.0] - 2026-09-05 (+03)
 
 ### Fixed

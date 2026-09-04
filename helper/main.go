@@ -1645,10 +1645,14 @@ func mapVMInfo(vm mo.VirtualMachine, hostName string, clusterName *string, poolN
 		HostName:            hostName,
 		ClusterName:         clusterName,
 		ConsolidationNeeded: vm.Runtime.ConsolidationNeeded,
+		// vmID falls back to the VM's moref when Config is nil or Config.Uuid
+		// is empty — matching every other per-VM mapper (mapVMCPU, etc.).
+		// Using vm.Config.Uuid directly here left every such VM with an
+		// identical empty VMUUID, colliding in the GUI/exports.
+		VMUUID: vmID(vm),
 	}
 	if vm.Config != nil {
 		info.Template = vm.Config.Template
-		info.VMUUID = vm.Config.Uuid
 		if vm.Config.GuestFullName != "" {
 			v := vm.Config.GuestFullName
 			info.GuestOSFullName = &v
