@@ -160,6 +160,30 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) #11: XLSX hücre tipi artık kolon tanımından geliyor,
+      değerden sniff edilmiyor (v1.3.3)** — kullanıcının sıralamasında #8'den
+      sonraki adım. Eski kod "değer Int/Double olarak parse oluyor mu"
+      testiyle karar veriyordu ve kod içindeki "deliberately conservative"
+      yorumuna rağmen bu gerçekte doğru değildi: `Int("00123")` başarıyla
+      123'e parse oluyor (baştaki sıfırlar kayboluyor), `Double("8.0")` da
+      8'e parse oluyor (iki parçalı versiyon string'i sayıya dönüşüyor) —
+      ikisi de review'ın verdiği somut örneklerdi. Düzeltme: `CSVExportable`
+      protokolüne yeni bir `xlsxColumnTypes: [XLSXColumnType]` (`.text`/
+      `.number`, `csvHeader` ile birebir aynı sırada) eklendi — 28 conformance'ın
+      (23 model + `InventorySnapshot`'ın dinamik metrik kolonları +
+      `SnapshotsTabView`'daki `CompareRow`) her biri kendi kolonlarının
+      gerçek tipini tek tek deklare ediyor. `XLSXWriter` artık değere hiç
+      bakmadan (sadece boş/parse-edilemez bir `.number` hücresi için text'e
+      düşme güvenlik ağı hariç) bu deklarasyona göre hücre tipi yazıyor. 2
+      yeni regresyon testi (`00123` VM adı ve `8.0` vApp versiyonu, ikisi de
+      gerçek bir zip'ten çıkarılan XML'e karşı doğrulandı — text kaldıklarını
+      VE aynı satırdaki gerçek sayısal bir kolonun (CPUs) hâlâ sayı olarak
+      yazıldığını kanıtlıyor). Bu değişiklik ayrıca gelecekteki bir "tüm
+      envanteri tek dosyaya aktar" özelliği için de temel oluşturuyor — her
+      kolonun tipi zaten tek bir yerde deklare edilmiş oluyor. `swift
+      build`/`swift test` temiz (65/65, +2 yeni test). **Sırada #5
+      (bağlantı yaşam döngüsü: refresh/disconnect/switch), sonra #9
+      (otomasyon)**.
 - [x] **(2026-09-05) #8: Performans toplama artık kapsamını raporluyor +
       çoklu disk metrikleri tanımlı bir kuralla birleştiriliyor (v1.3.2)** —
       kullanıcı kalan 4 P2 için veri doğruluğuna öncelik veren bir sıra

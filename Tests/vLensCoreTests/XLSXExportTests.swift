@@ -58,7 +58,7 @@ import ZIPFoundation
 
 @Test func xlsxSanitizesLongSheetNames() throws {
     let longName = String(repeating: "x", count: 50)
-    let xlsxData = try XLSXWriter.data(header: ["A"], rows: [["1"]], sheetName: longName)
+    let xlsxData = try XLSXWriter.data(header: ["A"], columnTypes: [.number], rows: [["1"]], sheetName: longName)
     let archive = try Archive(data: xlsxData, accessMode: .read)
     guard let workbookEntry = archive["xl/workbook.xml"] else {
         Issue.record("workbook.xml missing from archive")
@@ -68,4 +68,52 @@ import ZIPFoundation
     _ = try archive.extract(workbookEntry) { extracted.append($0) }
     let xml = String(data: extracted, encoding: .utf8) ?? ""
     #expect(!xml.contains(longName)) // must have been truncated to Excel's 31-char limit
+}
+
+/// Direct regression test for review finding #11: cell type must come from
+/// the column's declaration, not from sniffing whether the string value
+/// happens to parse as a number — a VM literally named "00123" would
+/// otherwise become the number 123, silently losing the leading zero.
+@Test func xlsxKeepsLeadingZeroLookingNameAsText() throws {
+    let vm = VirtualMachineInfo(
+        name: "00123", powerState: .poweredOn, template: false,
+        guestOSFullName: nil, cpuCount: 4, memoryMiB: 8192,
+        hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "u1"
+    )
+
+    let xlsxData = try XLSXWriter.data(for: [vm], sheetName: "vInfo")
+    let archive = try Archive(data: xlsxData, accessMode: .read)
+    guard let sheetEntry = archive["xl/worksheets/sheet1.xml"] else {
+        Issue.record("sheet1.xml missing from archive")
+        return
+    }
+    var extracted = Data()
+    _ = try archive.extract(sheetEntry) { extracted.append($0) }
+    let xml = String(data: extracted, encoding: .utf8) ?? ""
+
+    // "VM" is declared .text — must survive as a string cell, not become
+    // the number 123.
+    #expect(xml.contains("<is><t xml:space=\"preserve\">00123</t></is>"))
+    // "CPUs" (a genuinely numeric column) must still be a real number cell.
+    #expect(xml.contains("<c r=\"E2\"><v>4</v></c>"))
+}
+
+/// Same finding, the other example the reviewer gave: a two-part version
+/// string like "8.0" must not silently become the number 8.
+@Test func xlsxKeepsVersionStringAsText() throws {
+    let vApp = VAppInfo(id: "vapp-1", name: "app1", ownerName: nil, numVMs: 2, productName: "Acme", productVersion: "8.0")
+
+    let xlsxData = try XLSXWriter.data(for: [vApp], sheetName: "vApp")
+    let archive = try Archive(data: xlsxData, accessMode: .read)
+    guard let sheetEntry = archive["xl/worksheets/sheet1.xml"] else {
+        Issue.record("sheet1.xml missing from archive")
+        return
+    }
+    var extracted = Data()
+    _ = try archive.extract(sheetEntry) { extracted.append($0) }
+    let xml = String(data: extracted, encoding: .utf8) ?? ""
+
+    #expect(xml.contains("<is><t xml:space=\"preserve\">8.0</t></is>"))
+    #expect(!xml.contains("<v>8</v>"))
 }
