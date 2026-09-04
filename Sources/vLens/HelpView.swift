@@ -7,12 +7,13 @@ import SwiftUI
 /// own Tips app — a colored icon badge per topic, sidebar and detail pane
 /// both using it, rather than a plain text-only list.
 enum HelpTopic: String, CaseIterable, Identifiable {
-    case gettingStarted, tabs, snapshots, performance, securityAdvisories, exportReports, feedback, preferences
+    case whatsNew, gettingStarted, tabs, snapshots, performance, securityAdvisories, exportReports, feedback, preferences
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
+        case .whatsNew: return "What's New"
         case .gettingStarted: return "Getting Started"
         case .tabs: return "Tabs"
         case .snapshots: return "Snapshots & Compare"
@@ -26,6 +27,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
+        case .whatsNew: return "sparkles"
         case .gettingStarted: return "play.circle.fill"
         case .tabs: return "tablecells.fill"
         case .snapshots: return "clock.arrow.circlepath"
@@ -42,6 +44,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
     /// sidebar rather than reading every label.
     var accentColor: Color {
         switch self {
+        case .whatsNew: return .yellow
         case .gettingStarted: return .green
         case .tabs: return .blue
         case .snapshots: return .purple
@@ -53,8 +56,14 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Unused for `.whatsNew` — that topic renders the bundled
+    /// `CHANGELOG.md` as Markdown instead (see `HelpView.changelogText`),
+    /// so its history can't drift from what `scripts/release.sh` actually
+    /// ships. A hand-written string here would just be a second copy to
+    /// keep in sync by hand.
     var body: String {
         switch self {
+        case .whatsNew: return ""
         case .gettingStarted:
             return """
             Connect with your vCenter's FQDN, a username, and a password. The first time you connect to a given host, vLens shows you the certificate it presented and asks you to approve it — this is trust-on-first-use, the same idea as SSH host keys. If that certificate ever changes unexpectedly later, vLens blocks the connection instead of silently allowing it.
@@ -133,10 +142,23 @@ struct HelpView: View {
                         Text(selectedTopic.title)
                             .font(.title.bold())
                     }
-                    Text(selectedTopic.body)
-                        .font(.body)
-                        .lineSpacing(3)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if selectedTopic == .whatsNew {
+                        if let changelog = Self.changelogText {
+                            Text(changelog)
+                                .font(.body)
+                                .lineSpacing(3)
+                                .textSelection(.enabled)
+                                .fixedSize(horizontal: false, vertical: true)
+                        } else {
+                            Text("Changelog unavailable.")
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Text(selectedTopic.body)
+                            .font(.body)
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     Spacer(minLength: 0)
                 }
                 .padding(28)
@@ -144,6 +166,21 @@ struct HelpView: View {
             }
         }
         .frame(width: 680, height: 460)
+    }
+
+    /// The bundled `CHANGELOG.md` (`Package.swift` copies it into this
+    /// target's resources — see the comment on `Resources/CHANGELOG.md`)
+    /// rendered as Markdown via Foundation's native parser, no third-party
+    /// dependency. `.full` interpretation is what makes `##` headers and
+    /// `-` bullet lists actually render as headers/bullets rather than
+    /// literal text.
+    private static var changelogText: AttributedString? {
+        guard let url = Bundle.module.url(forResource: "CHANGELOG", withExtension: "md"),
+            let raw = try? String(contentsOf: url, encoding: .utf8)
+        else { return nil }
+        var options = AttributedString.MarkdownParsingOptions()
+        options.interpretedSyntax = .full
+        return try? AttributedString(markdown: raw, options: options)
     }
 
     private func iconBadge(for topic: HelpTopic, size: CGFloat, iconSize: CGFloat) -> some View {

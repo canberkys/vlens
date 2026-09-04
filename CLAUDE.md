@@ -160,6 +160,27 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) "What's New" ve Sparkle release notes eklendi (v1.2.2)**
+      — kullanıcı Sparkle güncellemesini gerçekten test edip ("vov çalıştı!")
+      sonra "kullanıcı update etti ama yenilikleri bilmiyor, rahatsız etmeden
+      nasıl gösteririz" diye sordu. İki parça: (1) Help ▸ What's New — kök
+      `CHANGELOG.md`, `Package.swift`'te yeni bir resource olarak
+      `Sources/vLens/Resources/CHANGELOG.md`'ye kopyalanıp `Bundle.module`
+      üzerinden okunuyor, Foundation'ın native `AttributedString(markdown:)`
+      parser'ı (`.full` interpretedSyntax) ile render ediliyor — üçüncü parti
+      bağımlılık yok, `docs/vLens-Reference.md`'nin "elle uyarlanmış özet"
+      kuralının aksine burada TAM CHANGELOG gösterilmesi istendiği için
+      kaynağın kendisi bundle edildi (elle kopyalanan ikinci bir Swift string
+      = drift riski). (2) `scripts/release.sh`'a yeni bir adım: yeni
+      `scripts/changelog_section_html.py` (bağımlılıksız, küçük bir markdown→HTML
+      dönüştürücü — `### `/`- ` satırlarını + wrap olmuş devam satırlarını +
+      `**bold**`/`` `code` ``'u anlıyor) `CHANGELOG.md`'den o sürümün bölümünü
+      çekip appcast.xml'in `<item><description>`'ına CDATA olarak gömüyor —
+      Sparkle bunu native güncelleme diyaloğunun içinde gösteriyor, ayrı bir
+      pencere/interruption yok. Script'in başına `CHANGELOG.md`'yi
+      `Sources/vLens/Resources/`'a kopyalayan bir senkron adımı da eklendi
+      (tek elle yapılması gereken şey: release öncesi CHANGELOG.md'yi güncel
+      tutmak). `swift build`/`swift test` temiz (59/59).
 - [x] **(2026-09-05) Preferences'a Snapshot metrikleri için Select All/None
       eklendi (v1.2.1)** — kullanıcı Sparkle'ın "Check for Updates"
       akışını gerçek bir sürüm artışıyla test etmek istedi, Faz 7 backlog'undan

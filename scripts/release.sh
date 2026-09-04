@@ -10,13 +10,16 @@ set -euo pipefail
 # (also SwiftPM-only, also signed/notarized this way).
 
 APP_NAME="vLens"
-VERSION="1.2.1"
+VERSION="1.2.2"
 SIGN_IDENTITY="Developer ID Application: Canberk KILIÇARSLAN (9QB26WKA4K)"
 NOTARY_PROFILE="vlens-notary"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="$ROOT_DIR/.build/release-package"
 APP_BUNDLE="$BUILD_DIR/$APP_NAME.app"
+
+echo "==> Syncing CHANGELOG.md into the app bundle (Help ▸ What's New)"
+cp "$ROOT_DIR/CHANGELOG.md" "$ROOT_DIR/Sources/vLens/Resources/CHANGELOG.md"
 
 echo "==> Building release binaries"
 cd "$ROOT_DIR"
@@ -187,6 +190,13 @@ OSA
         PUB_DATE="$(date -u "+%a, %d %b %Y %H:%M:%S +0000")"
         APPCAST_PATH="$ROOT_DIR/appcast.xml"
 
+        # Pulled from CHANGELOG.md and shown right inside Sparkle's own
+        # update dialog — the user is already looking at that dialog to
+        # decide whether to update, so this is "what's new" without a
+        # separate interruption. Keep CHANGELOG.md's [$VERSION] section
+        # accurate before running this script; that's the only manual step.
+        RELEASE_NOTES_HTML="$(python3 "$ROOT_DIR/scripts/changelog_section_html.py" "$ROOT_DIR/CHANGELOG.md" "$VERSION" 2>/dev/null || echo "")"
+
         # Single-item feed — Sparkle only needs the latest version to decide
         # "is there something newer than what's installed," it doesn't need
         # full history. The enclosure URL must exactly match where this DMG
@@ -205,6 +215,9 @@ OSA
             <sparkle:version>$BUILD_NUMBER</sparkle:version>
             <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[
+$RELEASE_NOTES_HTML
+            ]]></description>
             <enclosure
                 url="https://github.com/canberkys/vlens/releases/download/v$VERSION/$APP_NAME-$VERSION.dmg"
                 length="$DMG_LENGTH"
@@ -214,8 +227,9 @@ OSA
     </channel>
 </rss>
 XML
-        echo "==> Wrote $APPCAST_PATH — commit + push to main (SUFeedURL reads it from raw.githubusercontent.com),"
-        echo "    and publish DMG_PATH as a GitHub Release asset at tag v$VERSION with this exact filename."
+        echo "==> Wrote $APPCAST_PATH (with release notes from CHANGELOG.md) — commit + push to main"
+        echo "    (SUFeedURL reads it from raw.githubusercontent.com), and publish DMG_PATH as a GitHub"
+        echo "    Release asset at tag v$VERSION with this exact filename."
     fi
 else
     echo "==> Skipping notarization — no stored credentials for profile '$NOTARY_PROFILE'."

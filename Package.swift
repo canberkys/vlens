@@ -19,7 +19,7 @@ let package = Package(
             name: "vLens",
             dependencies: ["vLensCore", .product(name: "Sparkle", package: "Sparkle")],
             path: "Sources/vLens",
-            resources: [.copy("Resources/AppIconImage.png")],
+            resources: [.copy("Resources/AppIconImage.png"), .copy("Resources/CHANGELOG.md")],
             swiftSettings: [
                 .unsafeFlags(["-strict-concurrency=complete"])
             ],
