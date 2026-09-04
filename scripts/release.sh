@@ -76,10 +76,54 @@ if xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1
     echo "==> Verifying Gatekeeper acceptance"
     spctl -a -vvv --type exec "$APP_BUNDLE"
 
-    echo "==> Packaging DMG"
+    echo "==> Packaging DMG (standard drag-to-Applications layout)"
     DMG_PATH="$BUILD_DIR/$APP_NAME-$VERSION.dmg"
-    rm -f "$DMG_PATH"
-    hdiutil create -volname "$APP_NAME" -srcfolder "$APP_BUNDLE" -ov -format UDZO "$DMG_PATH"
+    DMG_STAGING="$BUILD_DIR/dmg-staging"
+    DMG_TEMP="$BUILD_DIR/$APP_NAME-temp.dmg"
+    rm -f "$DMG_PATH" "$DMG_TEMP"
+    rm -rf "$DMG_STAGING"
+    mkdir -p "$DMG_STAGING"
+    cp -R "$APP_BUNDLE" "$DMG_STAGING/"
+    ln -s /Applications "$DMG_STAGING/Applications"
+
+    hdiutil create -volname "$APP_NAME" -srcfolder "$DMG_STAGING" -fs HFS+ -format UDRW -ov "$DMG_TEMP"
+
+    # Mount at the default /Volumes location (not a custom -mountpoint) —
+    # Finder only recognizes a volume as a scriptable "disk" when it's
+    # mounted there, discovered by trial while building this step.
+    hdiutil attach "$DMG_TEMP" -readwrite -noverify -noautoopen
+
+    # Lays out the two icons side by side (app on the left, an Applications
+    # symlink on the right) so opening the DMG shows the standard "drag to
+    # install" arrangement instead of a bare Finder window with just the
+    # app in it.
+    osascript <<OSA
+tell application "Finder"
+    tell disk "$APP_NAME"
+        open
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set the bounds of container window to {200, 120, 660, 420}
+        set viewOptions to the icon view options of container window
+        set arrangement of viewOptions to not arranged
+        set icon size of viewOptions to 128
+        set position of item "$APP_NAME.app" of container window to {130, 150}
+        set position of item "Applications" of container window to {330, 150}
+        close
+        open
+        update without registering applications
+        delay 1
+    end tell
+end tell
+OSA
+
+    sync
+    hdiutil detach "/Volumes/$APP_NAME"
+    rm -rf "$DMG_STAGING"
+
+    hdiutil convert "$DMG_TEMP" -format UDZO -imagekey zlib-level=9 -ov -o "$DMG_PATH"
+    rm -f "$DMG_TEMP"
     echo "==> Done: $DMG_PATH"
 else
     echo "==> Skipping notarization — no stored credentials for profile '$NOTARY_PROFILE'."
