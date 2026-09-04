@@ -989,6 +989,15 @@ Broadcom doesn't document or guarantee to keep stable.
 
 ## 11. In-app Help & Onboarding
 
+**About** (`Sources/vLens/AboutView.swift`) replaces SwiftUI's default About
+panel (`CommandGroup(replacing: .appInfo)` in `vLensApp.swift`) — the default
+panel reads version info from `Bundle.main`'s Info.plist, which is empty in
+`swift run` development mode (only the real packaged `.app` has one), so it'd
+show blank. `AppVersion.swift` reads `Bundle.main` first (correct in the
+packaged app) and falls back to the same values hardcoded in
+`Resources/Info.plist` (correct in dev mode) — same shape as
+`HelperLocator.resolve()`'s bundle-then-dev-fallback pattern.
+
 **Help** (`Sources/vLens/HelpView.swift`) replaces the default Help menu item
 (`CommandGroup(replacing: .help)` in `vLensApp.swift`) rather than linking out
 to an external site. `HelpTopic` is a small enum (Getting Started, Tabs,

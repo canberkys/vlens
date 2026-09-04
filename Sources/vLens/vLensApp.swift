@@ -17,6 +17,14 @@ struct vLensApp: App {
         }
         .windowResizability(.contentSize)
         .commands {
+            // Replaces the default About panel — in `swift run` dev mode
+            // there's no real Info.plist for it to read from, so it shows
+            // blank; this always shows correct info (see AppVersion).
+            CommandGroup(replacing: .appInfo) {
+                Button("About vLens") {
+                    openWindow(id: "about")
+                }
+            }
             // Replaces the default (empty) Help menu item — native in-app
             // help, not a link out to an external site.
             CommandGroup(replacing: .help) {
@@ -30,6 +38,11 @@ struct vLensApp: App {
                 }
             }
         }
+
+        Window("About vLens", id: "about") {
+            AboutView()
+        }
+        .windowResizability(.contentSize)
 
         Window("vLens Help", id: "help") {
             HelpView()

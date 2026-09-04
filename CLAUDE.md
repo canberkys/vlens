@@ -71,6 +71,8 @@ vLens/
 │   │   ├── ReportView.swift      # yönetici raporu (PDF) — SwiftUI Charts + stat kartları
 │   │   ├── ReportRenderer.swift  # ImageRenderer → CGContext → tek sayfa PDF
 │   │   ├── HelpView.swift        # native in-app Help (Help menüsü artık dışarı çıkmıyor)
+│   │   ├── AboutView.swift       # custom About paneli (varsayılan boş panel yerine)
+│   │   ├── AppVersion.swift      # Bundle.main → dev fallback (HelperLocator'la aynı desen)
 │   │   ├── FeedbackView.swift    # Help menüsünden "Send Feedback…" — mailto: taslağı, backend yok
 │   │   ├── Tutorial.swift        # TutorialID + .tutorialPopover(...) + WelcomeOverlayView
 │   │   └── Tabs/                 # her tab için ayrı Table view (VInfoTabView, VCpuTabView, ...)
@@ -134,6 +136,13 @@ go build -o vcsim/vcsim ./vcsim && ./vcsim/vcsim
 
 ## Durum (2026-09-03, son maddeler 2026-09-04)
 
+- [x] **(2026-09-04) README.md + About penceresi eklendi (Faz 7)** — README
+      PkgLens'in yapısıyla tutarlı ama vLens'in henüz dağıtılmamış durumuna
+      uyarlandı (Download bölümü yok, lisans "henüz karar verilmedi").
+      `AboutView.swift`/`AppVersion.swift` — varsayılan boş About panelinin
+      yerine geçiyor (`swift run` modunda gerçek Info.plist olmadığı için
+      varsayılan panel boş görünürdü), `HelperLocator`'la aynı bundle→dev-fallback
+      deseni.
 - [x] **(2026-09-04) Gerçek imzalı `.app` bundle çalışıyor (Faz 3'ün büyük kısmı)** —
       `scripts/release.sh`: `swift build -c release` + elle inşa edilmiş `.app`
       bundle (Xcode projesi yok, PkgLens'in kanıtlanmış deseni) + iki aşamalı
