@@ -26,7 +26,7 @@ public struct InventorySnapshot: Codable, Identifiable, Sendable {
     /// Opt-in, off by default — see `SnapshotsTabView`'s "Include full VM
     /// inventory" checkbox. `nil` for every snapshot taken without it
     /// (including all pre-existing snapshots, which decode fine since this
-    /// is optional). Only used for the Compare panel's "VM Changes"
+    /// is optional). Only used for the Compare panel's "VM Membership Changes"
     /// added/removed section — deliberately not a field-by-field diff of
     /// every VM, just membership by `vmUUID`.
     public let fullVMList: [VirtualMachineInfo]?

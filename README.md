@@ -22,9 +22,10 @@ reporting tool.
 It covers essentially everything RVTools does (27 tabs total, 23 of RVTools'
 24 documented tabs — only `vFileInfo` is missing) — but it isn't just a port.
 vLens adds several things RVTools doesn't have: historical performance
-trends, point-in-time inventory snapshots you can compare, a one-page PDF
-management report, and quiet awareness of published VMware security
-advisories.
+data sampled over a time window you choose, point-in-time inventory
+snapshots you can compare, a one-page PDF management report, and quiet
+awareness of published VMware security advisories and ESXi/vCenter
+end-of-life dates.
 
 **Status**: signed, notarized, and distributed — see
 [Releases](https://github.com/canberkys/vlens/releases) for a ready-to-run

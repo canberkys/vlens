@@ -728,14 +728,16 @@ already have one. No concurrent-write protection is provided if two vLens
 instances point at the same shared folder simultaneously — documented
 single-writer assumption, not a real sync mechanism.
 
-**(v1.1, 2026-09-04) Optional full VM inventory + "VM Changes" diff**: the
+**(v1.1, 2026-09-04) Optional full VM inventory + "VM Membership Changes"
+diff** (section renamed from "VM Changes" in a later pass — a plain
+"Changes" label read as promising more than membership alone): the
 "Take Snapshot" row has an "Include full VM inventory" checkbox (default
 **off** — keeps the lightweight-by-default behavior, especially once a
 scheduler is taking snapshots unattended). When on, `InventorySnapshot.fullVMList`
 embeds the current `[VirtualMachineInfo]` array. When **both** snapshots being
-compared have a `fullVMList`, the Compare panel adds a "VM Changes" section
-below the metrics table — VMs added/removed, matched by `vmUUID` (a simple
-set difference, not a field-by-field diff of every VM's CPU/memory/etc. —
+compared have a `fullVMList`, the Compare panel adds a "VM Membership Changes"
+section below the metrics table — VMs added/removed, matched by `vmUUID` (a
+simple set difference, not a field-by-field diff of every VM's CPU/memory/etc. —
 deliberately out of scope, a much bigger feature). Snapshots list rows show a
 small icon next to entries that carry full detail.
 
