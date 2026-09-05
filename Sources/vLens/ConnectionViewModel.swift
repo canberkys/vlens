@@ -27,6 +27,19 @@ final class ConnectionViewModel {
     var isDataStale: Bool = false
     var searchText: String = ""
 
+    /// Bumped by `disconnect()` and captured locally at the start of every
+    /// `performCollection`/`collectPerformance` call — lets those calls
+    /// tell, once their `await` finally returns, whether they're still for
+    /// the connection currently on screen or a stale one superseded by a
+    /// disconnect (or another connect/refresh) that happened while they
+    /// were in flight. Without this, disconnecting mid-refresh let the old
+    /// request's result silently resurrect the connection afterward — and,
+    /// with `saveCredentials` on, call `persistCurrentConnection()` with
+    /// `password` already cleared by `disconnect()`, overwriting the saved
+    /// Keychain entry with an empty password. Confirmed live with a
+    /// delayed fake helper.
+    private var connectionGeneration = 0
+
     /// Set when `fetchCertificate` returns a certificate this host has never
     /// been seen presenting before. The Connect screen shows a confirmation
     /// sheet bound to this; resolved via `approvePendingCertificate()` or
@@ -247,6 +260,9 @@ final class ConnectionViewModel {
     /// are left as-is as a small convenience for reconnecting to the same
     /// target.
     func disconnect() {
+        // Invalidates any in-flight performCollection/collectPerformance —
+        // see connectionGeneration's doc comment.
+        connectionGeneration += 1
         isDemoMode = false
         isConnected = false
         isDataStale = false
@@ -427,6 +443,10 @@ final class ConnectionViewModel {
             if isRefreshOfExistingConnection { isDataStale = true }
             return
         }
+        // Captured now, compared against the (possibly-since-bumped) live
+        // value after the `await` below returns — see connectionGeneration's
+        // doc comment.
+        let myGeneration = connectionGeneration
         do {
             // `insecure: true` no longer means "skip verification" for this
             // call — the Go helper binds the connection to
@@ -437,6 +457,15 @@ final class ConnectionViewModel {
             let inventory = try await helperClient.collectAll(
                 url: sdkURL, username: username, password: password, expectedFingerprint: expectedFingerprint
             )
+            guard myGeneration == connectionGeneration else {
+                // Superseded by a disconnect (or another connect/refresh)
+                // while this request was in flight — discard silently.
+                // Applying it now would resurrect a connection the user
+                // has since left, and persistCurrentConnection() below
+                // could save whatever `password` has been cleared to in
+                // the meantime.
+                return
+            }
             vms = inventory.vms
             cpus = inventory.cpus
             memory = inventory.memory
@@ -474,6 +503,7 @@ final class ConnectionViewModel {
                 persistCurrentConnection()
             }
         } catch {
+            guard myGeneration == connectionGeneration else { return }
             errorMessage = Self.describe(error)
             if isRefreshOfExistingConnection { isDataStale = true }
         }
@@ -562,6 +592,11 @@ final class ConnectionViewModel {
             performanceErrorMessage = "No pinned certificate found for this host — please reconnect to re-verify it."
             return
         }
+        // Same supersession guard as performCollection — a disconnect (or a
+        // new connect/refresh) while this is in flight must not let a stale
+        // result populate performance data for a connection that's since
+        // gone away or changed.
+        let myGeneration = connectionGeneration
         isCollectingPerformance = true
         performanceErrorMessage = nil
         do {
@@ -569,6 +604,7 @@ final class ConnectionViewModel {
                 url: normalizedSDKURL(), username: username, password: password,
                 expectedFingerprint: expectedFingerprint, intervalMinutes: intervalMinutes
             )
+            guard myGeneration == connectionGeneration else { return }
             performanceMetrics = metrics
             performanceCoverage = coverage
             // A partial collection isn't a thrown error (the helper call
@@ -578,14 +614,32 @@ final class ConnectionViewModel {
                 performanceErrorMessage =
                     "Collected \(coverage.collectedVMCount) of \(coverage.requestedVMCount) VMs — the request failed partway through" + (coverage.error.map { ": \($0)" } ?? ".")
             }
+            isCollectingPerformance = false
         } catch {
+            guard myGeneration == connectionGeneration else { return }
             performanceErrorMessage = Self.describe(error)
+            isCollectingPerformance = false
         }
-        isCollectingPerformance = false
     }
 
     private func persistCurrentConnection() {
-        let id = activeProfileID ?? UUID()
+        // Reuses `activeProfileID` only if it still refers to a saved
+        // profile whose host/username match what's being connected right
+        // now — otherwise this is a different connection than whichever
+        // one was last selected (e.g. disconnected from a saved profile,
+        // then typed a completely different host by hand), and blindly
+        // reusing that stale id would silently overwrite the *previous*
+        // profile's saved host/username under its own id — and, since
+        // `AutomationSchedule` pins a schedule to a profile by this same
+        // id, could silently redirect a scheduled job too. Confirmed live:
+        // select A, disconnect, type B by hand, connect with save-on left
+        // just from before → only one profile remained, A's id now
+        // pointing at B. Reading fresh from `profileStore` rather than the
+        // cached `savedProfiles` avoids relying on that cache being current.
+        let existingMatch = activeProfileID.flatMap { id in
+            profileStore.loadAll().first { $0.id == id && $0.host == host && $0.username == username }
+        }
+        let id = existingMatch?.id ?? UUID()
         activeProfileID = id
         let profile = ConnectionProfile(id: id, name: host, host: host, username: username)
         do {

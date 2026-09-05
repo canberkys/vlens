@@ -3,6 +3,48 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.4.2] - 2026-09-05 (+03)
+
+### Fixed
+- **Certificate pinning was still conditional on CA trust (critical).** The
+  1.3.0 fix used govmomi's own `soap.Client.SetThumbprint`, which only ever
+  consults the pinned fingerprint as a *fallback* — if the presented
+  certificate happens to validate against the OS's own trust store for any
+  reason, the connection succeeds without the thumbprint being checked at
+  all. Confirmed directly: a deliberately wrong pinned fingerprint was
+  rejected against an untrusted cert as expected, but accepted once that
+  same cert was trusted via a CA, with the exact same wrong pin still
+  configured. Fixed by not delegating to govmomi's dial logic at all: the
+  transport's dialer now skips Go's chain verification entirely and
+  unconditionally compares the presented certificate's SHA-256 thumbprint
+  against the pinned one — an exact match is the only way to connect, no
+  CA-trust escape hatch.
+- **Disconnecting during an in-flight refresh could resurrect the
+  connection**, and — with "Save this connection to Keychain" on — save
+  whatever the password field had already been cleared to by
+  `disconnect()`, overwriting the real saved password with an empty one.
+  Both `performCollection` and `collectPerformance` now capture a
+  connection "generation" before their network call and discard the
+  result if a disconnect (or another connect/refresh) has since
+  superseded it.
+- **A new connection could silently overwrite a previously-selected saved
+  profile.** Selecting a saved connection, disconnecting, then manually
+  connecting somewhere else with "Save to Keychain" still on reused the
+  first profile's id — since automation schedules pin a job to a profile
+  by that same id, this could silently redirect a scheduled job too. Now
+  only reuses the previous id when its stored host/username still match
+  what's being connected; otherwise a fresh profile is created.
+- **Snapshot writes proceeded without their cross-process lock if the lock
+  itself couldn't be acquired** — the 1.3.0 fix for concurrent snapshot
+  writes checked neither `open()`'s nor `flock()`'s failure, silently
+  falling back to unlocked (and therefore unsafe) writes on exactly the
+  kind of storage backend (a network share) most likely to hit that
+  failure. Both failures now abort the write with an error instead.
+
+All four found and verified by a second, independent round of review
+(isolated tests against a delayed fake helper and real store instances,
+`go test -race`, and a locked-out lock file) — not by inspection alone.
+
 ## [1.4.1] - 2026-09-05 (+03)
 
 ### Fixed

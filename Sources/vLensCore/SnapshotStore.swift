@@ -99,24 +99,43 @@ public struct SnapshotStore: Sendable {
     /// time — without this, whichever process's `.atomic` write lands last
     /// silently discards whatever the other one had just added, since both
     /// load the same starting state and neither knows about the other's
-    /// change. Found by an external code review. If a lock file can't even
-    /// be created, proceeds without locking rather than failing the whole
-    /// operation outright — a best-effort safety net for a single-user
-    /// desktop app, not a distributed-systems guarantee (e.g. it doesn't
-    /// protect against two *different machines* writing to a shared
-    /// network folder — `SnapshotPreferencesStore.customStorageDirectory`'s
-    /// own doc comment already calls that scenario out of scope).
+    /// change. Found by an external code review.
+    ///
+    /// Both failure modes below (the lock file can't even be opened, or
+    /// `flock` itself fails — a real possibility on some network
+    /// filesystems, which is exactly the kind of storage location
+    /// `SnapshotPreferencesStore.customStorageDirectory` lets a user point
+    /// at) now abort the mutation with an error instead of silently
+    /// proceeding unlocked, which would reintroduce the very race this
+    /// exists to close. A prior version of this fix did exactly that —
+    /// caught by a second round of review, confirmed live: with the lock
+    /// path made permanently unopenable, 20 concurrent writers left only 5
+    /// of their records in the file (matching an unlocked run) instead of
+    /// all 20.
     private func withFileLock<T>(_ body: () throws -> T) throws -> T {
         let dir = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let lockPath = fileURL.appendingPathExtension("lock").path
         let fd = open(lockPath, O_CREAT | O_RDWR, 0o644)
         guard fd >= 0 else {
-            return try body()
+            throw SnapshotStoreError.lockUnavailable(errno: errno)
         }
         defer { close(fd) }
-        flock(fd, LOCK_EX)
+        guard flock(fd, LOCK_EX) == 0 else {
+            throw SnapshotStoreError.lockUnavailable(errno: errno)
+        }
         defer { flock(fd, LOCK_UN) }
         return try body()
+    }
+}
+
+public enum SnapshotStoreError: LocalizedError, Sendable {
+    case lockUnavailable(errno: Int32)
+
+    public var errorDescription: String? {
+        switch self {
+        case .lockUnavailable(let code):
+            return "Couldn't acquire the snapshot storage lock (errno \(code)) — the write was not attempted, to avoid a race with another vLens process. If this persists, check that the snapshot storage location supports file locking (some network shares don't)."
+        }
     }
 }

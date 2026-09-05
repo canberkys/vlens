@@ -199,6 +199,33 @@ private func makeVM(name: String, uuid: String) -> VirtualMachineInfo {
     #expect(rawAfter == "{ this is not valid JSON at all")
 }
 
+/// Regression test for a second-round review finding: the first version of
+/// `withFileLock` silently proceeded WITHOUT the lock whenever it couldn't
+/// even be opened (or when `flock` itself failed, return value unchecked)
+/// — reintroducing the exact concurrent-write race the lock exists to
+/// close, on precisely the kind of storage backend (a network share via
+/// `SnapshotPreferencesStore.customStorageDirectory`) most likely to hit
+/// that failure. A directory sitting at the `.lock` file's own path makes
+/// `open()` fail with EISDIR without needing to actually break the
+/// filesystem.
+@Test func addThrowsWhenLockCannotBeAcquiredRatherThanProceedingUnlocked() throws {
+    let store = makeStore()
+    try FileManager.default.createDirectory(at: store.url.deletingLastPathComponent(), withIntermediateDirectories: true)
+    let lockPath = store.url.appendingPathExtension("lock").path
+    try FileManager.default.createDirectory(at: URL(fileURLWithPath: lockPath), withIntermediateDirectories: true)
+
+    do {
+        try store.add(InventorySnapshot(vCenterHost: "vcenter.local", label: "should not be saved", metrics: makeMetrics()))
+        Issue.record("expected add() to throw when the lock file can't be opened")
+    } catch is SnapshotStoreError {
+        // expected
+    } catch {
+        Issue.record("expected SnapshotStoreError, got \(error)")
+    }
+
+    #expect(store.loadAll().isEmpty)
+}
+
 // loadAll() (the read path the GUI's snapshot list actually uses) is
 // deliberately more forgiving than add()/delete() — showing an empty list
 // beats refusing to render the tab at all over a corrupt file.
