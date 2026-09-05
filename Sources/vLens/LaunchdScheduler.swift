@@ -27,17 +27,25 @@ enum LaunchdScheduler {
             throw LaunchdSchedulerError.cliNotFound(cliPath)
         }
 
+        // `--profile-id` (the schedule's stable UUID), not `--profile
+        // <name>` — a name isn't guaranteed unique across saved
+        // connections, and even when it is today, nothing stops the user
+        // renaming the profile later and silently pointing this schedule
+        // at the wrong (or a since-deleted) connection. `--profile-id` also
+        // doubles as the signal `vlens-cli` uses to record this run's
+        // result via `AutomationPreferencesStore.recordRunResult` — see
+        // main.swift.
         var programArguments = [cliPath]
         switch schedule.action {
         case .snapshot(let fullDetail):
-            programArguments += ["snapshot", "--profile", profile.name]
+            programArguments += ["snapshot", "--profile-id", profile.id.uuidString]
             if fullDetail { programArguments.append("--full-detail") }
         case .export(let tab, let format):
             let outputDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
                 ?? FileManager.default.homeDirectoryForCurrentUser
             let outputPath = outputDir
                 .appendingPathComponent("vLens-\(tab.rawValue)-scheduled.\(format.rawValue)").path
-            programArguments += ["export", "--profile", profile.name, "--tab", tab.rawValue, "--format", format.rawValue, "--output", outputPath]
+            programArguments += ["export", "--profile-id", profile.id.uuidString, "--tab", tab.rawValue, "--format", format.rawValue, "--output", outputPath]
         }
 
         let plist: [String: Any] = [
@@ -70,8 +78,25 @@ enum LaunchdScheduler {
         try? FileManager.default.removeItem(at: plistURL)
     }
 
-    static var isInstalled: Bool {
+    /// Whether the plist exists on disk — necessary but not sufficient:
+    /// the file can exist while launchd itself has no memory of the job
+    /// (a prior `bootstrap` failing silently, launchd's database getting
+    /// reset, `bootout` succeeding without the plist being removed after).
+    /// Prefer `isActuallyLoaded` for anything user-facing; this is only
+    /// used as that check's fallback if `launchctl` itself can't be run.
+    static var isPlistPresent: Bool {
         FileManager.default.fileExists(atPath: plistURL.path)
+    }
+
+    /// The real, launchd-verified answer to "is this job actually loaded" —
+    /// `launchctl print gui/<uid>/<label>` exits 0 only when launchd itself
+    /// has the job loaded, unlike checking for the plist file, which can
+    /// exist on disk while launchd has no record of it at all (previously
+    /// the only check this app made — confirmed via a real code review
+    /// finding, not a hypothetical). Runs synchronously; called from a
+    /// SwiftUI computed property already, so no separate async plumbing.
+    static var isActuallyLoaded: Bool {
+        (try? runLaunchctl(["print", "gui/\(getuid())/\(label)"])) != nil
     }
 
     @discardableResult

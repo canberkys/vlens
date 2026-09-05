@@ -35,6 +35,27 @@ public enum AutomationAction: Codable, Equatable, Sendable {
     case export(tab: ExportTab, format: ExportFormat)
 }
 
+/// Recorded by `vlens-cli` after every launchd-triggered run (identified by
+/// `--profile-id`, the same flag that fixes resolving the scheduled
+/// connection by stable UUID instead of by its possibly-ambiguous name) —
+/// distinguishes "the job is loaded in launchd" (`LaunchdScheduler.isActuallyLoaded`)
+/// from "the job actually ran and succeeded last time it fired", which used
+/// to have no visibility at all: a schedule could be correctly loaded and
+/// still be silently failing every single run (wrong password after a
+/// rotation, a certificate that changed, disk full) with nothing in
+/// Preferences to show for it.
+public struct AutomationRunResult: Codable, Equatable, Sendable {
+    public let ranAt: Date
+    public let succeeded: Bool
+    public let message: String?
+
+    public init(ranAt: Date = Date(), succeeded: Bool, message: String?) {
+        self.ranAt = ranAt
+        self.succeeded = succeeded
+        self.message = message
+    }
+}
+
 /// UserDefaults-backed, same pattern as every other `*PreferencesStore` in
 /// this file set (`SnapshotPreferencesStore`, `HealthCheckPreferencesStore`).
 public struct AutomationPreferencesStore: @unchecked Sendable {
@@ -62,7 +83,29 @@ public struct AutomationPreferencesStore: @unchecked Sendable {
         defaults.set(data, forKey: Keys.schedule)
     }
 
+    public func loadLastRunResult() -> AutomationRunResult? {
+        guard let data = defaults.data(forKey: Keys.lastRunResult) else { return nil }
+        return try? JSONDecoder().decode(AutomationRunResult.self, from: data)
+    }
+
+    public func recordRunResult(_ result: AutomationRunResult) {
+        guard let data = try? JSONEncoder().encode(result) else { return }
+        defaults.set(data, forKey: Keys.lastRunResult)
+        // `vlens-cli` calls this immediately before calling `exit(_:)`
+        // directly (see `fail(_:)`/`recordAutomationSuccessIfNeeded` in
+        // main.swift) — `UserDefaults`'s normal write-behind caching can
+        // lose this write if the process terminates before it flushes on
+        // its own. Confirmed live: without this, a failed run's result
+        // silently stayed as whatever the previous *successful* run had
+        // recorded. `synchronize()` is a documented no-op for a
+        // long-running app, but is exactly the escape hatch Apple's own
+        // docs describe for "the app is about to exit and you need this
+        // written now."
+        defaults.synchronize()
+    }
+
     private enum Keys {
         static let schedule = "com.vlens.automation.schedule"
+        static let lastRunResult = "com.vlens.automation.lastRunResult"
     }
 }
