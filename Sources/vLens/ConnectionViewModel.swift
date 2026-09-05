@@ -81,6 +81,7 @@ final class ConnectionViewModel {
     var vmKernels: [VMKernelInfo] = []
     var multipaths: [MultipathInfo] = []
     var cds: [CDInfo] = []
+    var floppies: [FloppyInfo] = []
     var usbs: [USBInfo] = []
     var partitions: [PartitionInfo] = []
     var healthChecks: [HealthCheckResult] = []
@@ -270,6 +271,7 @@ final class ConnectionViewModel {
         vmKernels = DemoData.vmKernels()
         multipaths = DemoData.multipaths()
         cds = DemoData.cds(for: vms)
+        floppies = DemoData.floppies(for: vms)
         usbs = DemoData.usbs(for: vms)
         partitions = DemoData.partitions(for: vms)
         performanceMetrics = DemoData.performanceMetrics(for: vms, intervalMinutes: 60)
@@ -342,6 +344,7 @@ final class ConnectionViewModel {
         vmKernels = []
         multipaths = []
         cds = []
+        floppies = []
         usbs = []
         partitions = []
         performanceMetrics = []
@@ -360,6 +363,7 @@ final class ConnectionViewModel {
             hosts: hosts,
             cpus: cpus,
             cds: cds,
+            floppies: floppies,
             partitions: partitions,
             multipaths: multipaths,
             vms: vms,
@@ -521,6 +525,7 @@ final class ConnectionViewModel {
             vmKernels = inventory.vmKernels
             multipaths = inventory.multipaths
             cds = inventory.cds
+            floppies = inventory.floppies
             usbs = inventory.usbs
             partitions = inventory.partitions
             performanceMetrics = [] // separate action, doesn't carry over from a previous connection

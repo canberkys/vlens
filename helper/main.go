@@ -74,6 +74,7 @@ type helperResponse struct {
 	Multipaths    []multipathInfo      `json:"multipaths"`
 	CDs           []cdInfo             `json:"cds"`
 	USBs          []usbInfo            `json:"usbs"`
+	Floppies      []floppyInfo         `json:"floppies"`
 	Partitions    []partitionInfo      `json:"partitions"`
 	Networks      []vmNetworkInfo      `json:"networks"`
 	Performance   []vmPerformanceInfo  `json:"performance"`
@@ -377,6 +378,13 @@ type usbInfo struct {
 	Product    *int   `json:"product"`
 }
 
+type floppyInfo struct {
+	ID         string `json:"id"`
+	VMName     string `json:"vmName"`
+	PowerState string `json:"powerState"`
+	Connected  bool   `json:"connected"`
+}
+
 type partitionInfo struct {
 	ID          string `json:"id"`
 	VMName      string `json:"vmName"`
@@ -546,6 +554,9 @@ func writeResponse(resp helperResponse) {
 	}
 	if resp.USBs == nil {
 		resp.USBs = []usbInfo{}
+	}
+	if resp.Floppies == nil {
+		resp.Floppies = []floppyInfo{}
 	}
 	if resp.Partitions == nil {
 		resp.Partitions = []partitionInfo{}
@@ -818,6 +829,7 @@ func collectAll(req helperRequest) (helperResponse, error) {
 		resp.Tools = append(resp.Tools, mapVMTools(vm, hostName, clusterName))
 		resp.CDs = append(resp.CDs, mapVMCDs(vm)...)
 		resp.USBs = append(resp.USBs, mapVMUSBs(vm)...)
+		resp.Floppies = append(resp.Floppies, mapVMFloppies(vm)...)
 		resp.Partitions = append(resp.Partitions, mapVMPartitions(vm)...)
 		resp.Networks = append(resp.Networks, mapVMNetworks(vm, dvpgNames)...)
 	}
@@ -2042,6 +2054,32 @@ func mapVMUSBs(vm mo.VirtualMachine) []usbInfo {
 		if usb.Product != 0 {
 			p := int(usb.Product)
 			info.Product = &p
+		}
+		result = append(result, info)
+	}
+	return result
+}
+
+// RVTools vHealth #2 "VM has a Floppy device connected!" — same shape as
+// mapVMCDs/mapVMUSBs, walking the same already-fetched device list.
+func mapVMFloppies(vm mo.VirtualMachine) []floppyInfo {
+	if vm.Config == nil {
+		return nil
+	}
+	var result []floppyInfo
+	for _, d := range vm.Config.Hardware.Device {
+		floppy, ok := d.(*types.VirtualFloppy)
+		if !ok {
+			continue
+		}
+		base := floppy.GetVirtualDevice()
+		info := floppyInfo{
+			ID:         fmt.Sprintf("%s-floppy%d", vmID(vm), base.Key),
+			VMName:     vm.Name,
+			PowerState: string(vm.Runtime.PowerState),
+		}
+		if base.Connectable != nil {
+			info.Connected = base.Connectable.Connected
 		}
 		result = append(result, info)
 	}

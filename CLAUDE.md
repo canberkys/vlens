@@ -69,7 +69,7 @@ vLens/
 │   │   │                          # arasında paylaştırır
 │   │   ├── ContentView.swift     # tab bar + demo banner + connect ekranı + cert onay sheet'i
 │   │   ├── PreferencesView.swift # Cmd+, — vHealth eşikleri (RVTools'un Health Properties'i)
-│   │   ├── AppTab.swift          # 27 tab'ın enum'u
+│   │   ├── AppTab.swift          # 28 tab'ın enum'u
 │   │   ├── ConnectionViewModel.swift
 │   │   ├── HelperLocator.swift
 │   │   ├── ReportView.swift      # yönetici raporu (PDF) — SwiftUI Charts + stat kartları
@@ -183,6 +183,25 @@ varsayılan davranış her zaman "merge ettiysen yayınla"dır.
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) #2 Floppy connected vHealth kuralı + vFloppy tab (v1.5.4)** —
+      RVTools'un 24 kuralından 17'si artık tamam, ve artık **28 tab** var
+      (RVTools'un 24 tab'ından 23'ü — sadece `vFileInfo` eksik). vCD/vUSB
+      tab'larıyla birebir aynı desen: `config.hardware.device` listesinden
+      `*types.VirtualFloppy` filtreleniyor, ekstra bir round-trip gerekmiyor.
+      Bağlı bir floppy, mevcut "CDROM connected" kuralıyla aynı şekilde sarı
+      bir vHealth bulgusu üretiyor. vcsim'in varsayılan VM'leri hiç floppy
+      cihazı taşımıyor — canlı doğrulama bu yüzden yapısal kaldı (`collectAll`
+      doğru tipte boş bir array döndürüyor, 10 VM hatasız toplandı), pozitif
+      bir fixture'a karşı test edilemedi (vUSB/vPartition'ın zaten dokümante
+      ettiği aynı sınır). 2 yeni test (`flagsConnectedFloppy`/
+      `doesNotFlagDisconnectedFloppy`). `swift build`/`swift test` temiz
+      (97/97), `go build`/`go vet` temiz. README ve `docs/vLens-Reference.md`'nin
+      tab/vHealth sayıları (uzun süredir stale kalmış #17/#20/#21/#22/#23/#24
+      girdileri dahil) bu turda gerçek duruma güncellendi. **Sırada**: #11
+      (Inconsistent Folder Names — tam semantiği hâlâ net değil, muhtemelen
+      kullanıcıya sorulacak/atlanacak), sonra roadmap'in diğer maddeleri
+      (Preferences backlog, erişilebilirlik, export sıralaması, multi-vCenter
+      merge).
 - [x] **(2026-09-05) #24 Sertifika bitişi vHealth kuralı (v1.5.3)** —
       RVTools'un 24 kuralından 16'sı artık tamam. Diğer host kurallarından
       (#17/#20/#21) farklı olarak sertifika verisi düz bir `HostSystem`

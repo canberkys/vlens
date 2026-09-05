@@ -4,9 +4,10 @@ import Foundation
 /// tabs — matches RVTools' own model (vHealth doesn't do a separate
 /// collection pass, it evaluates rules over vInfo/vSnapshot/vTools/etc.).
 ///
-/// Implements 16 of RVTools' 24 documented rules (numbering matches
+/// Implements 17 of RVTools' 24 documented rules (numbering matches
 /// rvtools.txt's vHealth section):
 ///   #1  VM has a CDROM device connected!
+///   #2  VM has a Floppy device connected!
 ///   #3  VM has an active snapshot!
 ///   #4  VMware tools are out of date, not running or not installed!
 ///   #5  On disk xx is yy% disk space available! (guest-level, threshold zz%)
@@ -22,9 +23,8 @@ import Foundation
 ///   #23 In-memory performance tip (NUMA exposure vs. hot-add/cores-per-socket)
 ///   #24 Certificate within xx days of expiring or has expired
 ///   host config status not green (rolled into the vHealth concept generally)
-/// The remaining 8 rules (floppy connected, zombie VMDK/VM,
-/// inconsistent folder names, config-issue events, etc.) need
-/// data this app doesn't collect
+/// The remaining 7 rules (zombie VMDK/VM, inconsistent folder names,
+/// config-issue events, etc.) need data this app doesn't collect
 /// yet — add them incrementally as their source tabs are built.
 public enum HealthCheckEngine {
     public static func evaluate(
@@ -34,6 +34,7 @@ public enum HealthCheckEngine {
         hosts: [HostInfo],
         cpus: [VMCpuInfo],
         cds: [CDInfo] = [],
+        floppies: [FloppyInfo] = [],
         partitions: [PartitionInfo] = [],
         multipaths: [MultipathInfo] = [],
         vms: [VirtualMachineInfo] = [],
@@ -106,6 +107,16 @@ public enum HealthCheckEngine {
                 rule: "CDROM connected",
                 message: "\(cd.vmName): CD/DVD device is connected.",
                 relatedObject: cd.vmName
+            ))
+        }
+
+        for floppy in floppies where floppy.connected {
+            results.append(HealthCheckResult(
+                id: "floppy.\(floppy.id)",
+                severity: .yellow,
+                rule: "Floppy connected",
+                message: "\(floppy.vmName): floppy device is connected.",
+                relatedObject: floppy.vmName
             ))
         }
 

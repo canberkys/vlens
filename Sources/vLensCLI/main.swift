@@ -212,7 +212,7 @@ func evaluateHealth(_ inventory: CollectedInventory) -> [HealthCheckResult] {
     let thresholds = HealthCheckPreferencesStore(defaults: sharedDefaults()).load()
     return HealthCheckEngine.evaluate(
         snapshots: inventory.snapshots, tools: inventory.tools, datastores: inventory.datastores,
-        hosts: inventory.hosts, cpus: inventory.cpus, cds: inventory.cds, partitions: inventory.partitions,
+        hosts: inventory.hosts, cpus: inventory.cpus, cds: inventory.cds, floppies: inventory.floppies, partitions: inventory.partitions,
         multipaths: inventory.multipaths, vms: inventory.vms, disks: inventory.disks, memory: inventory.memory,
         thresholds: thresholds
     )

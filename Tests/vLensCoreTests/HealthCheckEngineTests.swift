@@ -93,6 +93,27 @@ import Testing
     #expect(results.isEmpty)
 }
 
+@Test func flagsConnectedFloppy() {
+    let floppy = FloppyInfo(id: "floppy1", vmName: "web-01", powerState: .poweredOn, connected: true)
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [], floppies: [floppy]
+    )
+
+    #expect(results.count == 1)
+    #expect(results[0].rule == "Floppy connected")
+}
+
+@Test func doesNotFlagDisconnectedFloppy() {
+    let floppy = FloppyInfo(id: "floppy1", vmName: "web-01", powerState: .poweredOn, connected: false)
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [], floppies: [floppy]
+    )
+
+    #expect(results.isEmpty)
+}
+
 @Test func flagsLowGuestDiskFreeSpace() {
     let partition = PartitionInfo(id: "p1", vmName: "web-01", diskPath: "C:\\", capacityMiB: 100_000, freeMiB: 2_000)
 

@@ -262,6 +262,12 @@ extension USBInfo: CSVExportable {
     public var csvRow: [String] { [vmName, powerState.rawValue, connected ? "True" : "False", vendor.map(String.init) ?? "", product.map(String.init) ?? ""] }
 }
 
+extension FloppyInfo: CSVExportable {
+    public static var csvHeader: [String] { ["VM", "Powerstate", "Connected"] }
+    public static var xlsxColumnTypes: [XLSXColumnType] { [.text, .text, .text] }
+    public var csvRow: [String] { [vmName, powerState.rawValue, connected ? "True" : "False"] }
+}
+
 extension VMNetworkInfo: CSVExportable {
     public static var csvHeader: [String] {
         ["VM", "Powerstate", "NIC Label", "Adapter Type", "Network", "Connected", "MAC Address", "IPv4 Address", "IPv6 Address"]

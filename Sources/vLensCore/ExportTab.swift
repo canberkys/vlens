@@ -21,7 +21,7 @@ public enum ExportTab: String, CaseIterable, Codable, Sendable {
     case vhost, vdatastore, vcluster, vlicense
     case vswitch, vport, dvswitch, dvport
     case vrp, vapp, vhba, vnic, vmk, vmultipath
-    case vcd, vusb, vpartition
+    case vcd, vfloppy, vusb, vpartition
     case vhealth
 
     /// User-facing label for the Preferences Automation picker — matches
@@ -50,6 +50,7 @@ public enum ExportTab: String, CaseIterable, Codable, Sendable {
         case .vmk: return "vSC+VMK"
         case .vmultipath: return "vMultipath"
         case .vcd: return "vCD"
+        case .vfloppy: return "vFloppy"
         case .vusb: return "vUSB"
         case .vpartition: return "vPartition"
         case .vhealth: return "vHealth"
@@ -98,6 +99,7 @@ public func exportData(
     case .vmk: return try make(inventory.vmKernels, sheet: "vSC+VMK")
     case .vmultipath: return try make(inventory.multipaths, sheet: "vMultipath")
     case .vcd: return try make(inventory.cds, sheet: "vCD")
+    case .vfloppy: return try make(inventory.floppies, sheet: "vFloppy")
     case .vusb: return try make(inventory.usbs, sheet: "vUSB")
     case .vpartition: return try make(inventory.partitions, sheet: "vPartition")
     case .vhealth: return try make(healthChecks, sheet: "vHealth")

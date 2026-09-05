@@ -371,6 +371,15 @@ public enum DemoData {
         }
     }
 
+    public static func floppies(for vms: [VirtualMachineInfo]) -> [FloppyInfo] {
+        vms.enumerated().compactMap { i, vm in
+            // One connected floppy so the vHealth "Floppy connected" rule
+            // (RVTools #2) is actually demonstrable in demo mode.
+            guard i == 1 else { return nil }
+            return FloppyInfo(id: "\(vm.vmUUID)-floppy", vmName: vm.name, powerState: vm.powerState, connected: true)
+        }
+    }
+
     public static func usbs(for vms: [VirtualMachineInfo]) -> [USBInfo] {
         vms.enumerated().compactMap { i, vm in
             guard i % 15 == 0 else { return nil }
