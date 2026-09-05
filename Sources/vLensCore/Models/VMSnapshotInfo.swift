@@ -8,6 +8,15 @@ public struct VMSnapshotInfo: Codable, Identifiable, Sendable {
     public let snapshotName: String
     public let snapshotDescription: String?
     public let createdDate: Date
+    /// This snapshot's own data (`.vmsn`) + memory file size — deliberately
+    /// NOT the disk delta chain (`layoutEx.snapshot`'s `Disk` entries),
+    /// because attributing how much of a chain's cumulative size belongs to
+    /// any one snapshot isn't well-defined without guessing. This
+    /// underreports vs. RVTools' "Size MiB (total)" (which does include
+    /// disk deltas) — every number here is real, not estimated, but a
+    /// capacity decision made from this column alone could be wrong. The UI
+    /// says so directly (`VSnapshotTabView`'s "Size MiB (excl. deltas)"
+    /// column header) rather than only in this comment.
     public let sizeMiBTotal: Int?
     public let quiesced: Bool
     public let hostName: String

@@ -3,6 +3,19 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.4.3] - 2026-09-05 (+03)
+
+### Changed
+- **vSnapshot's "Size MiB" column now says what it doesn't include.**
+  It's always been this snapshot's own data + memory file size,
+  deliberately excluding the disk delta chain (attributing how much of a
+  chain's cumulative size belongs to any one snapshot isn't well-defined
+  without guessing) — every number was real, never estimated, but that
+  caveat lived only in a code comment, not anywhere a user looking at the
+  table would see it. The column header now reads "Size MiB (excl.
+  deltas)" so a capacity decision made from this column alone isn't made
+  on a false assumption of completeness.
+
 ## [1.4.2] - 2026-09-05 (+03)
 
 ### Fixed
