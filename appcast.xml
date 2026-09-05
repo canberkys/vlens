@@ -6,22 +6,22 @@
         <description>vLens release updates</description>
         <language>en</language>
         <item>
-            <title>Version 1.5.3</title>
-            <pubDate>Sat, 05 Sep 2026 18:39:38 +0000</pubDate>
-            <sparkle:version>22</sparkle:version>
-            <sparkle:shortVersionString>1.5.3</sparkle:shortVersionString>
+            <title>Version 1.5.4</title>
+            <pubDate>Sat, 05 Sep 2026 18:55:49 +0000</pubDate>
+            <sparkle:version>23</sparkle:version>
+            <sparkle:shortVersionString>1.5.4</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[
 <h4>Added</h4>
 <ul>
-<li><strong>Certificate expiry vHealth rule</strong> (RVTools #24, 16 of 24 documented rules now implemented) — warns when a host&#x27;s own TLS certificate is within a configurable number of days of expiring (default 90, matching RVTools&#x27; own default), or flags it red if already expired. Adjustable in Preferences alongside the other vHealth thresholds. A host&#x27;s certificate lives on a separate <code>CertificateManager</code> child object, not a plain <code>HostSystem</code> property — a real second, batched round trip per collection, not free like the other recent host-level rules; a host whose certificate can&#x27;t be read (e.g. a permission restriction some environments apply) is silently skipped rather than failing the whole collection.</li>
+<li><strong>vFloppy tab + Floppy connected vHealth rule</strong> (RVTools #2, 17 of 24 documented rules now implemented) — the last new device tab in this round of parity work. Per-VM floppy devices, read from the already-fetched <code>config.hardware.device</code> list (mirrors the existing vCD/vUSB tabs exactly, no extra collection round-trip). A connected floppy is flagged as a yellow vHealth finding, same pattern as the existing CDROM-connected rule. vcsim&#x27;s default VMs never carry a floppy device, so this was verified structurally (<code>collectAll</code> returns a correctly-typed empty array, 10 VMs collected without error) rather than against a positive fixture — same limitation the vUSB/vPartition tabs already documented.</li>
 </ul>
             ]]></description>
             <enclosure
-                url="https://github.com/canberkys/vlens/releases/download/v1.5.3/vLens-1.5.3.dmg"
-                length="13261956"
+                url="https://github.com/canberkys/vlens/releases/download/v1.5.4/vLens-1.5.4.dmg"
+                length="13287267"
                 type="application/octet-stream"
-                sparkle:edSignature="dewGuZKuWCH6k29qdxGkw3qJO1pbJzLVL5wGIM4A1ZbVb3llH3yF7OjEUkV9Wsi9/ICQmfrbgECOJU8qEqjLCA==" />
+                sparkle:edSignature="a4v0MsZreFsXzvXbpY62f+x6gF84uWZVFB5n+KxHYmfxzOC2vJZpmEbrf+dmyNlT4+vsyguewQcoNS5D2lfSAA==" />
         </item>
     </channel>
 </rss>
