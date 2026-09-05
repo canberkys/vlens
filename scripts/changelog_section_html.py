@@ -35,41 +35,58 @@ def inline_format(escaped_text: str) -> str:
 
 
 def to_html(section: str) -> str:
+    """Accumulates each list item/paragraph's full RAW text across all of
+    its wrapped continuation lines first, and only escapes+formats it once
+    that's complete — not line by line. A `**bold**` span that wraps across
+    a continuation line (a real, common shape in this CHANGELOG's longer
+    bullets) has its opening and closing markers on two different physical
+    lines; formatting each line in isolation, as an earlier version of this
+    function did, meant `inline_format` never saw both markers in the same
+    call and left the asterisks in literally — confirmed by regenerating a
+    real release's appcast section and finding several bullets that
+    happened to wrap exactly where a `**...**` span crossed the line break."""
     lines = section.splitlines()
     html_lines: list[str] = []
     in_list = False
-    # Indices into html_lines of the currently-open <li>/<p>, so a wrapped
-    # continuation line (markdown's own convention: an indented line right
-    # after a "- " bullet, no "- " of its own) can be appended to it
-    # instead of becoming its own stray paragraph.
-    open_item_index: int | None = None
+    current_tag: str | None = None
+    current_text = ""
+
+    def flush() -> None:
+        nonlocal current_tag, current_text
+        if current_tag is not None:
+            html_lines.append(f"<{current_tag}>{inline_format(html.escape(current_text))}</{current_tag}>")
+        current_tag = None
+        current_text = ""
 
     for line in lines:
         stripped = line.strip()
         if not stripped:
-            open_item_index = None
+            flush()
             continue
         if stripped.startswith("### "):
+            flush()
             if in_list:
                 html_lines.append("</ul>")
                 in_list = False
             html_lines.append(f"<h4>{inline_format(html.escape(stripped[4:]))}</h4>")
-            open_item_index = None
         elif stripped.startswith("- "):
+            flush()
             if not in_list:
                 html_lines.append("<ul>")
                 in_list = True
-            html_lines.append(f"<li>{inline_format(html.escape(stripped[2:]))}</li>")
-            open_item_index = len(html_lines) - 1
-        elif open_item_index is not None:
-            tag = "li" if in_list else "p"
-            html_lines[open_item_index] = html_lines[open_item_index][: -len(f"</{tag}>")] + " " + inline_format(html.escape(stripped)) + f"</{tag}>"
+            current_tag = "li"
+            current_text = stripped[2:]
+        elif current_tag is not None:
+            current_text += " " + stripped
         else:
+            flush()
             if in_list:
                 html_lines.append("</ul>")
                 in_list = False
-            html_lines.append(f"<p>{inline_format(html.escape(stripped))}</p>")
-            open_item_index = len(html_lines) - 1
+            current_tag = "p"
+            current_text = stripped
+
+    flush()
     if in_list:
         html_lines.append("</ul>")
     return "\n".join(html_lines)
