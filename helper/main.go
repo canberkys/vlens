@@ -206,6 +206,7 @@ type hostInfo struct {
 	NumVMsTotal        int      `json:"numVMsTotal"`
 	NumVMsRunning      int      `json:"numVMsRunning"`
 	EsxVersion         string   `json:"esxVersion"`
+	EsxBuild           string   `json:"esxBuild"`
 	Vendor             *string  `json:"vendor"`
 	Model              *string  `json:"model"`
 	MaintenanceMode    bool     `json:"maintenanceMode"`
@@ -1174,6 +1175,7 @@ func collectHosts(ctx context.Context, client *govmomi.Client, clusterNames map[
 
 		if p := h.Summary.Config.Product; p != nil {
 			info.EsxVersion = p.Version
+			info.EsxBuild = p.Build
 		}
 
 		result = append(result, info)

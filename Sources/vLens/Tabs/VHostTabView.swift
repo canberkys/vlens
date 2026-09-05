@@ -19,7 +19,13 @@ struct VHostTabView: View {
             TableColumn("Memory MiB", sortUsing: FieldComparator.value("memory", \.memoryTotalMiB)) { Text("\($0.memoryTotalMiB)") }
             TableColumn("Mem %", sortUsing: FieldComparator.optional("memPercent", \.memoryUsagePercent)) { Text($0.memoryUsagePercent.map { String(format: "%.0f", $0) } ?? "—") }
             TableColumn("VMs", sortUsing: FieldComparator.value("vms", \.numVMsRunning)) { Text("\($0.numVMsRunning)/\($0.numVMsTotal)") }
-            TableColumn("ESXi Version", sortUsing: FieldComparator.value("esxVersion", \.esxVersion)) { Text($0.esxVersion) }
+            // Build appended in parentheses rather than its own column —
+            // this table is already at the established 10-column limit
+            // (see CLAUDE.md); the full separate value is still available
+            // via CSV/XLSX export ("ESXi Build" column).
+            TableColumn("ESXi Version", sortUsing: FieldComparator.value("esxVersion", \.esxVersion)) { row in
+                Text(row.esxBuild.isEmpty ? row.esxVersion : "\(row.esxVersion) (\(row.esxBuild))")
+            }
         }
     }
 }

@@ -205,6 +205,10 @@ public enum DemoData {
                 // 2025-10-02) — demonstrates the ESXi end-of-life badge
                 // (GitHub issue #19) without fabricating a fake EOL date.
                 esxVersion: i == 0 ? "7.0.3" : "8.0.3",
+                // Representative build strings (mock data, like the rest
+                // of this file) — real format, not tied to a specific
+                // verified patch.
+                esxBuild: i == 0 ? "19193900" : "24022515",
                 vendor: "Dell Inc.",
                 model: "PowerEdge R750",
                 maintenanceMode: false

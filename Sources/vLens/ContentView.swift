@@ -89,9 +89,10 @@ struct ContentView: View {
             await viewModel.checkSecurityAdvisories()
         }
         .task {
-            // Same shape — see checkESXiEndOfLife(). hostEOLStatuses only
-            // has anything to show once hosts is populated (connect/demo).
-            await viewModel.checkESXiEndOfLife()
+            // Same shape — see checkVMwareEndOfLife(). hostEOLStatuses/
+            // vCenterEOLStatus only have anything to show once hosts/
+            // vCenterInfo are populated (connect/demo).
+            await viewModel.checkVMwareEndOfLife()
         }
     }
 
@@ -325,15 +326,19 @@ struct ContentView: View {
                     showEOLWarnings = true
                 } label: {
                     Label(
-                        "\(viewModel.notableEOLCount) ESXi EOL",
+                        "\(viewModel.notableEOLCount) EOL",
                         systemImage: "calendar.badge.exclamationmark"
                     )
-                    .foregroundStyle(viewModel.hostEOLStatuses.contains { $0.severity() == .red } ? .red : .orange)
+                    .foregroundStyle(
+                        viewModel.hostEOLStatuses.contains { $0.severity() == .red }
+                            || viewModel.vCenterEOLStatus?.severity() == .red
+                            ? .red : .orange
+                    )
                 }
                 .popover(isPresented: $showEOLWarnings) {
-                    ESXiEOLView(statuses: viewModel.hostEOLStatuses)
+                    VMwareEOLView(hostStatuses: viewModel.hostEOLStatuses, vCenterStatus: viewModel.vCenterEOLStatus)
                 }
-                .help("ESXi hosts nearing or past their VMware general-support end-of-life date — from endoflife.date's public lifecycle data, matched against each host's collected version.")
+                .help("ESXi hosts and/or vCenter nearing or past their VMware general-support end-of-life date — from endoflife.date's public lifecycle data, matched against each collected version.")
             }
 
             Button {

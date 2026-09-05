@@ -1,14 +1,15 @@
 import Foundation
 
-/// Fetches ESXi's release lifecycle (general-support end-of-life per major
-/// version) from endoflife.date's public API — deliberately not routed
-/// through the Go helper: this has nothing to do with a vCenter connection,
-/// just a plain HTTPS GET to a public, unauthenticated endpoint. Verified
-/// with a real request during planning (GitHub issue #19), not assumed
-/// from documentation alone — `GET https://endoflife.date/api/v1/products/esxi`
-/// returns real `eolFrom`/`isEol`/`isMaintained` per major.minor release.
+/// Fetches VMware product release lifecycle (general-support end-of-life
+/// per major version) from endoflife.date's public API — deliberately not
+/// routed through the Go helper: this has nothing to do with a vCenter
+/// connection, just a plain HTTPS GET to a public, unauthenticated
+/// endpoint. Both ESXi and vCenter are separate products on endoflife.date
+/// (`/api/v1/products/esxi`, `/api/v1/products/vcenter`) but share the
+/// identical response schema — verified with real requests during
+/// planning (GitHub issue #19), not assumed from documentation alone.
 public struct EndOfLifeClient: Sendable {
-    private static let endpoint = URL(string: "https://endoflife.date/api/v1/products/esxi")!
+    private static let baseURL = URL(string: "https://endoflife.date/api/v1/products/")!
 
     private let session: URLSession
 
@@ -16,14 +17,23 @@ public struct EndOfLifeClient: Sendable {
         self.session = session
     }
 
-    public func fetchESXiReleaseCycles() async throws -> [ESXiReleaseCycle] {
-        let (data, response) = try await session.data(from: Self.endpoint)
+    public func fetchESXiReleaseCycles() async throws -> [VMwareReleaseCycle] {
+        try await fetchReleaseCycles(product: "esxi")
+    }
+
+    public func fetchVCenterReleaseCycles() async throws -> [VMwareReleaseCycle] {
+        try await fetchReleaseCycles(product: "vcenter")
+    }
+
+    private func fetchReleaseCycles(product: String) async throws -> [VMwareReleaseCycle] {
+        let url = Self.baseURL.appendingPathComponent(product)
+        let (data, response) = try await session.data(from: url)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw EndOfLifeClientError.badResponse
         }
         let decoded = try JSONDecoder().decode(APIResponse.self, from: data)
         return decoded.result.releases.map { raw in
-            ESXiReleaseCycle(
+            VMwareReleaseCycle(
                 version: raw.name,
                 eolDate: raw.eolFrom.flatMap { Self.dateFormatter.date(from: $0) },
                 isEol: raw.isEol,

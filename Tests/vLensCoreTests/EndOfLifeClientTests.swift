@@ -59,26 +59,38 @@ struct EndOfLifeClientTests {
             _ = try await client.fetchESXiReleaseCycles()
         }
     }
+
+    /// Same decode path, different endoflife.date product (vCenter is a
+    /// separate product from ESXi, but shares the identical schema —
+    /// confirmed with a real request during planning, GitHub issue #19).
+    @Test func fetchVCenterReleaseCyclesUsesSameDecodePath() async throws {
+        let client = makeStubbedClient(json: Self.capturedJSON)
+
+        let cycles = try await client.fetchVCenterReleaseCycles()
+
+        #expect(cycles.count == 2)
+        #expect(cycles.contains { $0.version == "8.0" && !$0.isEol })
+    }
 }
 
 @Suite
-struct ESXiReleaseCycleMatchingTests {
+struct VMwareReleaseCycleMatchingTests {
     private static let cycles = [
-        ESXiReleaseCycle(version: "8.0", eolDate: Calendar.current.date(byAdding: .year, value: 1, to: Date()), isEol: false, isMaintained: true),
-        ESXiReleaseCycle(version: "7.0", eolDate: Calendar.current.date(byAdding: .day, value: -30, to: Date()), isEol: true, isMaintained: false),
+        VMwareReleaseCycle(version: "8.0", eolDate: Calendar.current.date(byAdding: .year, value: 1, to: Date()), isEol: false, isMaintained: true),
+        VMwareReleaseCycle(version: "7.0", eolDate: Calendar.current.date(byAdding: .day, value: -30, to: Date()), isEol: true, isMaintained: false),
     ]
 
     @Test func matchesByMajorMinorIgnoringPatchVersion() {
-        let match = Self.cycles.matching(esxVersion: "7.0.3")
+        let match = Self.cycles.matching(version: "7.0.3")
         #expect(match?.version == "7.0")
     }
 
     @Test func returnsNilForUnknownVersion() {
-        #expect(Self.cycles.matching(esxVersion: "9.9.9") == nil)
+        #expect(Self.cycles.matching(version: "9.9.9") == nil)
     }
 
     @Test func returnsNilForMalformedVersionString() {
-        #expect(Self.cycles.matching(esxVersion: "notaversion") == nil)
+        #expect(Self.cycles.matching(version: "notaversion") == nil)
     }
 
     @Test func severityIsRedWhenAlreadyEol() {
@@ -92,7 +104,7 @@ struct ESXiReleaseCycleMatchingTests {
     }
 
     @Test func severityIsOrangeWithinWarningWindow() {
-        let soonCycle = ESXiReleaseCycle(
+        let soonCycle = VMwareReleaseCycle(
             version: "8.0", eolDate: Calendar.current.date(byAdding: .day, value: 60, to: Date()),
             isEol: false, isMaintained: true
         )
@@ -101,8 +113,16 @@ struct ESXiReleaseCycleMatchingTests {
     }
 
     @Test func severityIsGreenWhenNoEolDateIsKnownYet() {
-        let unknownCycle = ESXiReleaseCycle(version: "9.1", eolDate: nil, isEol: false, isMaintained: true)
+        let unknownCycle = VMwareReleaseCycle(version: "9.1", eolDate: nil, isEol: false, isMaintained: true)
         let status = HostEOLStatus(hostName: "esx-04", esxVersion: "9.1.0", cycle: unknownCycle)
         #expect(status.severity() == .green)
+    }
+
+    /// vCenter shares the exact same severity logic as a host — same
+    /// underlying `eolSeverity(for:warningDays:)`, just a different wrapper
+    /// type since there's only ever one vCenter per connection.
+    @Test func vCenterStatusSeverityIsRedWhenAlreadyEol() {
+        let status = VCenterEOLStatus(version: "7.0.3", cycle: Self.cycles[1])
+        #expect(status.severity() == .red)
     }
 }

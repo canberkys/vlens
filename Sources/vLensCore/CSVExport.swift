@@ -126,13 +126,13 @@ extension VMToolsInfo: CSVExportable {
 
 extension HostInfo: CSVExportable {
     public static var csvHeader: [String] {
-        ["Host", "Cluster", "Status", "CPU Model", "Cores", "CPU %", "Memory MiB", "Mem %", "VMs Running", "VMs Total", "ESXi Version"]
+        ["Host", "Cluster", "Status", "CPU Model", "Cores", "CPU %", "Memory MiB", "Mem %", "VMs Running", "VMs Total", "ESXi Version", "ESXi Build"]
     }
     public static var xlsxColumnTypes: [XLSXColumnType] {
-        [.text, .text, .text, .text, .number, .number, .number, .number, .number, .number, .text]
+        [.text, .text, .text, .text, .number, .number, .number, .number, .number, .number, .text, .text]
     }
     public var csvRow: [String] {
-        [name, clusterName ?? "", configStatus.rawValue, cpuModel, "\(numCpuCores)", cpuUsagePercent.map { String(format: "%.0f", $0) } ?? "", "\(memoryTotalMiB)", memoryUsagePercent.map { String(format: "%.0f", $0) } ?? "", "\(numVMsRunning)", "\(numVMsTotal)", esxVersion]
+        [name, clusterName ?? "", configStatus.rawValue, cpuModel, "\(numCpuCores)", cpuUsagePercent.map { String(format: "%.0f", $0) } ?? "", "\(memoryTotalMiB)", memoryUsagePercent.map { String(format: "%.0f", $0) } ?? "", "\(numVMsRunning)", "\(numVMsTotal)", esxVersion, esxBuild]
     }
 }
 

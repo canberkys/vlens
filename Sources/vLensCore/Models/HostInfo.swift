@@ -19,6 +19,13 @@ public struct HostInfo: Codable, Identifiable, Sendable {
     public let numVMsTotal: Int
     public let numVMsRunning: Int
     public let esxVersion: String
+    /// The actual ESXi build number (e.g. "24022515") — distinct from
+    /// `esxVersion`'s dotted release version (e.g. "8.0.3"): two hosts can
+    /// report the same version while being on different patch builds, and
+    /// version alone can't be checked against a specific advisory/patch
+    /// level. Same `AboutInfo.Build` field `VCenterInfo.build` already
+    /// reads for vCenter itself, just host-scoped here.
+    public let esxBuild: String
     public let vendor: String?
     public let model: String?
     public let maintenanceMode: Bool
@@ -28,7 +35,7 @@ public struct HostInfo: Codable, Identifiable, Sendable {
         configStatus: EntityStatus, cpuModel: String, cpuMhz: Int, numCpuCores: Int,
         numCpuThreads: Int, cpuUsagePercent: Double?, memoryTotalMiB: Int,
         memoryUsagePercent: Double?, numNics: Int, numHbas: Int, numVMsTotal: Int,
-        numVMsRunning: Int, esxVersion: String, vendor: String?, model: String?,
+        numVMsRunning: Int, esxVersion: String, esxBuild: String, vendor: String?, model: String?,
         maintenanceMode: Bool
     ) {
         self.id = id
@@ -48,6 +55,7 @@ public struct HostInfo: Codable, Identifiable, Sendable {
         self.numVMsTotal = numVMsTotal
         self.numVMsRunning = numVMsRunning
         self.esxVersion = esxVersion
+        self.esxBuild = esxBuild
         self.vendor = vendor
         self.model = model
         self.maintenanceMode = maintenanceMode
