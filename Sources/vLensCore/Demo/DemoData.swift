@@ -200,7 +200,11 @@ public enum DemoData {
                 numHbas: 2,
                 numVMsTotal: 10 + i * 3,
                 numVMsRunning: 8 + i * 2,
-                esxVersion: "8.0.3",
+                // One host deliberately on an already-EOL version (real
+                // endoflife.date data: ESXi 7.0's general support ended
+                // 2025-10-02) — demonstrates the ESXi end-of-life badge
+                // (GitHub issue #19) without fabricating a fake EOL date.
+                esxVersion: i == 0 ? "7.0.3" : "8.0.3",
                 vendor: "Dell Inc.",
                 model: "PowerEdge R750",
                 maintenanceMode: false

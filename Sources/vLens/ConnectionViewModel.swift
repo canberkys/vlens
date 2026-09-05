@@ -92,6 +92,20 @@ final class ConnectionViewModel {
     var securityAdvisories: [SecurityAdvisory] = []
     var notableAdvisoryCount: Int { securityAdvisories.filter(\.isNotable).count }
 
+    /// ESXi release-cycle lifecycle data — not vCenter data, a plain
+    /// internet fetch (GitHub issue #19). See `checkESXiEndOfLife()`.
+    var esxiReleaseCycles: [ESXiReleaseCycle] = []
+    /// Derived from whatever hosts are currently loaded (real or demo)
+    /// plus the fetched release-cycle data — recomputed automatically
+    /// whenever either changes, no separate vCenter round-trip.
+    var hostEOLStatuses: [HostEOLStatus] {
+        hosts.compactMap { host in
+            guard let cycle = esxiReleaseCycles.matching(esxVersion: host.esxVersion) else { return nil }
+            return HostEOLStatus(hostName: host.name, esxVersion: host.esxVersion, cycle: cycle)
+        }
+    }
+    var notableEOLCount: Int { hostEOLStatuses.filter { $0.severity() != .green }.count }
+
     /// Not part of `collectAll` — see `collectPerformance()` below and
     /// `collectPerformanceAction`'s doc comment in `helper/main.go`.
     var performanceMetrics: [VMPerformanceInfo] = []
@@ -152,6 +166,7 @@ final class ConnectionViewModel {
     private let snapshotPreferencesStore = SnapshotPreferencesStore()
     private let automationPreferencesStore = AutomationPreferencesStore()
     private let vmsaClient = VMSAClient()
+    private let endOfLifeClient = EndOfLifeClient()
 
     init() {
         savedProfiles = profileStore.loadAll()
@@ -517,6 +532,14 @@ final class ConnectionViewModel {
     /// should ever interrupt or alarm the user with an error dialog.
     func checkSecurityAdvisories() async {
         securityAdvisories = (try? await vmsaClient.fetchRecentAdvisories()) ?? []
+    }
+
+    /// Called once per app launch (`ContentView`'s `.task`) — same shape as
+    /// `checkSecurityAdvisories()`: a plain internet fetch, silently
+    /// no-ops on failure, never interrupts with an error. `hostEOLStatuses`
+    /// recomputes on its own once `hosts` is populated (connect or demo).
+    func checkESXiEndOfLife() async {
+        esxiReleaseCycles = (try? await endOfLifeClient.fetchESXiReleaseCycles()) ?? []
     }
 
     // MARK: - Snapshots (local history, see SnapshotsTabView)
