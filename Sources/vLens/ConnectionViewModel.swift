@@ -363,6 +363,8 @@ final class ConnectionViewModel {
             partitions: partitions,
             multipaths: multipaths,
             vms: vms,
+            disks: disks,
+            memory: memory,
             thresholds: healthCheckThresholds
         )
     }

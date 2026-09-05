@@ -4,7 +4,7 @@ import Foundation
 /// tabs — matches RVTools' own model (vHealth doesn't do a separate
 /// collection pass, it evaluates rules over vInfo/vSnapshot/vTools/etc.).
 ///
-/// Implements 10 of RVTools' 24 documented rules (numbering matches
+/// Implements 12 of RVTools' 24 documented rules (numbering matches
 /// rvtools.txt's vHealth section):
 ///   #1  VM has a CDROM device connected!
 ///   #3  VM has an active snapshot!
@@ -15,8 +15,10 @@ import Foundation
 ///   #8  There are xx VMs active on this datastore! (threshold zz)
 ///   #12 Multipath operational state (degraded/dead paths)
 ///   #13 Virtual machine consolidation needed
+///   #22 Disk I/O performance tip (PVSCSI controller count vs. disk count/size)
+///   #23 In-memory performance tip (NUMA exposure vs. hot-add/cores-per-socket)
 ///   host config status not green (rolled into the vHealth concept generally)
-/// The remaining 14 rules (floppy connected, zombie VMDK/VM, NTP/cert
+/// The remaining 12 rules (floppy connected, zombie VMDK/VM, NTP/cert
 /// expiry, config-issue events, etc.) need data this app doesn't collect
 /// yet — add them incrementally as their source tabs are built.
 public enum HealthCheckEngine {
@@ -30,6 +32,8 @@ public enum HealthCheckEngine {
         partitions: [PartitionInfo] = [],
         multipaths: [MultipathInfo] = [],
         vms: [VirtualMachineInfo] = [],
+        disks: [VMDiskInfo] = [],
+        memory: [VMMemoryInfo] = [],
         thresholds: HealthCheckThresholds = HealthCheckThresholds()
     ) -> [HealthCheckResult] {
         var results: [HealthCheckResult] = []
@@ -161,6 +165,58 @@ public enum HealthCheckEngine {
                     relatedObject: host.name
                 ))
             }
+        }
+
+        // #22 Disk I/O performance tip — RVTools' own documented rule and
+        // thresholds (not user-adjustable in RVTools either, so not added
+        // to HealthCheckThresholds): a VM with more than 3 disks totaling
+        // over 750 GiB should spread them across at least 2 Paravirtual
+        // SCSI controllers for lower latency; fewer than 2 means every
+        // disk funnels through the same queue.
+        let disksByVM = Dictionary(grouping: disks, by: \.vmName)
+        for vm in vms where vm.powerState == .poweredOn {
+            guard let vmDisks = disksByVM[vm.name] else { continue }
+            let totalDiskGiB = Double(vmDisks.reduce(0) { $0 + $1.capacityMiB }) / 1024.0
+            guard vmDisks.count > 3, totalDiskGiB > 750, vm.pvscsiControllerCount < 2 else { continue }
+            results.append(HealthCheckResult(
+                id: "diskperf.\(vm.vmUUID)",
+                severity: .yellow,
+                rule: "Disk I/O performance tip",
+                message: "\(vm.name): \(vmDisks.count) disks (\(String(format: "%.0f", totalDiskGiB)) GiB total) on only \(vm.pvscsiControllerCount) Paravirtual SCSI controller(s) — spreading disks across multiple PVSCSI controllers lowers latency.",
+                relatedObject: vm.name
+            ))
+        }
+
+        // #23 In-memory performance tip — RVTools' documented rule also
+        // checks a `vnumaOnCpuHotaddExposed` VM setting; that isn't a
+        // documented, reliably-sourceable vim25 API property (unlike every
+        // other field this engine reads), so it's deliberately left out
+        // rather than guessed at. The other three conditions (>=4 cores,
+        // CPU/memory hot-add, one core per socket) are each real collected
+        // fields and implemented as documented — any one of them can
+        // prevent virtual NUMA from being exposed to the guest OS.
+        let cpuByVM = Dictionary(cpus.map { ($0.vmName, $0) }, uniquingKeysWith: { first, _ in first })
+        let memoryByVM = Dictionary(memory.map { ($0.vmName, $0) }, uniquingKeysWith: { first, _ in first })
+        for vm in vms where vm.powerState == .poweredOn {
+            guard let cpu = cpuByVM[vm.name], cpu.cpuCount >= 4 else { continue }
+            let reason: String?
+            if cpu.hotAddEnabled {
+                reason = "CPU Hot Add is enabled"
+            } else if memoryByVM[vm.name]?.hotAddEnabled == true {
+                reason = "Memory Hot Add is enabled"
+            } else if cpu.coresPerSocket == 1 {
+                reason = "only 1 core per socket is configured"
+            } else {
+                reason = nil
+            }
+            guard let reason else { continue }
+            results.append(HealthCheckResult(
+                id: "memperf.\(vm.vmUUID)",
+                severity: .yellow,
+                rule: "In-memory performance tip",
+                message: "\(vm.name): \(cpu.cpuCount) vCPUs but \(reason) — this can prevent virtual NUMA from being exposed to the guest, hurting memory-latency-sensitive workloads.",
+                relatedObject: vm.name
+            ))
         }
 
         return results

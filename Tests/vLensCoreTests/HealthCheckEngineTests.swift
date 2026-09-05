@@ -182,3 +182,133 @@ import Testing
 
     #expect(results.isEmpty)
 }
+
+// #22 Disk I/O performance tip — RVTools: running VM, >3 disks, >750 GiB
+// total, <2 Paravirtual SCSI controllers.
+
+private func makeDisk(vmName: String, capacityMiB: Int, index: Int) -> VMDiskInfo {
+    VMDiskInfo(
+        id: "\(vmName)-disk\(index)", vmName: vmName, powerState: .poweredOn,
+        diskLabel: "Hard disk \(index)", capacityMiB: capacityMiB, thinProvisioned: false,
+        diskMode: "persistent", controller: "SCSI controller (Paravirtual)", unitNumber: index,
+        datastorePath: "[ds1] \(vmName)/disk\(index).vmdk", hostName: "esxi-01"
+    )
+}
+
+@Test func flagsDiskIOPerformanceTip() {
+    let vm = VirtualMachineInfo(
+        name: "db-01", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 4,
+        memoryMiB: 16384, hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "vm1", pvscsiControllerCount: 1
+    )
+    // 4 disks x 250 GiB (256000 MiB) = 1000 GiB total, both thresholds cleared.
+    let disks = (1...4).map { makeDisk(vmName: "db-01", capacityMiB: 256_000, index: $0) }
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [], vms: [vm], disks: disks
+    )
+
+    #expect(results.count == 1)
+    #expect(results[0].rule == "Disk I/O performance tip")
+}
+
+@Test func doesNotFlagDiskIOPerformanceTipWithEnoughControllers() {
+    let vm = VirtualMachineInfo(
+        name: "db-01", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 4,
+        memoryMiB: 16384, hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "vm1", pvscsiControllerCount: 2
+    )
+    let disks = (1...4).map { makeDisk(vmName: "db-01", capacityMiB: 256_000, index: $0) }
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [], vms: [vm], disks: disks
+    )
+
+    #expect(results.isEmpty)
+}
+
+@Test func doesNotFlagDiskIOPerformanceTipWithFewDisks() {
+    let vm = VirtualMachineInfo(
+        name: "db-01", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 4,
+        memoryMiB: 16384, hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "vm1", pvscsiControllerCount: 1
+    )
+    // Only 3 disks (not > 3), even though large and under-controllered.
+    let disks = (1...3).map { makeDisk(vmName: "db-01", capacityMiB: 256_000, index: $0) }
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [], vms: [vm], disks: disks
+    )
+
+    #expect(results.isEmpty)
+}
+
+// #23 In-memory performance tip — RVTools: running VM, >=4 cores, and
+// (CPU hot add OR memory hot add OR one core per socket). The
+// `vnumaOnCpuHotaddExposed` sub-condition RVTools also checks isn't a
+// reliably-sourceable vim25 field, so it's deliberately not part of this
+// implementation (see HealthCheckEngine.swift's doc comment).
+
+@Test func flagsInMemoryPerformanceTipForHotAddCPU() {
+    let vm = VirtualMachineInfo(
+        name: "sql-01", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 8,
+        memoryMiB: 32768, hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "vm1"
+    )
+    let cpu = VMCpuInfo(
+        id: "vm1", vmName: "sql-01", powerState: .poweredOn, cpuCount: 8, sockets: 2, coresPerSocket: 4,
+        overallUsageMHz: nil, reservationMHz: 0, limitMHz: -1, hotAddEnabled: true, hotRemoveEnabled: false,
+        hostName: "esxi-01", clusterName: nil
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [cpu], vms: [vm]
+    )
+
+    #expect(results.count == 1)
+    #expect(results[0].rule == "In-memory performance tip")
+}
+
+@Test func flagsInMemoryPerformanceTipForOneCorePerSocket() {
+    let vm = VirtualMachineInfo(
+        name: "sql-01", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 4,
+        memoryMiB: 32768, hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "vm1"
+    )
+    let cpu = VMCpuInfo(
+        id: "vm1", vmName: "sql-01", powerState: .poweredOn, cpuCount: 4, sockets: 4, coresPerSocket: 1,
+        overallUsageMHz: nil, reservationMHz: 0, limitMHz: -1, hotAddEnabled: false, hotRemoveEnabled: false,
+        hostName: "esxi-01", clusterName: nil
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [cpu], vms: [vm]
+    )
+
+    #expect(results.count == 1)
+    #expect(results[0].rule == "In-memory performance tip")
+}
+
+@Test func doesNotFlagInMemoryPerformanceTipForHealthyConfig() {
+    let vm = VirtualMachineInfo(
+        name: "sql-01", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 8,
+        memoryMiB: 32768, hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "vm1"
+    )
+    let cpu = VMCpuInfo(
+        id: "vm1", vmName: "sql-01", powerState: .poweredOn, cpuCount: 8, sockets: 2, coresPerSocket: 4,
+        overallUsageMHz: nil, reservationMHz: 0, limitMHz: -1, hotAddEnabled: false, hotRemoveEnabled: false,
+        hostName: "esxi-01", clusterName: nil
+    )
+    let memory = VMMemoryInfo(
+        id: "vm1", vmName: "sql-01", powerState: .poweredOn, sizeMiB: 32768, overheadMiB: nil,
+        consumedMiB: nil, activeMiB: nil, sharedMiB: nil, swappedMiB: nil, balloonedMiB: nil,
+        reservationMiB: 0, limitMiB: -1, hotAddEnabled: false, hostName: "esxi-01", clusterName: nil
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [cpu], vms: [vm], memory: [memory]
+    )
+
+    #expect(results.isEmpty)
+}
