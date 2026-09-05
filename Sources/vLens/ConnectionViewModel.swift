@@ -92,6 +92,36 @@ final class ConnectionViewModel {
     var securityAdvisories: [SecurityAdvisory] = []
     var notableAdvisoryCount: Int { securityAdvisories.filter(\.isNotable).count }
 
+    /// VMware release-cycle lifecycle data — not vCenter *data*, a plain
+    /// internet fetch (GitHub issue #19). Two separate endoflife.date
+    /// products (ESXi and vCenter Server), same schema. See
+    /// `checkVMwareEndOfLife()`.
+    var esxiReleaseCycles: [VMwareReleaseCycle] = []
+    var vCenterReleaseCycles: [VMwareReleaseCycle] = []
+
+    /// Derived from whatever hosts are currently loaded (real or demo)
+    /// plus the fetched release-cycle data — recomputed automatically
+    /// whenever either changes, no separate vCenter round-trip.
+    var hostEOLStatuses: [HostEOLStatus] {
+        hosts.compactMap { host in
+            guard let cycle = esxiReleaseCycles.matching(version: host.esxVersion) else { return nil }
+            return HostEOLStatus(hostName: host.name, esxVersion: host.esxVersion, cycle: cycle)
+        }
+    }
+    /// Same idea, for the single connected vCenter — deliberately not a
+    /// list (there's only ever one), not a sidebar tab (see
+    /// `VCenterEOLStatus`'s doc comment for why): shown as an extra row
+    /// in the same popover as the hosts instead.
+    var vCenterEOLStatus: VCenterEOLStatus? {
+        guard let info = vCenterInfo, let cycle = vCenterReleaseCycles.matching(version: info.version) else { return nil }
+        return VCenterEOLStatus(version: info.version, cycle: cycle)
+    }
+    var notableEOLCount: Int {
+        let notableHosts = hostEOLStatuses.filter { $0.severity() != .green }.count
+        let vCenterNotable = (vCenterEOLStatus?.severity() ?? .green) != .green ? 1 : 0
+        return notableHosts + vCenterNotable
+    }
+
     /// Not part of `collectAll` — see `collectPerformance()` below and
     /// `collectPerformanceAction`'s doc comment in `helper/main.go`.
     var performanceMetrics: [VMPerformanceInfo] = []
@@ -152,6 +182,7 @@ final class ConnectionViewModel {
     private let snapshotPreferencesStore = SnapshotPreferencesStore()
     private let automationPreferencesStore = AutomationPreferencesStore()
     private let vmsaClient = VMSAClient()
+    private let endOfLifeClient = EndOfLifeClient()
 
     init() {
         savedProfiles = profileStore.loadAll()
@@ -517,6 +548,19 @@ final class ConnectionViewModel {
     /// should ever interrupt or alarm the user with an error dialog.
     func checkSecurityAdvisories() async {
         securityAdvisories = (try? await vmsaClient.fetchRecentAdvisories()) ?? []
+    }
+
+    /// Called once per app launch (`ContentView`'s `.task`) — same shape as
+    /// `checkSecurityAdvisories()`: a plain internet fetch, silently
+    /// no-ops on failure, never interrupts with an error. `hostEOLStatuses`/
+    /// `vCenterEOLStatus` recompute on their own once `hosts`/`vCenterInfo`
+    /// are populated (connect or demo). The two products are fetched
+    /// concurrently — independent requests, no reason to serialize them.
+    func checkVMwareEndOfLife() async {
+        async let esxi = (try? endOfLifeClient.fetchESXiReleaseCycles()) ?? []
+        async let vcenter = (try? endOfLifeClient.fetchVCenterReleaseCycles()) ?? []
+        esxiReleaseCycles = await esxi
+        vCenterReleaseCycles = await vcenter
     }
 
     // MARK: - Snapshots (local history, see SnapshotsTabView)

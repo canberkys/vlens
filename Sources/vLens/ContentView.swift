@@ -8,6 +8,7 @@ struct ContentView: View {
     private let tutorialStore = TutorialStore()
     @State private var showWelcome = false
     @State private var showAdvisories = false
+    @State private var showEOLWarnings = false
     @FocusState private var isSearchFocused: Bool
 
     /// Sidebar navigation (vInfo, vCPU, ... the 27-tab list) is this app's
@@ -86,6 +87,12 @@ struct ContentView: View {
             // plain internet fetch, independent of any vCenter connection.
             // Silently no-ops on failure; see checkSecurityAdvisories().
             await viewModel.checkSecurityAdvisories()
+        }
+        .task {
+            // Same shape — see checkVMwareEndOfLife(). hostEOLStatuses/
+            // vCenterEOLStatus only have anything to show once hosts/
+            // vCenterInfo are populated (connect/demo).
+            await viewModel.checkVMwareEndOfLife()
         }
     }
 
@@ -312,6 +319,26 @@ struct ContentView: View {
                     SecurityAdvisoriesView(advisories: viewModel.securityAdvisories)
                 }
                 .help("Recent VMware security advisories (CRITICAL/HIGH) — not from your vCenter, from Broadcom's public advisory list.")
+            }
+
+            if viewModel.notableEOLCount > 0 {
+                Button {
+                    showEOLWarnings = true
+                } label: {
+                    Label(
+                        "\(viewModel.notableEOLCount) EOL",
+                        systemImage: "calendar.badge.exclamationmark"
+                    )
+                    .foregroundStyle(
+                        viewModel.hostEOLStatuses.contains { $0.severity() == .red }
+                            || viewModel.vCenterEOLStatus?.severity() == .red
+                            ? .red : .orange
+                    )
+                }
+                .popover(isPresented: $showEOLWarnings) {
+                    VMwareEOLView(hostStatuses: viewModel.hostEOLStatuses, vCenterStatus: viewModel.vCenterEOLStatus)
+                }
+                .help("ESXi hosts and/or vCenter nearing or past their VMware general-support end-of-life date — from endoflife.date's public lifecycle data, matched against each collected version.")
             }
 
             Button {

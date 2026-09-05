@@ -158,8 +158,51 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 `VLENS_HELPER_PATH` env var → dev fallback (`helper/vlens-helper`, proje kökünde
 `go build` ile üretilmiş olmalı).
 
+## PR merge sonrası release checklist — ASLA ATLAMA
+
+**2026-09-05'te v1.2.2 → v1.4.2 arası ~4 aylık bir boşluk oluştu**: 7 PR
+(16 gerçek review bulgusu, 4'ü P1/kritik dahil) `main`'e merge edildi ve
+versiyon numarası her seferinde bump edildi, ama hiçbiri gerçek bir GitHub
+Release olarak yayınlanmadı — bir test cihazından gelen crash raporuyla
+fark edildi. Bu bir daha olmasın diye: **her `main`'e merge'den sonra**
+(versiyon bump + CHANGELOG içeren her PR), aşağıdaki adımlar tamamlanmadan
+o değişiklik "bitmiş" sayılmaz:
+
+1. `git checkout main && git pull` — merge edilen değişiklik gerçekten orada mı doğrula.
+2. `swift build -c release && swift test` (+ `helper`: `go build`/`go test`) — temiz olmalı.
+3. `./scripts/release.sh` — build → sign → notarize → staple → Gatekeeper → DMG → appcast.xml.
+4. Paketlenmiş `.app`'i gerçekten `open` ile başlatıp çöküp çökmediğini doğrula.
+5. `appcast.xml`'i commit + push et (`main`'e doğrudan, ayrı bir PR gerekmiyor — bu adım zaten `release.sh`'ın kendi çıktısı).
+6. `gh release create v<VERSION> <DMG_PATH> --title "vLens <VERSION>" --notes-file <notlar> --latest`.
+7. `raw.githubusercontent.com/canberkys/vlens/main/appcast.xml` ve DMG indirme linkinin kimlik doğrulamasız (`curl -I`) gerçekten çalıştığını doğrula.
+
+**İstisna**: kullanıcı açıkça "production'a almayalım, sadece test edelim"
+derse (örn. bir feature'ı demo modda deneme aşamasında), bu checklist o
+özellik production'a alınana kadar uygulanmaz — ama karar kullanıcıya ait,
+varsayılan davranış her zaman "merge ettiysen yayınla"dır.
+
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) ESXi/vCenter EOL farkındalığı demo'dan production'a
+      alındı (v1.5.0)** — GitHub issue #19 ([@yunusozturk](https://github.com/yunusozturk)).
+      Kullanıcı demo modda test etti, "olumlu duruyor" dedi; `feat/esxi-eol-awareness`
+      branch'i `main`'e merge edildi. Özellik: toolbar rozeti (sadece
+      destek süresi biten/yaklaşan host veya vCenter varsa görünür) +
+      popover, Yeşil/Turuncu/Kırmızı renk kodlaması (Kırmızı: destek
+      bitmiş, Turuncu: 180 gün içinde bitecek). `endoflife.date`'in hem
+      ESXi hem vCenter için ayrı ama aynı şemalı ürünleri kullanılıyor.
+      Bilinçli olarak: yeni bir sidebar tab değil (vCenter için tek satır,
+      "her satır gerçek envanter öğesi" desenini bozar — host listesiyle
+      aynı popover'da ekstra bir satır olarak gösteriliyor), vHealth'e de
+      karıştırılmadı (VMSA ile aynı gerekçe — offline/saf motor). Ayrıca
+      fark edilen bir eksiklik giderildi: `HostInfo` artık ESXi build
+      numarasını da topluyor (`AboutInfo.Build`, vCenter için zaten
+      toplanan alanla aynı) — vHost tablosunda parantez içinde, CSV/XLSX'te
+      ayrı bir kolon olarak. 80/80 test yeşil, hem ESXi hem vCenter
+      endpoint'lerine karşı canlı doğrulandı. Issue'ya TR/ENG bilingual
+      comment atıldı. **Bu turda ayrıca**: yukarıdaki "PR merge sonrası
+      release checklist" kalıcı olarak eklendi (v1.2.2→v1.4.2 boşluğunun
+      tekrarlanmaması için).
 - [x] **(2026-09-05) v1.2.2 çöküyor bulgusu → v1.4.2 public'e yayınlandı,
       appcast rendering bug'ı düzeltildi (v1.4.2/hotfix), snapshot boyutu
       caveat'i UI'da görünür oldu (v1.4.3)** — bir test cihazından gelen

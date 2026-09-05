@@ -49,7 +49,7 @@ import Testing
         id: "h1", name: "esxi-01", datacenterName: nil, clusterName: nil, configStatus: .green,
         cpuModel: "Xeon", cpuMhz: 2000, numCpuCores: 4, numCpuThreads: 8, cpuUsagePercent: nil,
         memoryTotalMiB: 65536, memoryUsagePercent: nil, numNics: 2, numHbas: 1, numVMsTotal: 2,
-        numVMsRunning: 2, esxVersion: "8.0", vendor: nil, model: nil, maintenanceMode: false
+        numVMsRunning: 2, esxVersion: "8.0", esxBuild: "24022515", vendor: nil, model: nil, maintenanceMode: false
     )
     let cpus = [
         VMCpuInfo(
