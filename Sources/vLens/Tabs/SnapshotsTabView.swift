@@ -241,7 +241,12 @@ struct SnapshotsTabView: View {
 
     private func vmChangesSection(_ changes: VMChanges) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("VM Changes").fontWeight(.semibold).padding(.horizontal, 8).padding(.top, 12)
+            // "Membership" is deliberate, not just "Changes" — this only
+            // ever reports which VMs were added/removed between the two
+            // snapshots, never a field-by-field diff of a VM present in
+            // both (CPU/memory/config changes aren't shown here at all).
+            // A plain "VM Changes" label read as promising more than that.
+            Text("VM Membership Changes").fontWeight(.semibold).padding(.horizontal, 8).padding(.top, 12)
             if changes.added.isEmpty && changes.removed.isEmpty {
                 Text("No VMs added or removed.")
                     .font(.callout)
