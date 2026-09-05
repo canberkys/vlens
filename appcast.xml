@@ -6,23 +6,26 @@
         <description>vLens release updates</description>
         <language>en</language>
         <item>
-            <title>Version 1.5.0</title>
-            <pubDate>Sat, 05 Sep 2026 11:31:46 +0000</pubDate>
-            <sparkle:version>19</sparkle:version>
-            <sparkle:shortVersionString>1.5.0</sparkle:shortVersionString>
+            <title>Version 1.5.1</title>
+            <pubDate>Sat, 05 Sep 2026 11:45:13 +0000</pubDate>
+            <sparkle:version>20</sparkle:version>
+            <sparkle:shortVersionString>1.5.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[
 <h4>Added</h4>
 <ul>
-<li><strong>ESXi and vCenter end-of-life awareness</strong> (GitHub issue #19, thanks <a href="https://github.com/yunusozturk">@yunusozturk</a>). A new toolbar badge — shown only when at least one host or vCenter itself is nearing or past its VMware general-support end-of-life date — opens a popover listing each with Green/Orange/Red severity (Red: support has ended, Orange: ending within 180 days, a realistic ESXi/vCenter upgrade planning window). Sourced from endoflife.date&#x27;s real public lifecycle data, matched against versions already collected — no extra vCenter call. Deliberately not its own sidebar tab (there&#x27;s only ever one connected vCenter, and a tab that always shows exactly one row doesn&#x27;t fit this app&#x27;s &quot;one row per real inventory item&quot; pattern) and deliberately not folded into vHealth (which stays a pure, offline-data-only engine, same reasoning that already kept the security-advisory feature separate).</li>
-<li><strong>ESXi build number.</strong> <code>HostInfo</code> now also collects the actual build (the same <code>AboutInfo.Build</code> field already read for vCenter, just host-scoped) — a VM&#x27;s version alone can&#x27;t be checked against a specific patch/advisory level. Shown appended to the vHost tab&#x27;s &quot;ESXi Version&quot; column and as its own &quot;ESXi Build&quot; column in CSV/XLSX export.</li>
+<li><strong>2 more vHealth rules</strong> (RVTools #22/#23, 12 of 24 documented rules now implemented): <strong>Disk I/O performance tip</strong> — a running VM with more than 3 disks totaling over 750 GiB on fewer than 2 Paravirtual SCSI controllers funnels all that I/O through a single controller queue. <strong>In-memory performance tip</strong> — a running VM with 4+ vCPUs where CPU Hot Add, Memory Hot Add, or a single core per socket is configured can prevent virtual NUMA from being exposed to the guest, hurting memory-latency-sensitive workloads. RVTools&#x27; exact rule #23 also checks a <code>vnumaOnCpuHotaddExposed</code> VM setting, which isn&#x27;t a documented, reliably-sourceable vim25 API property — left out rather than guessed at; the other three conditions are each real collected fields.</li>
+</ul>
+<h4>Changed</h4>
+<ul>
+<li>README&#x27;s &quot;historical performance trends&quot; reworded — vPerformance reports avg/max for a chosen window, not a trend. Snapshot Compare&#x27;s &quot;VM Changes&quot; section renamed to &quot;VM Membership Changes&quot; — it only ever reports added/removed VMs, never a field-by-field diff.</li>
 </ul>
             ]]></description>
             <enclosure
-                url="https://github.com/canberkys/vlens/releases/download/v1.5.0/vLens-1.5.0.dmg"
-                length="13238060"
+                url="https://github.com/canberkys/vlens/releases/download/v1.5.1/vLens-1.5.1.dmg"
+                length="13255517"
                 type="application/octet-stream"
-                sparkle:edSignature="YAEEmqQWnofo83RzfR+ojuR3l0zNsihknGQc0boIVvNoMHBLpk9uBq8XcGf60idgaiuz/zlXv8sDNjOw2JgzAA==" />
+                sparkle:edSignature="hSZfHM00ViyxH3MZ0nQNM9pF4n92077kj9JQtFT1IP5uKNj4cLytbyrMQjlppXZ2sL4EV6AgllSicHydGZAFAw==" />
         </item>
     </channel>
 </rss>
