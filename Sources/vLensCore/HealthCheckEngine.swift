@@ -4,7 +4,7 @@ import Foundation
 /// tabs — matches RVTools' own model (vHealth doesn't do a separate
 /// collection pass, it evaluates rules over vInfo/vSnapshot/vTools/etc.).
 ///
-/// Implements 12 of RVTools' 24 documented rules (numbering matches
+/// Implements 15 of RVTools' 24 documented rules (numbering matches
 /// rvtools.txt's vHealth section):
 ///   #1  VM has a CDROM device connected!
 ///   #3  VM has an active snapshot!
@@ -15,11 +15,15 @@ import Foundation
 ///   #8  There are xx VMs active on this datastore! (threshold zz)
 ///   #12 Multipath operational state (degraded/dead paths)
 ///   #13 Virtual machine consolidation needed
+///   #17 NTP issues (no servers configured, or ntpd not running)
+///   #20 Warning if ESXi Shell is enabled on host
+///   #21 Warning if SSH is enabled on host
 ///   #22 Disk I/O performance tip (PVSCSI controller count vs. disk count/size)
 ///   #23 In-memory performance tip (NUMA exposure vs. hot-add/cores-per-socket)
 ///   host config status not green (rolled into the vHealth concept generally)
-/// The remaining 12 rules (floppy connected, zombie VMDK/VM, NTP/cert
-/// expiry, config-issue events, etc.) need data this app doesn't collect
+/// The remaining 9 rules (floppy connected, zombie VMDK/VM, certificate
+/// expiry, inconsistent folder names, config-issue events, etc.) need
+/// data this app doesn't collect
 /// yet — add them incrementally as their source tabs are built.
 public enum HealthCheckEngine {
     public static func evaluate(
@@ -141,6 +145,41 @@ public enum HealthCheckEngine {
         }
 
         for host in hosts {
+            // #20/#21 — service keys confirmed against govmomi's own
+            // simulator fixtures ("TSM" = ESXi Shell, "TSM-SSH" = SSH).
+            if host.esxiShellEnabled {
+                results.append(HealthCheckResult(
+                    id: "host.shell.\(host.id)",
+                    severity: .yellow,
+                    rule: "ESXi Shell enabled",
+                    message: "\(host.name): ESXi Shell (TSM) is enabled.",
+                    relatedObject: host.name
+                ))
+            }
+            if host.sshEnabled {
+                results.append(HealthCheckResult(
+                    id: "host.ssh.\(host.id)",
+                    severity: .yellow,
+                    rule: "SSH enabled",
+                    message: "\(host.name): SSH is enabled.",
+                    relatedObject: host.name
+                ))
+            }
+            // #17 — either no NTP servers configured, or servers are
+            // configured but the ntpd service isn't actually running (a
+            // real, common misconfiguration — the config alone doesn't
+            // mean time is actually being synced).
+            if host.ntpServerCount == 0 || !host.ntpdRunning {
+                let reason = host.ntpServerCount == 0 ? "no NTP servers configured" : "ntpd is not running"
+                results.append(HealthCheckResult(
+                    id: "host.ntp.\(host.id)",
+                    severity: .yellow,
+                    rule: "NTP issue",
+                    message: "\(host.name): \(reason).",
+                    relatedObject: host.name
+                ))
+            }
+
             let activeVCPUs = cpus
                 .filter { $0.hostName == host.name && $0.powerState == .poweredOn }
                 .reduce(0) { $0 + $1.cpuCount }

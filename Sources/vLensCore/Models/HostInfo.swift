@@ -29,6 +29,13 @@ public struct HostInfo: Codable, Identifiable, Sendable {
     public let vendor: String?
     public let model: String?
     public let maintenanceMode: Bool
+    /// Not vHost columns — only read by vHealth's ESXi Shell/SSH/NTP rules
+    /// (RVTools #20/#21/#17). Service keys: "TSM" (ESXi Shell), "TSM-SSH"
+    /// (SSH), "ntpd" (NTP daemon).
+    public let esxiShellEnabled: Bool
+    public let sshEnabled: Bool
+    public let ntpdRunning: Bool
+    public let ntpServerCount: Int
 
     public init(
         id: String, name: String, datacenterName: String?, clusterName: String?,
@@ -36,7 +43,8 @@ public struct HostInfo: Codable, Identifiable, Sendable {
         numCpuThreads: Int, cpuUsagePercent: Double?, memoryTotalMiB: Int,
         memoryUsagePercent: Double?, numNics: Int, numHbas: Int, numVMsTotal: Int,
         numVMsRunning: Int, esxVersion: String, esxBuild: String, vendor: String?, model: String?,
-        maintenanceMode: Bool
+        maintenanceMode: Bool, esxiShellEnabled: Bool = false, sshEnabled: Bool = false,
+        ntpdRunning: Bool = true, ntpServerCount: Int = 1
     ) {
         self.id = id
         self.name = name
@@ -59,6 +67,10 @@ public struct HostInfo: Codable, Identifiable, Sendable {
         self.vendor = vendor
         self.model = model
         self.maintenanceMode = maintenanceMode
+        self.esxiShellEnabled = esxiShellEnabled
+        self.sshEnabled = sshEnabled
+        self.ntpdRunning = ntpdRunning
+        self.ntpServerCount = ntpServerCount
     }
 }
 

@@ -3,6 +3,21 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.5.2] - 2026-09-05 (+03)
+
+### Added
+- **3 more vHealth rules** (RVTools #17/#20/#21, 15 of 24 documented rules
+  now implemented): **ESXi Shell enabled** and **SSH enabled** — a plain
+  warning when either management service is running on a host (`TSM`/
+  `TSM-SSH`, confirmed against govmomi's own simulator fixtures). **NTP
+  issue** — flags a host with no NTP servers configured at all, or one
+  where servers are configured but the `ntpd` service isn't actually
+  running (a real, common misconfiguration that config alone doesn't
+  catch — a server list existing doesn't mean time is actually being
+  synced). All three read directly off the same host property fetch
+  `collectAll` already does (`config.service`, `config.dateTimeInfo`) — no
+  extra vCenter round-trip.
+
 ## [1.5.1] - 2026-09-05 (+03)
 
 ### Added

@@ -215,6 +215,14 @@ type hostInfo struct {
 	Vendor             *string  `json:"vendor"`
 	Model              *string  `json:"model"`
 	MaintenanceMode    bool     `json:"maintenanceMode"`
+	// Not vHost columns — only read by vHealth's #20/#21/#17 rules (RVTools
+	// numbering). Service keys confirmed against govmomi's own simulator
+	// fixtures (simulator/esx/host_config_info.go): "TSM" is ESXi Shell,
+	// "TSM-SSH" is SSH, "ntpd" is the NTP daemon.
+	ESXiShellEnabled bool `json:"esxiShellEnabled"`
+	SSHEnabled       bool `json:"sshEnabled"`
+	NTPDRunning      bool `json:"ntpdRunning"`
+	NTPServerCount   int  `json:"ntpServerCount"`
 }
 
 type datastoreInfo struct {
@@ -1101,6 +1109,8 @@ func collectHosts(ctx context.Context, client *govmomi.Client, clusterNames map[
 		"summary.config.product",
 		"runtime.inMaintenanceMode",
 		"vm",
+		"config.service",
+		"config.dateTimeInfo",
 	}
 
 	var raw []mo.HostSystem
@@ -1181,6 +1191,24 @@ func collectHosts(ctx context.Context, client *govmomi.Client, clusterNames map[
 		if p := h.Summary.Config.Product; p != nil {
 			info.EsxVersion = p.Version
 			info.EsxBuild = p.Build
+		}
+
+		if h.Config != nil {
+			if h.Config.Service != nil {
+				for _, svc := range h.Config.Service.Service {
+					switch svc.Key {
+					case "TSM":
+						info.ESXiShellEnabled = svc.Running
+					case "TSM-SSH":
+						info.SSHEnabled = svc.Running
+					case "ntpd":
+						info.NTPDRunning = svc.Running
+					}
+				}
+			}
+			if dt := h.Config.DateTimeInfo; dt != nil && dt.NtpConfig != nil {
+				info.NTPServerCount = len(dt.NtpConfig.Server)
+			}
 		}
 
 		result = append(result, info)
