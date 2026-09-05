@@ -28,7 +28,7 @@ struct PreferencesView: View {
                     HStack(spacing: 4) {
                         TextField(
                             "",
-                            value: $viewModel.healthCheckThresholds.datastoreFreeSpacePercent,
+                            value: clampedThreshold(\.datastoreFreeSpacePercent, in: 0...100),
                             format: .number
                         )
                         .frame(width: 50)
@@ -43,7 +43,7 @@ struct PreferencesView: View {
                 LabeledContent("vCPUs per core warning") {
                     TextField(
                         "",
-                        value: $viewModel.healthCheckThresholds.vCPUsPerCoreWarning,
+                        value: clampedThreshold(\.vCPUsPerCoreWarning, in: 0.1...1000),
                         format: .number
                     )
                     .frame(width: 50)
@@ -57,7 +57,7 @@ struct PreferencesView: View {
                     HStack(spacing: 4) {
                         TextField(
                             "",
-                            value: $viewModel.healthCheckThresholds.guestDiskFreeSpacePercent,
+                            value: clampedThreshold(\.guestDiskFreeSpacePercent, in: 0...100),
                             format: .number
                         )
                         .frame(width: 50)
@@ -72,7 +72,7 @@ struct PreferencesView: View {
                 LabeledContent("Max VMs per datastore") {
                     TextField(
                         "",
-                        value: $viewModel.healthCheckThresholds.maxVMsPerDatastore,
+                        value: clampedThreshold(\.maxVMsPerDatastore, in: 1...9999),
                         format: .number
                     )
                     .frame(width: 50)
@@ -86,7 +86,7 @@ struct PreferencesView: View {
                     HStack(spacing: 4) {
                         TextField(
                             "",
-                            value: $viewModel.healthCheckThresholds.certificateExpiryWarningDays,
+                            value: clampedThreshold(\.certificateExpiryWarningDays, in: 0...3650),
                             format: .number
                         )
                         .frame(width: 50)
@@ -95,6 +95,18 @@ struct PreferencesView: View {
                     }
                 }
                 Text("Flags a host's certificate when it expires within this many days, or has already expired.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button("Reset to Defaults") {
+                    viewModel.healthCheckThresholds = HealthCheckThresholds()
+                }
+                .font(.caption)
+            }
+
+            Section("Privacy") {
+                Toggle("Check for VMware security advisories", isOn: $viewModel.securityAdvisoriesEnabled)
+                Text("Fetches Broadcom's public security advisory list once per launch — a plain internet request, independent of any vCenter connection. Off skips this entirely.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -162,6 +174,37 @@ struct PreferencesView: View {
                 Text("Where inventory-snapshots.json is stored — useful for pointing it at a shared folder. Switching copies the existing file to the new location; the old one is left in place.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            Section("Saved connections") {
+                if viewModel.savedProfiles.isEmpty {
+                    Text("Connections saved from the connect screen (\"Save this connection to Keychain\") show up here.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(viewModel.savedProfiles) { profile in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(profile.name)
+                                Text("\(profile.username)@\(profile.host)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            if viewModel.automationSchedule?.profileID == profile.id {
+                                Image(systemName: "clock.badge.exclamationmark")
+                                    .foregroundStyle(.orange)
+                                    .help("Used by the Automation schedule below — deleting it will break that schedule.")
+                            }
+                            Button(role: .destructive) {
+                                viewModel.deleteSavedProfile(profile)
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
             }
 
             Section("Automation") {
@@ -258,8 +301,27 @@ struct PreferencesView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 860)
+        .frame(width: 460, height: 960)
         .onAppear(perform: syncAutomationForm)
+    }
+
+    /// Wraps one `HealthCheckThresholds` field in a `Binding` that clamps
+    /// on write — a `TextField` bound directly to the raw value happily
+    /// accepts a negative percentage or a zero VM count, both nonsensical
+    /// for their domain (see the ranges each call site passes). Reassigns
+    /// the whole `healthCheckThresholds` struct so `ConnectionViewModel`'s
+    /// existing `didSet` (persist + re-evaluate vHealth) still fires.
+    private func clampedThreshold<T: Comparable>(
+        _ keyPath: WritableKeyPath<HealthCheckThresholds, T>, in range: ClosedRange<T>
+    ) -> Binding<T> {
+        Binding(
+            get: { viewModel.healthCheckThresholds[keyPath: keyPath] },
+            set: { newValue in
+                var thresholds = viewModel.healthCheckThresholds
+                thresholds[keyPath: keyPath] = min(max(newValue, range.lowerBound), range.upperBound)
+                viewModel.healthCheckThresholds = thresholds
+            }
+        )
     }
 
     private func syncAutomationForm() {
