@@ -6,22 +6,23 @@
         <description>vLens release updates</description>
         <language>en</language>
         <item>
-            <title>Version 1.4.3</title>
-            <pubDate>Sat, 05 Sep 2026 09:26:00 +0000</pubDate>
-            <sparkle:version>18</sparkle:version>
-            <sparkle:shortVersionString>1.4.3</sparkle:shortVersionString>
+            <title>Version 1.5.0</title>
+            <pubDate>Sat, 05 Sep 2026 11:31:46 +0000</pubDate>
+            <sparkle:version>19</sparkle:version>
+            <sparkle:shortVersionString>1.5.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[
-<h4>Changed</h4>
+<h4>Added</h4>
 <ul>
-<li><strong>vSnapshot&#x27;s &quot;Size MiB&quot; column now says what it doesn&#x27;t include.</strong> It&#x27;s always been this snapshot&#x27;s own data + memory file size, deliberately excluding the disk delta chain (attributing how much of a chain&#x27;s cumulative size belongs to any one snapshot isn&#x27;t well-defined without guessing) — every number was real, never estimated, but that caveat lived only in a code comment, not anywhere a user looking at the table would see it. The column header now reads &quot;Size MiB (excl. deltas)&quot; so a capacity decision made from this column alone isn&#x27;t made on a false assumption of completeness.</li>
+<li><strong>ESXi and vCenter end-of-life awareness</strong> (GitHub issue #19, thanks <a href="https://github.com/yunusozturk">@yunusozturk</a>). A new toolbar badge — shown only when at least one host or vCenter itself is nearing or past its VMware general-support end-of-life date — opens a popover listing each with Green/Orange/Red severity (Red: support has ended, Orange: ending within 180 days, a realistic ESXi/vCenter upgrade planning window). Sourced from endoflife.date&#x27;s real public lifecycle data, matched against versions already collected — no extra vCenter call. Deliberately not its own sidebar tab (there&#x27;s only ever one connected vCenter, and a tab that always shows exactly one row doesn&#x27;t fit this app&#x27;s &quot;one row per real inventory item&quot; pattern) and deliberately not folded into vHealth (which stays a pure, offline-data-only engine, same reasoning that already kept the security-advisory feature separate).</li>
+<li><strong>ESXi build number.</strong> <code>HostInfo</code> now also collects the actual build (the same <code>AboutInfo.Build</code> field already read for vCenter, just host-scoped) — a VM&#x27;s version alone can&#x27;t be checked against a specific patch/advisory level. Shown appended to the vHost tab&#x27;s &quot;ESXi Version&quot; column and as its own &quot;ESXi Build&quot; column in CSV/XLSX export.</li>
 </ul>
             ]]></description>
             <enclosure
-                url="https://github.com/canberkys/vlens/releases/download/v1.4.3/vLens-1.4.3.dmg"
-                length="13181970"
+                url="https://github.com/canberkys/vlens/releases/download/v1.5.0/vLens-1.5.0.dmg"
+                length="13238060"
                 type="application/octet-stream"
-                sparkle:edSignature="TzCjK4ZyI4QYDUTcfSrvSQ6oXDDog2lTkUbDUZJmytAY8coq05m+7S6XLOL1ZMtkBkP06PQ/Wbid5fYtlmrHDg==" />
+                sparkle:edSignature="YAEEmqQWnofo83RzfR+ojuR3l0zNsihknGQc0boIVvNoMHBLpk9uBq8XcGf60idgaiuz/zlXv8sDNjOw2JgzAA==" />
         </item>
     </channel>
 </rss>
