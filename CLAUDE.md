@@ -160,6 +160,48 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) v1.2.2 çöküyor bulgusu → v1.4.2 public'e yayınlandı,
+      appcast rendering bug'ı düzeltildi (v1.4.2/hotfix), snapshot boyutu
+      caveat'i UI'da görünür oldu (v1.4.3)** — bir test cihazından gelen
+      gerçek bir crash raporu, v1.3.0'dan bu yana yapılan HİÇBİR düzeltmenin
+      (7 PR, 16 bulgu) gerçek bir GitHub Release olarak yayınlanmadığını
+      ortaya çıkardı — GitHub'daki tek/son Release hâlâ v1.2.2'ydi, dolayısıyla
+      dışarıdaki kullanıcılar hâlâ #1 (paketleme çökmesi) dahil tüm eski
+      bug'ları taşıyan bir build indiriyordu. Kullanıcı repoyu bir gün önce
+      private'a çekmişti — Sparkle'ın appcast'e kimlik doğrulamasız erişimi
+      için tekrar public'e alındı (önce commit geçmişi secret taraması
+      tekrarlandı, temiz). `./scripts/release.sh` uçtan uca çalıştırıldı
+      (build→sign→notarize "Accepted"→staple→Gatekeeper "accepted"→DMG),
+      appcast.xml commit edilip push edildi, **v1.4.2 GitHub Release**
+      olarak yayınlandı (v1.2.2'den bu yana ilk yayın — release notu
+      birikmiş tüm kritik düzeltmeleri özetliyor). **Sonra kullanıcı "check
+      for updates'i test edeceğiz" deyince**, kendi yayınladığım appcast'i
+      tekrar okurken gerçek bir kozmetik bug fark ettim: `changelog_section_html.py`
+      her fiziksel satırı ayrı ayrı formatlıyordu, bu yüzden bir bültenin
+      satır kaydırmasıyla iki farklı satıra bölünen `**bold**` span'leri
+      (v1.4.2'nin 4 maddesinden 3'ü tam bu şekildeydi) hiç `<strong>`'e
+      dönüşmüyor, Sparkle'ın güncelleme diyaloğunda çıplak yıldız işareti
+      olarak görünüyordu. Düzeltildi (her list item/paragraph'ın tam ham
+      metni tüm satır kaydırmaları birleştirildikten SONRA tek seferde
+      formatlanıyor), CHANGELOG'daki her sürüme karşı regresyon kontrolü
+      yapıldı (sıfır kırık `**`), **DMG'ye dokunmadan** (aynı dosya, aynı
+      imza) sadece appcast.xml'in açıklaması yeniden üretilip push edildi.
+      Kullanıcı "sürümde atlayalım, direkt test edeceğiz" dedi — bu
+      makinedeki `/Applications/vLens.app`'in zaten v1.4.2 olduğu (gerçek
+      "yeni sürüm bulundu" akışını test edemeyeceği) not edildi. Ardından
+      kullanıcı "geliştirme yapıp 1.4.3 yapar mısın" dedi — bu hem gerçek,
+      küçük bir iyileştirme fırsatı hem de Sparkle'ın gerçek update-bulundu
+      akışını test edebilecekleri bir sürüm farkı yaratma isteğiydi.
+      Review'ın daha önce ertelenen "snapshot Size MiB'in disk delta'larını
+      içermediği tabloda gösterilmiyor" maddesi seçildi (kullanıcının kendi
+      sözleriyle daha önce "kozmetik saymıyorum, kapasite kararını
+      etkileyebilir" dediği madde) — `VSnapshotTabView`'ın "Size MiB" kolon
+      başlığı artık "Size MiB (excl. deltas)", `VMSnapshotInfo.sizeMiBTotal`'a
+      da kalıcı bir doc comment eklendi. `swift build`/`swift test` temiz
+      (69/69). **v1.4.3 olarak yayınlanacak** (kullanıcı test edebilsin
+      diye) — bu sürümden itibaren **her merge sonrası gerçek bir release
+      yayınlamayı unutmama** kuralı net (v1.2.2→v1.4.2 arasındaki 4 aylık
+      boşluğun tekrarlanmaması için).
 - [x] **(2026-09-05) İkinci bağımsız review turu — 1 kritik + 3 P2 bulgu
       daha düzeltildi (v1.4.2)** — kullanıcı "12/12 kapandı" sonucunu
       izole testlerle sorguladı, 4 yeni gerçek bulgu getirdi; hepsi kod
