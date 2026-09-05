@@ -276,6 +276,23 @@ Network/IPv4/IPv6 columns degrade gracefully without Tools rather than the whole
 disappearing. Verified against vcsim with a real distributed port group
 (`DC0_DVPG0` resolved correctly via the key→name map, not guessed).
 
+### vFloppy
+
+Model: `FloppyInfo` · View: `VFloppyTabView` · Source: `mapVMFloppies`
+
+Per-VM floppy devices, also read from the already-fetched `config.hardware.device`
+list — filters for `*types.VirtualFloppy`. Also feeds vHealth rule #2 ("VM has a
+Floppy device connected!").
+
+| Column | Type | vim25 source |
+|---|---|---|
+| VM / Power | — | — |
+| Connected | Bool | `VirtualDevice.connectable.connected` |
+
+vcsim's default VMs never carry a floppy device (confirmed live — `collectAll`
+returns `floppies: []`, structurally correct but not exercisable with real
+positive data), same limitation as vUSB/vPartition below.
+
 ### vCD
 
 Model: `CDInfo` · View: `VCDTabView` · Source: `mapVMCDs`
@@ -746,17 +763,17 @@ small icon next to entries that carry full detail.
 ## 5. vHealth rule status
 
 RVTools documents 24 built-in health-check rules (rvtools.txt's vHealth section).
-vLens implements the 10 computable from data the other tabs already collect. All
-numeric thresholds are user-adjustable — RVTools' equivalent is its Health
-Properties panel; vLens' is the standard macOS Settings scene (Cmd+,,
-`Sources/vLens/PreferencesView.swift`), backed by `HealthCheckPreferencesStore`
-(UserDefaults). Changing a threshold there re-evaluates vHealth immediately against
-whatever's already collected, in both the main window and the shared
-`ConnectionViewModel` — no reconnect needed.
+vLens implements 17 of them. All numeric thresholds are user-adjustable —
+RVTools' equivalent is its Health Properties panel; vLens' is the standard macOS
+Settings scene (Cmd+,, `Sources/vLens/PreferencesView.swift`), backed by
+`HealthCheckPreferencesStore` (UserDefaults). Changing a threshold there
+re-evaluates vHealth immediately against whatever's already collected, in both
+the main window and the shared `ConnectionViewModel` — no reconnect needed.
 
 | # (RVTools numbering) | Rule | vLens status |
 |---|---|---|
 | 1 | VM has a CDROM device connected! | ✅ Implemented — one finding per connected CD/DVD device |
+| 2 | VM has a Floppy device connected! | ✅ Implemented — one finding per connected floppy device (same pattern as #1) |
 | 3 | VM has an active snapshot! | ✅ Implemented — one finding per snapshot, includes age in the message |
 | 4 | VMware tools are out of date, not running or not installed! | ✅ Implemented — severity red if not installed, yellow otherwise |
 | 5 | On disk xx is yy% disk space available! (guest-level) | ✅ Implemented — reads vPartition, default threshold 10%, adjustable in Preferences |
@@ -765,22 +782,21 @@ whatever's already collected, in both the main window and the shared
 | 8 | There are xx VMs active on this datastore! | ✅ Implemented — counts registered VMs (`numVMsTotal`), not power-state-filtered; default threshold 30, adjustable in Preferences |
 | 12 | Multipath operational state | ✅ Implemented — flags any path not in `active`/`standby` state |
 | 13 | Virtual machine consolidation needed | ✅ Implemented — reads `runtime.consolidationNeeded`, one finding per VM needing it |
+| 17 | NTP issues | ✅ Implemented — flags no servers configured OR ntpd not running, reads `config.dateTimeInfo`/`config.service` |
+| 20 | ESXi shell enabled warning | ✅ Implemented — reads `config.service` (key `TSM`) |
+| 21 | SSH enabled warning | ✅ Implemented — reads `config.service` (key `TSM-SSH`) |
+| 22 | Disk I/O performance tip (PVSCSI controller count vs. disk count) | ✅ Implemented — running VM, >3 connected disks, >750 GiB total, <2 PVSCSI controllers (`VirtualMachineInfo.pvscsiControllerCount`, counted directly from `config.hardware.device`) |
+| 23 | In-memory performance tip (NUMA/hot-add settings) | ✅ Implemented — running VM, 4+ cores, and (CPU hot-add OR memory hot-add OR 1 core/socket); the `vnumaOnCpuHotaddExposed` sub-condition is deliberately omitted — no real, documented vim25 field for it was found |
+| 24 | Certificate expiry warning | ✅ Implemented — reads `configManager.certificateManager`, default threshold 90 days, adjustable in Preferences |
 | — | Host config status not green | ✅ Implemented (not a numbered RVTools rule, rolled into the general vHealth concept) |
-| 2 | VM has a Floppy device connected! | ❌ needs a vFloppy tab (not built — floppy devices are effectively extinct on modern guests, low priority) |
 | 9 | Possibly a zombie vmdk file! | ❌ needs `vFileInfo` (datastore file browser — deliberately deferred, see §10) |
 | 10 | Possibly a zombie vm! | ❌ same dependency |
-| 11 | Inconsistent Folder Names | ❌ needs folder-path data vLens doesn't collect yet — buildable without a real vCenter (vcsim), planned in the parity-closeout pass |
+| 11 | Inconsistent Folder Names | ❌ needs folder-path data vLens doesn't collect yet — semantics not yet fully confirmed against rvtools.txt, buildable without a real vCenter (vcsim) |
 | 14 | Search datastore errors | ❌ N/A without a datastore browser |
 | 15 | VM config issues | ❌ needs `configIssue` events, not fetched |
 | 16 | Host config issues | ❌ same |
-| 17 | NTP issues | ❌ needs host NTP config, not fetched |
 | 18 | Cluster config issues | ❌ needs `configIssue` on clusters |
 | 19 | Datastore config issues | ❌ same |
-| 20 | ESXi shell enabled warning | ❌ needs host service state, not fetched |
-| 21 | SSH enabled warning | ❌ same |
-| 22 | Disk I/O performance tip (PVSCSI controller count vs. disk count) | ❌ logic is well-defined (see rvtools.txt) but not implemented |
-| 23 | In-memory performance tip (NUMA/hot-add settings) | ❌ same |
-| 24 | Certificate expiry warning | ❌ needs host certificate info, not fetched |
 
 Add new rules to `HealthCheckEngine.evaluate` as their source tabs/properties get
 built — the function signature already takes every currently-collected array, so
@@ -972,7 +988,7 @@ Explicitly out of scope indefinitely since RVTools' own docs flag it as slow and
 rarely used interactively — this is the one tab that's a deliberate, permanent
 scope decision rather than a "not gotten to it yet."
 
-**vHealth**: 10 of 24 rules implemented, 14 remaining — see [§5](#5-vhealth-rule-status)
+**vHealth**: 17 of 24 rules implemented, 7 remaining — see [§5](#5-vhealth-rule-status)
 for the full table.
 
 **Export**: CSV and XLSX are both done — see [§6](#6-export). A PDF **report**

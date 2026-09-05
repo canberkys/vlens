@@ -19,7 +19,7 @@ to CSV or XLSX. If you've used RVTools on Windows, the data will look
 familiar; the app won't. No .NET, no VM/Wine, no Windows box just to run a
 reporting tool.
 
-It covers essentially everything RVTools does (27 tabs total, 23 of RVTools'
+It covers essentially everything RVTools does (28 tabs total, 23 of RVTools'
 24 documented tabs — only `vFileInfo` is missing) — but it isn't just a port.
 vLens adds several things RVTools doesn't have: historical performance
 data sampled over a time window you choose, point-in-time inventory
@@ -42,9 +42,9 @@ simulator).
 
 | | |
 |---|---|
-| **27 tabs** | vInfo, vCPU, vMemory, vDisk, vSnapshot, vTools, vNetwork, vCD, vUSB, vPartition, vApp, vHost, vDatastore, vCluster, vRP, vSwitch, vPort, dvSwitch, dvPort, vNic, vSC+VMK, vHBA, vMultipath, vLicense, vHealth, plus vLens' own vPerformance and Snapshots |
+| **28 tabs** | vInfo, vCPU, vMemory, vDisk, vSnapshot, vTools, vNetwork, vCD, vFloppy, vUSB, vPartition, vApp, vHost, vDatastore, vCluster, vRP, vSwitch, vPort, dvSwitch, dvPort, vNic, vSC+VMK, vHBA, vMultipath, vLicense, vHealth, plus vLens' own vPerformance and Snapshots |
 | **RVTools parity** | Only `vFileInfo` (datastore file browser) is deliberately out of scope — RVTools' own docs flag it as slow and rarely used |
-| **vHealth** | 10 of RVTools' 24 documented health-check rules, thresholds adjustable in Preferences, re-evaluates instantly on change |
+| **vHealth** | 17 of RVTools' 24 documented health-check rules, thresholds adjustable in Preferences, re-evaluates instantly on change |
 | **vPerformance** *(not in RVTools)* | Historical CPU/RAM/disk-IO usage over a time window you choose (1 hour–30 days), not just an instantaneous snapshot |
 | **Snapshots & Compare** *(not in RVTools)* | Record a point-in-time set of inventory metrics, compare any two later with a color-coded delta |
 | **PDF report** *(not in RVTools)* | One-page management summary — vCenter identity, counts, charts, vHealth status — generated on demand |

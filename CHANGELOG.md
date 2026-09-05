@@ -3,6 +3,20 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.5.4] - 2026-09-05 (+03)
+
+### Added
+- **vFloppy tab + Floppy connected vHealth rule** (RVTools #2, 17 of 24
+  documented rules now implemented) — the last new device tab in this
+  round of parity work. Per-VM floppy devices, read from the already-fetched
+  `config.hardware.device` list (mirrors the existing vCD/vUSB tabs exactly,
+  no extra collection round-trip). A connected floppy is flagged as a
+  yellow vHealth finding, same pattern as the existing CDROM-connected
+  rule. vcsim's default VMs never carry a floppy device, so this was
+  verified structurally (`collectAll` returns a correctly-typed empty
+  array, 10 VMs collected without error) rather than against a positive
+  fixture — same limitation the vUSB/vPartition tabs already documented.
+
 ## [1.5.3] - 2026-09-05 (+03)
 
 ### Added

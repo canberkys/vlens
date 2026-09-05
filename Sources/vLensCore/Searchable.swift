@@ -108,6 +108,10 @@ extension CDInfo: Searchable {
     public var searchableText: String { [vmName, isoPath, deviceName].compactMap { $0 }.joined(separator: " ") }
 }
 
+extension FloppyInfo: Searchable {
+    public var searchableText: String { vmName }
+}
+
 extension USBInfo: Searchable {
     public var searchableText: String { vmName }
 }

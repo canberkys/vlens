@@ -54,6 +54,7 @@ public struct VSphereHelperClient: Sendable {
             multipaths: response.multipaths ?? [],
             cds: response.cds ?? [],
             usbs: response.usbs ?? [],
+            floppies: response.floppies ?? [],
             partitions: response.partitions ?? [],
             networks: response.networks ?? [],
             vCenter: response.vCenter

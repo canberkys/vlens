@@ -467,6 +467,7 @@ struct ContentView: View {
     private var filteredVMKernels: [VMKernelInfo] { viewModel.vmKernels.filter { $0.matches(viewModel.searchText) } }
     private var filteredMultipaths: [MultipathInfo] { viewModel.multipaths.filter { $0.matches(viewModel.searchText) } }
     private var filteredCDs: [CDInfo] { viewModel.cds.filter { $0.matches(viewModel.searchText) } }
+    private var filteredFloppies: [FloppyInfo] { viewModel.floppies.filter { $0.matches(viewModel.searchText) } }
     private var filteredUSBs: [USBInfo] { viewModel.usbs.filter { $0.matches(viewModel.searchText) } }
     private var filteredPartitions: [PartitionInfo] { viewModel.partitions.filter { $0.matches(viewModel.searchText) } }
     private var filteredPerformance: [VMPerformanceInfo] { viewModel.performanceMetrics.filter { $0.matches(viewModel.searchText) } }
@@ -497,6 +498,7 @@ struct ContentView: View {
         case .vmk: return filteredVMKernels.count
         case .vMultipath: return filteredMultipaths.count
         case .vCD: return filteredCDs.count
+        case .vFloppy: return filteredFloppies.count
         case .vUSB: return filteredUSBs.count
         case .vPartition: return filteredPartitions.count
         case .vPerformance: return filteredPerformance.count
@@ -530,6 +532,7 @@ struct ContentView: View {
         case .vmk: VMKTabView(rows: filteredVMKernels)
         case .vMultipath: VMultipathTabView(rows: filteredMultipaths)
         case .vCD: VCDTabView(rows: filteredCDs)
+        case .vFloppy: VFloppyTabView(rows: filteredFloppies)
         case .vUSB: VUSBTabView(rows: filteredUSBs)
         case .vPartition: VPartitionTabView(rows: filteredPartitions)
         case .vPerformance: VPerformanceTabView(viewModel: viewModel, rows: filteredPerformance)
@@ -586,6 +589,7 @@ struct ContentView: View {
         case .vmk: export(filteredVMKernels, format: format)
         case .vMultipath: export(filteredMultipaths, format: format)
         case .vCD: export(filteredCDs, format: format)
+        case .vFloppy: export(filteredFloppies, format: format)
         case .vUSB: export(filteredUSBs, format: format)
         case .vPartition: export(filteredPartitions, format: format)
         case .vPerformance: export(filteredPerformance, format: format)

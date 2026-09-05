@@ -75,6 +75,7 @@ public struct HelperResponse: Codable, Sendable {
     public let multipaths: [MultipathInfo]?
     public let cds: [CDInfo]?
     public let usbs: [USBInfo]?
+    public let floppies: [FloppyInfo]?
     public let partitions: [PartitionInfo]?
     public let networks: [VMNetworkInfo]?
     public let performance: [VMPerformanceInfo]?
@@ -131,6 +132,7 @@ public struct CollectedInventory: Sendable {
     public let multipaths: [MultipathInfo]
     public let cds: [CDInfo]
     public let usbs: [USBInfo]
+    public let floppies: [FloppyInfo]
     public let partitions: [PartitionInfo]
     public let networks: [VMNetworkInfo]
     public let vCenter: VCenterInfo?
