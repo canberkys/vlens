@@ -123,6 +123,8 @@ struct SnapshotsTabView: View {
                             Image(systemName: "trash")
                         }
                         .buttonStyle(.borderless)
+                        .help("Delete snapshot")
+                        .accessibilityLabel("Delete snapshot \(snapshot.displayLabel)")
                     }
                     // Fixed row height (rather than letting the 2-line
                     // label+subtitle stack size the row implicitly) — taking
