@@ -25,11 +25,14 @@ def extract_section(changelog_text: str, version: str) -> str:
 
 
 def inline_format(escaped_text: str) -> str:
-    """Applied after html.escape(), so **/` below are always literal
+    """Applied after html.escape(), so **/`/[]() below are always literal
     characters, never something an attacker-controlled string could smuggle
     HTML through — CHANGELOG.md is a file we author ourselves, but this
-    keeps the conversion correct regardless."""
-    text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", escaped_text)
+    keeps the conversion correct regardless. Found missing (rendered as
+    literal "[text](url)") in the v1.5.0 release notes right before this
+    script produced its appcast — a real, visible gap, not hypothetical."""
+    text = re.sub(r"\[(.+?)\]\((https?://[^\s)]+)\)", r'<a href="\2">\1</a>', escaped_text)
+    text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
     text = re.sub(r"`(.+?)`", r"<code>\1</code>", text)
     return text
 
