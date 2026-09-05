@@ -3,6 +3,28 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.5.0] - 2026-09-05 (+03)
+
+### Added
+- **ESXi and vCenter end-of-life awareness** (GitHub issue #19, thanks
+  [@yunusozturk](https://github.com/yunusozturk)). A new toolbar badge —
+  shown only when at least one host or vCenter itself is nearing or past
+  its VMware general-support end-of-life date — opens a popover listing
+  each with Green/Orange/Red severity (Red: support has ended, Orange:
+  ending within 180 days, a realistic ESXi/vCenter upgrade planning
+  window). Sourced from endoflife.date's real public lifecycle data,
+  matched against versions already collected — no extra vCenter call.
+  Deliberately not its own sidebar tab (there's only ever one connected
+  vCenter, and a tab that always shows exactly one row doesn't fit this
+  app's "one row per real inventory item" pattern) and deliberately not
+  folded into vHealth (which stays a pure, offline-data-only engine, same
+  reasoning that already kept the security-advisory feature separate).
+- **ESXi build number.** `HostInfo` now also collects the actual build
+  (the same `AboutInfo.Build` field already read for vCenter, just
+  host-scoped) — a VM's version alone can't be checked against a specific
+  patch/advisory level. Shown appended to the vHost tab's "ESXi Version"
+  column and as its own "ESXi Build" column in CSV/XLSX export.
+
 ## [1.4.3] - 2026-09-05 (+03)
 
 ### Changed
