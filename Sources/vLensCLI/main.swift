@@ -37,7 +37,21 @@ nonisolated func sharedDefaults() -> UserDefaults {
     return UserDefaults(suiteName: "com.canberkki.vlens") ?? .standard
 }
 
+/// Set once `--profile-id` is parsed (the shape `LaunchdScheduler` always
+/// invokes this binary with) — a single chokepoint so `fail(_:)` can record
+/// this as the scheduled automation's failed last-run result no matter
+/// which function down the call chain actually calls `fail` (profile
+/// resolution, password lookup, certificate trust, the collection itself
+/// all can), without threading a parameter through every one of them.
+/// `nil` for a manual, human-run `--profile <name>` invocation, which isn't
+/// the scheduled job and shouldn't overwrite its last-run status.
+nonisolated(unsafe) var currentAutomationProfileID: UUID?
+
 func fail(_ message: String) -> Never {
+    if currentAutomationProfileID != nil {
+        AutomationPreferencesStore(defaults: sharedDefaults())
+            .recordRunResult(AutomationRunResult(succeeded: false, message: message))
+    }
     FileHandle.standardError.write(Data("Error: \(message)\n".utf8))
     exit(1)
 }
@@ -55,6 +69,10 @@ func printUsage() {
     <name> matches a connection already saved (with "Save this connection to
     Keychain" enabled) from the vLens app. The host's TLS certificate must
     already be trusted too — connect once via the app to approve it.
+
+    --profile-id <uuid> resolves by the profile's stable id instead of its
+    name — used internally by scheduled automation (Preferences), not meant
+    for manual use.
     """)
 }
 
@@ -94,6 +112,35 @@ func resolveProfile(named name: String) -> ConnectionProfile {
     return profile
 }
 
+/// Used exclusively for `--profile-id` (`LaunchdScheduler`'s own generated
+/// invocations) — resolves by the profile's stable UUID rather than its
+/// name, which isn't guaranteed unique and can be changed by the user at
+/// any time without that renaming this schedule's actual target.
+func resolveProfile(id: UUID) -> ConnectionProfile {
+    let profiles = ConnectionProfileStore().loadAll()
+    guard let profile = profiles.first(where: { $0.id == id }) else {
+        fail("No saved connection with id \(id.uuidString) — it may have been deleted. Re-save the automation schedule in Preferences.")
+    }
+    return profile
+}
+
+/// Resolves `--profile-id <uuid>` if present (also arming
+/// `currentAutomationProfileID` so `fail(_:)` records this run's outcome),
+/// otherwise falls back to the human-facing `--profile <name>`.
+func resolveProfileFromOptions(_ opts: Options) -> ConnectionProfile {
+    if let idString = opts["profile-id"] {
+        guard let id = UUID(uuidString: idString) else {
+            fail("--profile-id must be a UUID, got \"\(idString)\"")
+        }
+        currentAutomationProfileID = id
+        return resolveProfile(id: id)
+    }
+    guard let name = opts["profile"] else {
+        fail("--profile <name> (or --profile-id <uuid>) is required")
+    }
+    return resolveProfile(named: name)
+}
+
 func resolvePassword(for profile: ConnectionProfile) -> String {
     let password: String?
     do {
@@ -105,6 +152,16 @@ func resolvePassword(for profile: ConnectionProfile) -> String {
         fail("No saved password for \"\(profile.name)\". Connect once via the vLens app with \"Save this connection to Keychain\" enabled, then retry.")
     }
     return password
+}
+
+/// Counterpart to `fail(_:)`'s failure recording — called at the end of a
+/// `snapshot`/`export` run that completed without hitting `fail`. A no-op
+/// for a manual `--profile <name>` invocation (`currentAutomationProfileID`
+/// stays nil in that case).
+func recordAutomationSuccessIfNeeded() {
+    guard currentAutomationProfileID != nil else { return }
+    AutomationPreferencesStore(defaults: sharedDefaults())
+        .recordRunResult(AutomationRunResult(succeeded: true, message: nil))
 }
 
 func normalizedSDKURL(_ host: String) -> String {
@@ -186,8 +243,7 @@ case "list-tabs":
     }
 
 case "snapshot":
-    guard let profileName = opts["profile"] else { fail("--profile <name> is required") }
-    let profile = resolveProfile(named: profileName)
+    let profile = resolveProfileFromOptions(opts)
     let password = resolvePassword(for: profile)
     let inventory = await collect(profile: profile, password: password)
     let healthChecks = evaluateHealth(inventory)
@@ -212,9 +268,9 @@ case "snapshot":
         fail("Couldn't save snapshot: \(error)")
     }
     print("Snapshot saved for \(profile.host)\(fullDetail ? " (full VM inventory included)" : "").")
+    recordAutomationSuccessIfNeeded()
 
 case "export":
-    guard let profileName = opts["profile"] else { fail("--profile <name> is required") }
     guard let tabKey = opts["tab"], let tab = ExportTab(rawValue: tabKey) else {
         fail("--tab <key> is required and must be one of: \(ExportTab.allCases.map(\.rawValue).joined(separator: ", "))")
     }
@@ -223,7 +279,7 @@ case "export":
     }
     guard let outputPath = opts["output"] else { fail("--output <path> is required") }
 
-    let profile = resolveProfile(named: profileName)
+    let profile = resolveProfileFromOptions(opts)
     let password = resolvePassword(for: profile)
     let inventory = await collect(profile: profile, password: password)
     let healthChecks = evaluateHealth(inventory)
@@ -234,6 +290,7 @@ case "export":
         fail("Export failed: \(error)")
     }
     print("Exported \(tab.rawValue) as \(format.rawValue) to \(outputPath)")
+    recordAutomationSuccessIfNeeded()
 
 case "help", "-h", "--help":
     printUsage()

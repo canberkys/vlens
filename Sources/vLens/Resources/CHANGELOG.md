@@ -3,6 +3,36 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.4.1] - 2026-09-05 (+03)
+
+### Fixed
+- **A scheduled automation job could silently run against the wrong
+  connection.** `LaunchdScheduler` passed the saved connection's *name* to
+  `vlens-cli`, even though the schedule itself stores a stable UUID — a
+  name isn't guaranteed unique, and renaming a profile after scheduling it
+  could point the job at nothing (or, in principle, at a same-named
+  profile it was never meant to touch). The generated launchd job now
+  passes `--profile-id <uuid>`, resolved by the CLI directly against that
+  stable id.
+- **"Scheduled and active" only checked that a plist file existed on disk**,
+  not that launchd actually had the job loaded — a `bootstrap` that failed
+  silently, or launchd's own database losing track of it, would still show
+  as active. Preferences now asks launchd directly (`launchctl print`).
+- **A scheduled job's last run result was invisible.** The job could be
+  correctly loaded and still be silently failing every single time it
+  fired (an expired password, a certificate that changed) with nothing in
+  Preferences to show for it. `vlens-cli` now records the outcome of every
+  automation-triggered run (success, or failure with the real error) and
+  Preferences shows it.
+
+Caught during this fix's own verification: recording that last-run result
+requires a `UserDefaults` write to survive `vlens-cli` calling `exit()`
+immediately afterward — without an explicit flush, a failed run's result
+was silently lost, leaving whatever the previous *successful* run had
+recorded. Found by testing the actual failure path live, not just the
+happy path, against a real vcsim connection and a real `launchctl
+bootstrap`/`bootout` cycle.
+
 ## [1.4.0] - 2026-09-05 (+03)
 
 ### Added

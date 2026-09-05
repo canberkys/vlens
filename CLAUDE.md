@@ -160,6 +160,47 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) #9: Otomasyon artık UUID'yle çözülüyor + gerçek launchd
+      durumu + son çalışma sonucu (v1.4.1) — review'daki 12 bulgunun
+      sonuncusu tamamlandı** — kullanıcının belirlediği sıranın son maddesi.
+      (1) `LaunchdScheduler.install` artık `--profile <isim>` yerine
+      `--profile-id <uuid>` geçiyor — schedule zaten UUID saklıyordu ama
+      CLI'ya isim geçiliyordu, isim benzersizliği garanti değil ve profil
+      yeniden adlandırılırsa schedule sessizce yanlış/var olmayan bir
+      bağlantıya işaret edebilirdi. `vlensCLI/main.swift`'e
+      `resolveProfile(id:)` + `resolveProfileFromOptions(_:)` eklendi (insan
+      tarafından elle çalıştırılan `--profile <isim>` hâlâ çalışıyor, sadece
+      launchd'nin ürettiği çağrı şekli değişti). (2) `LaunchdScheduler.
+      isInstalled` sadece plist dosyasının var olup olmadığına bakıyordu —
+      yeni `isActuallyLoaded`, `launchctl print gui/<uid>/<label>` ile
+      launchd'nin gerçekten bildiği durumu soruyor (gerçek bir
+      `bootstrap`/`bootout` döngüsüyle canlı doğrulandı: yüklüyken exit 0,
+      bootout sonrası exit 113). (3) **Son çalışma sonucu artık görünür** —
+      yeni `AutomationRunResult` (`vLensCore`), `vlens-cli` her
+      `--profile-id` ile tetiklenen çalıştırmadan sonra (launchd'nin
+      ürettiği şekil — elle `--profile <isim>` çalıştırmalar etkilemiyor)
+      başarı/başarısızlığı `AutomationPreferencesStore.recordRunResult`'a
+      yazıyor; `fail(_:)` tek bir merkezi noktadan (`currentAutomationProfileID`
+      global'i) hangi iç fonksiyon çağırırsa çağırsın başarısızlığı
+      yakalıyor. Preferences artık "Last run ... succeeded/failed (mesaj)"
+      gösteriyor. **Canlı doğrulama sırasında gerçek bir bug yakalandı ve
+      düzeltildi**: `vlens-cli` `exit(1)`'i doğrudan çağırdığı için
+      `UserDefaults`'un normal flush'ı yetişmiyordu — bir başarısız
+      çalıştırmanın sonucu sessizce bir önceki BAŞARILI çalıştırmanın
+      sonucu olarak kalıyordu (gerçek vcsim + gerçek Keychain + gerçek
+      launchd ile test edilirken canlı yakalandı, `defaults.synchronize()`
+      eklenerek düzeltildi, aynı senaryo tekrar çalıştırılıp doğrulandı).
+      Tüm test verisi (Keychain, connection-profiles.json,
+      trusted-certificates.json, inventory-snapshots.json, launchd plist,
+      defaults anahtarı) test sonrası temizlendi. `swift build`/`swift
+      test` temiz (68/68). **Review'ın 12 bulgusunun tamamı artık ele
+      alındı** — 8'i düzeltildi (P1'ler v1.3.0, P2'lerin 4'ü v1.3.1/1.3.2/
+      1.3.3/1.4.0/1.4.1'de), kalan mimari/mesajlaşma eleştirileri (snapshot
+      Size MiB disk-delta caveat'i, "historical trends"/"VM Changes"
+      çerçevelemesi, export'un UI sıralamasını taşımaması,
+      `ConnectionViewModel`/`helper/main.go` boyutu) hâlâ backlog'da,
+      fonksiyonel bug olmadıkları için ayrı, isteğe bağlı bir hijyen turu
+      bekliyor.
 - [x] **(2026-09-05) #5: Refresh, Disconnect ve bağlantı değiştirme eklendi
       (v1.4.0)** — kullanıcının sıralamasında #8/#11'den sonraki adım, ilk
       kez yeni bir kullanıcı özelliği (önceki 3 tur sadece düzeltmeydi).

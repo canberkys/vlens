@@ -209,11 +209,21 @@ struct PreferencesView: View {
 
                     if let schedule = viewModel.automationSchedule, schedule.enabled {
                         Label(
-                            LaunchdScheduler.isInstalled ? "Scheduled and active" : "Not active — see error above",
-                            systemImage: LaunchdScheduler.isInstalled ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
+                            LaunchdScheduler.isActuallyLoaded ? "Scheduled and active" : "Not active — see error above",
+                            systemImage: LaunchdScheduler.isActuallyLoaded ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
                         )
-                        .foregroundStyle(LaunchdScheduler.isInstalled ? .green : .orange)
+                        .foregroundStyle(LaunchdScheduler.isActuallyLoaded ? .green : .orange)
                         .font(.caption)
+
+                        if let lastRun = AutomationPreferencesStore().loadLastRunResult() {
+                            Label(
+                                "Last run \(lastRun.ranAt.formatted(date: .abbreviated, time: .shortened)): "
+                                    + (lastRun.succeeded ? "succeeded" : "failed" + (lastRun.message.map { " (\($0))" } ?? "")),
+                                systemImage: lastRun.succeeded ? "checkmark.circle" : "xmark.octagon.fill"
+                            )
+                            .foregroundStyle(lastRun.succeeded ? Color.secondary : Color.red)
+                            .font(.caption)
+                        }
                     }
 
                     Text("Runs vlens-cli in the background at the scheduled time via launchd — only works from a packaged .app build (a stable path launchd can point at), not swift run.")
