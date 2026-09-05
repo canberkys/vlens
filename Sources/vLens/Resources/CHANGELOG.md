@@ -3,6 +3,27 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.5.1] - 2026-09-05 (+03)
+
+### Added
+- **2 more vHealth rules** (RVTools #22/#23, 12 of 24 documented rules now
+  implemented): **Disk I/O performance tip** — a running VM with more than
+  3 disks totaling over 750 GiB on fewer than 2 Paravirtual SCSI
+  controllers funnels all that I/O through a single controller queue.
+  **In-memory performance tip** — a running VM with 4+ vCPUs where CPU Hot
+  Add, Memory Hot Add, or a single core per socket is configured can
+  prevent virtual NUMA from being exposed to the guest, hurting
+  memory-latency-sensitive workloads. RVTools' exact rule #23 also checks
+  a `vnumaOnCpuHotaddExposed` VM setting, which isn't a documented,
+  reliably-sourceable vim25 API property — left out rather than guessed
+  at; the other three conditions are each real collected fields.
+
+### Changed
+- README's "historical performance trends" reworded — vPerformance
+  reports avg/max for a chosen window, not a trend. Snapshot Compare's
+  "VM Changes" section renamed to "VM Membership Changes" — it only ever
+  reports added/removed VMs, never a field-by-field diff.
+
 ## [1.5.0] - 2026-09-05 (+03)
 
 ### Added

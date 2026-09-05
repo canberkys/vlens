@@ -213,7 +213,8 @@ func evaluateHealth(_ inventory: CollectedInventory) -> [HealthCheckResult] {
     return HealthCheckEngine.evaluate(
         snapshots: inventory.snapshots, tools: inventory.tools, datastores: inventory.datastores,
         hosts: inventory.hosts, cpus: inventory.cpus, cds: inventory.cds, partitions: inventory.partitions,
-        multipaths: inventory.multipaths, vms: inventory.vms, thresholds: thresholds
+        multipaths: inventory.multipaths, vms: inventory.vms, disks: inventory.disks, memory: inventory.memory,
+        thresholds: thresholds
     )
 }
 

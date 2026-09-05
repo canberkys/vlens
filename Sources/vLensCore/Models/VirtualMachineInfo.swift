@@ -23,6 +23,11 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
     /// needed" rule (matches this doc comment's own "don't pre-model unread
     /// fields" rule: this one is read).
     public let consolidationNeeded: Bool
+    /// Same reasoning — only read by `HealthCheckEngine`'s "Disk I/O
+    /// performance tip" rule (RVTools #22). Number of distinct
+    /// ParaVirtualSCSIController *devices* registered with the VM, not
+    /// disks attached to one.
+    public let pvscsiControllerCount: Int
 
     public init(
         name: String,
@@ -37,7 +42,8 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
         primaryIPAddress: String?,
         vmwareToolsStatus: String?,
         vmUUID: String,
-        consolidationNeeded: Bool = false
+        consolidationNeeded: Bool = false,
+        pvscsiControllerCount: Int = 0
     ) {
         self.name = name
         self.powerState = powerState
@@ -52,6 +58,7 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
         self.vmwareToolsStatus = vmwareToolsStatus
         self.vmUUID = vmUUID
         self.consolidationNeeded = consolidationNeeded
+        self.pvscsiControllerCount = pvscsiControllerCount
     }
 }
 

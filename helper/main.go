@@ -114,6 +114,11 @@ type virtualMachineInfo struct {
 	// needed" rule (see HealthCheckEngine.swift), matching the doc comment's
 	// "don't pre-model fields nothing reads" rule: this one is read.
 	ConsolidationNeeded bool `json:"consolidationNeeded"`
+	// Same reasoning — only read by vHealth's "Disk I/O performance tip"
+	// rule (RVTools #22). Number of distinct ParaVirtualSCSIController
+	// *devices* registered with the VM, not disks attached to one — two
+	// disks on the same PVSCSI controller must not count as two.
+	PVSCSIControllerCount int `json:"pvscsiControllerCount"`
 }
 
 type vmCPUInfo struct {
@@ -1766,6 +1771,11 @@ func mapVMInfo(vm mo.VirtualMachine, hostName string, clusterName *string, poolN
 		}
 		info.CPUCount = int(vm.Config.Hardware.NumCPU)
 		info.MemoryMiB = int(vm.Config.Hardware.MemoryMB)
+		for _, d := range vm.Config.Hardware.Device {
+			if _, ok := d.(*types.ParaVirtualSCSIController); ok {
+				info.PVSCSIControllerCount++
+			}
+		}
 	}
 	info.ResourcePoolName = poolName
 	if vm.Guest != nil {

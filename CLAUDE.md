@@ -183,6 +183,35 @@ varsayılan davranış her zaman "merge ettiysen yayınla"dır.
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) Faz 11'in en ucuz 2 vHealth kuralı + mesajlaşma
+      düzeltmeleri (v1.5.1)** — kullanıcının onayladığı günlük backlog'un
+      son 2 maddesi. **#22 Disk I/O performance tip**: çalışan bir VM'de
+      3'ten fazla disk, toplamda 750 GiB'den fazla, ve 2'den az Paravirtual
+      SCSI controller varsa uyarı. Bunu doğru uygulamak için varsayılan
+      "sıfır yeni veri toplama" planı kısmen yanlış çıktı — RVTools'un
+      "controller sayısı" kontrolü, disk başına controller TİPİ etiketinden
+      (`VMDiskInfo.controller`, örn. "SCSI controller (Paravirtual)")
+      türetilemiyor çünkü bu hangi disk'in HANGİ controller INSTANCE'ına
+      bağlı olduğunu ayırt etmiyor — 2 disk aynı tek controller'da da
+      olabilir, 2 farklı controller'da da. Gerçek çözüm: Go tarafında
+      `vm.Config.Hardware.Device` içindeki `ParaVirtualSCSIController`
+      device'larının kendisi sayılıp yeni bir `VirtualMachineInfo.pvscsiControllerCount`
+      alanına eklendi (canlı vcsim'e karşı doğrulandı — gerçek vcsim VM'leri
+      varsayılan olarak 1 PVSCSI controller taşıyor). **#23 In-memory
+      performance tip**: çalışan bir VM'de 4+ çekirdek VE (CPU Hot Add YA DA
+      Memory Hot Add YA DA soket başına 1 çekirdek) varsa uyarı — RVTools'un
+      tam kuralı ayrıca bir `vnumaOnCpuHotaddExposed` VM ayarı da kontrol
+      ediyor, ama bu dokümante edilmiş/güvenilir bir vim25 API alanı değil
+      (govmomi kaynak kodunda arandı, bulunamadı) — tahmin yürütmek yerine
+      bilinçli olarak atlandı, diğer 3 koşul tam olarak uygulandı. 6 yeni
+      test + canlı vcsim doğrulaması. **Ayrıca**: "historical performance
+      trends" (README) ve "VM Changes" (Snapshot Compare, → "VM Membership
+      Changes") mesajlaşma düzeltmeleri de bu turda bitti. **Export'un UI
+      sıralamasını taşımaması** maddesi ise beklenenin aksine "ucuz" çıkmadı
+      — 26 ayrı tab view dosyasının kendi `@State sortOrder`'ını tuttuğu
+      görüldü, gerçek bir çözüm hepsini `ContentView`'a bağlamayı gerektiriyor;
+      kullanıcıya bildirilip ayrı bir tur olarak bekletiliyor. `swift
+      build`/`swift test` temiz (86/86), `go build`/`go vet`/`go test` temiz.
 - [x] **(2026-09-05) ESXi/vCenter EOL farkındalığı demo'dan production'a
       alındı (v1.5.0)** — GitHub issue #19 ([@yunusozturk](https://github.com/yunusozturk)).
       Kullanıcı demo modda test etti, "olumlu duruyor" dedi; `feat/esxi-eol-awareness`
