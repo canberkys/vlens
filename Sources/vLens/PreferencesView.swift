@@ -202,6 +202,8 @@ struct PreferencesView: View {
                                 Image(systemName: "trash")
                             }
                             .buttonStyle(.plain)
+                            .help("Delete saved connection")
+                            .accessibilityLabel("Delete saved connection \(profile.name)")
                         }
                     }
                 }
