@@ -33,6 +33,13 @@ public enum DemoData {
             let cpu = [1, 2, 4, 8, 16][i % 5]
             let memory = [2048, 4096, 8192, 16384, 32768][i % 5]
 
+            // Most VMs live in a folder named after themselves (the healthy
+            // case for RVTools #11) — every 15th one instead sits in a
+            // leftover, mismatched folder, just enough to demonstrate the
+            // "Inconsistent folder name" vHealth rule without flooding
+            // demo mode with findings.
+            let folder = (i % 15 == 0) ? "Legacy-Migration-Holding" : name
+
             return VirtualMachineInfo(
                 name: name,
                 powerState: power,
@@ -45,7 +52,8 @@ public enum DemoData {
                 resourcePoolName: pools[i % pools.count],
                 primaryIPAddress: power == .poweredOn ? "10.0.\(i % 8).\(10 + i % 200)" : nil,
                 vmwareToolsStatus: power == .poweredOn ? toolsStates[i % toolsStates.count] : nil,
-                vmUUID: "demo-\(UUID().uuidString)"
+                vmUUID: "demo-\(UUID().uuidString)",
+                folderName: folder
             )
         }
     }

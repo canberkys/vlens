@@ -17,7 +17,7 @@ public extension Searchable {
 
 extension VirtualMachineInfo: Searchable {
     public var searchableText: String {
-        [name, guestOSFullName, hostName, clusterName, primaryIPAddress]
+        [name, guestOSFullName, hostName, clusterName, folderName, primaryIPAddress]
             .compactMap { $0 }.joined(separator: " ")
     }
 }

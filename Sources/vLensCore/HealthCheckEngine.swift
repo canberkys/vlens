@@ -4,7 +4,7 @@ import Foundation
 /// tabs — matches RVTools' own model (vHealth doesn't do a separate
 /// collection pass, it evaluates rules over vInfo/vSnapshot/vTools/etc.).
 ///
-/// Implements 17 of RVTools' 24 documented rules (numbering matches
+/// Implements 18 of RVTools' 24 documented rules (numbering matches
 /// rvtools.txt's vHealth section):
 ///   #1  VM has a CDROM device connected!
 ///   #2  VM has a Floppy device connected!
@@ -14,6 +14,9 @@ import Foundation
 ///   #6  On datastore xx is yy% disk space available! (threshold zz%)
 ///   #7  There are xx virtual CPUs active per core on this host! (threshold zz)
 ///   #8  There are xx VMs active on this datastore! (threshold zz)
+///   #11 Inconsistent Folder Names (VM name vs. containing folder name;
+///       vCLS appliances excluded by name prefix, SRM Placeholders are NOT
+///       excluded — see the rule's own comment for why)
 ///   #12 Multipath operational state (degraded/dead paths)
 ///   #13 Virtual machine consolidation needed
 ///   #17 NTP issues (no servers configured, or ntpd not running)
@@ -23,9 +26,9 @@ import Foundation
 ///   #23 In-memory performance tip (NUMA exposure vs. hot-add/cores-per-socket)
 ///   #24 Certificate within xx days of expiring or has expired
 ///   host config status not green (rolled into the vHealth concept generally)
-/// The remaining 7 rules (zombie VMDK/VM, inconsistent folder names,
-/// config-issue events, etc.) need data this app doesn't collect
-/// yet — add them incrementally as their source tabs are built.
+/// The remaining 6 rules (zombie VMDK/VM, config-issue events, etc.) need
+/// data this app doesn't collect yet — add them incrementally as their
+/// source tabs are built.
 public enum HealthCheckEngine {
     public static func evaluate(
         snapshots: [VMSnapshotInfo],
@@ -50,6 +53,29 @@ public enum HealthCheckEngine {
                 severity: .yellow,
                 rule: "Consolidation needed",
                 message: "\(vm.name): virtual machine disk consolidation needed.",
+                relatedObject: vm.name
+            ))
+        }
+
+        // RVTools #11 "Inconsistent Folder Names" — flags a VM whose
+        // immediate containing folder name doesn't match its own name (an
+        // organizational convention some environments enforce, not a
+        // universal one — expect this to fire often in environments that
+        // don't follow it). vCLS appliance VMs are excluded by their
+        // stable, VMware-documented "vCLS " name prefix (not a hidden API
+        // field). SRM Placeholder VMs are NOT excluded — RVTools' own
+        // exclusion relies on `ManagedBy.ExtensionKey`, an informal,
+        // undocumented string this project has no way to verify without a
+        // real SRM install, so this rule can false-positive on those by
+        // design rather than guess at the value.
+        for vm in vms {
+            guard let folderName = vm.folderName, folderName != vm.name else { continue }
+            guard !vm.name.hasPrefix("vCLS ") else { continue }
+            results.append(HealthCheckResult(
+                id: "folderName.\(vm.vmUUID)",
+                severity: .yellow,
+                rule: "Inconsistent folder name",
+                message: "\(vm.name): VM name doesn't match its containing folder name (\"\(folderName)\").",
                 relatedObject: vm.name
             ))
         }

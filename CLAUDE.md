@@ -183,6 +183,31 @@ varsayılan davranış her zaman "merge ettiysen yayınla"dır.
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) #11 Inconsistent Folder Name vHealth kuralı + vInfo'ya
+      Folder kolonu (v1.5.5)** — kullanıcıya AskUserQuestion ile sorulup
+      "vCLS ad-tabanlı istisnayla uygula" seçeneği onaylandı. RVTools'un
+      24 kuralından 18'i artık tamam. Gerçek mantık rvtools.txt'nin
+      changelog geçmişinden doğrulandı: VM'in doğrudan bulunduğu Folder adı
+      VM'in kendi adıyla eşleşmiyorsa bulgu üretiliyor. `VirtualMachineInfo`'ya
+      `folderName: String?` eklendi — Go tarafında VM fetch listesine tek
+      bir `"parent"` alanı eklenip (bedava, ekstra round-trip yok), zaten
+      var olan `nameMap(ctx, client, "Folder")` helper'ı yeniden kullanıldı.
+      vCLS appliance VM'leri stabil `"vCLS "` isim prefix'iyle (dokümante
+      edilmiş bir VMware convention'ı, gizli bir API alanı değil) hariç
+      tutuldu. **Bilinçli sınır**: SRM Placeholder VM'leri hariç
+      TUTULMADI — RVTools'un kendi istisnası doğrulanamayan bir
+      `ManagedBy.ExtensionKey` string'ine dayanıyor, gerçek bir SRM kurulumu
+      olmadan bu değeri teyit etmenin yolu yok. Canlı vcsim'e karşı
+      doğrulandı: gerçek folder çözümü çalışıyor (vcsim'in varsayılan VM
+      folder'ı "vm", hiçbir VM adıyla eşleşmiyor) — bu da kuralın "her VM
+      kendi adını taşıyan klasörde" convention'ını takip etmeyen her ortamda
+      genişçe ateşleneceğini doğruluyor (bug değil, beklenen davranış).
+      Demo data'da 40 VM'den her 15.'si kasıtlı olarak uyumsuz bir klasöre
+      yerleştirildi (kuralın demo'da gürültüye boğmadan gösterilmesi için).
+      4 yeni test. `swift build`/`swift test` temiz (101/101), `go build`/
+      `go vet`/`go test` temiz. **Sırada**: roadmap'in diğer maddeleri
+      (Preferences backlog, erişilebilirlik, export sıralaması, multi-vCenter
+      merge).
 - [x] **(2026-09-05) #2 Floppy connected vHealth kuralı + vFloppy tab (v1.5.4)** —
       RVTools'un 24 kuralından 17'si artık tamam, ve artık **28 tab** var
       (RVTools'un 24 tab'ından 23'ü — sadece `vFileInfo` eksik). vCD/vUSB
