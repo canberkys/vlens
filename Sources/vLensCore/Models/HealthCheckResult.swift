@@ -26,14 +26,19 @@ public struct HealthCheckThresholds: Equatable, Sendable {
     public var vCPUsPerCoreWarning: Double
     public var guestDiskFreeSpacePercent: Double
     public var maxVMsPerDatastore: Int
+    /// RVTools #24 — "Certificate within xx days of expiring or has
+    /// expired." Default 90 matches RVTools' own documented default.
+    public var certificateExpiryWarningDays: Int
 
     public init(
         datastoreFreeSpacePercent: Double = 10, vCPUsPerCoreWarning: Double = 4,
-        guestDiskFreeSpacePercent: Double = 10, maxVMsPerDatastore: Int = 30
+        guestDiskFreeSpacePercent: Double = 10, maxVMsPerDatastore: Int = 30,
+        certificateExpiryWarningDays: Int = 90
     ) {
         self.datastoreFreeSpacePercent = datastoreFreeSpacePercent
         self.vCPUsPerCoreWarning = vCPUsPerCoreWarning
         self.guestDiskFreeSpacePercent = guestDiskFreeSpacePercent
         self.maxVMsPerDatastore = maxVMsPerDatastore
+        self.certificateExpiryWarningDays = certificateExpiryWarningDays
     }
 }

@@ -81,6 +81,22 @@ struct PreferencesView: View {
                 Text("Flags a datastore when the number of registered VMs on it exceeds this count.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                LabeledContent("Certificate expiry warning") {
+                    HStack(spacing: 4) {
+                        TextField(
+                            "",
+                            value: $viewModel.healthCheckThresholds.certificateExpiryWarningDays,
+                            format: .number
+                        )
+                        .frame(width: 50)
+                        .multilineTextAlignment(.trailing)
+                        Text("days")
+                    }
+                }
+                Text("Flags a host's certificate when it expires within this many days, or has already expired.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Snapshot comparison metrics") {

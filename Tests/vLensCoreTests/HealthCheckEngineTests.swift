@@ -366,3 +366,49 @@ private func makeHost(
     )
     #expect(!results.contains { $0.rule == "ESXi Shell enabled" || $0.rule == "SSH enabled" || $0.rule == "NTP issue" })
 }
+
+// #24 Certificate expiry — RVTools: warn within a configurable number of
+// days (default 90), red if already expired.
+
+private func makeHostWithCert(daysUntilExpiry: Int?) -> HostInfo {
+    let certNotAfter = daysUntilExpiry.map { Calendar.current.date(byAdding: .day, value: $0, to: Date())! }
+    return HostInfo(
+        id: "h1", name: "esxi-01", datacenterName: nil, clusterName: nil, configStatus: .green,
+        cpuModel: "Xeon", cpuMhz: 2000, numCpuCores: 4, numCpuThreads: 8, cpuUsagePercent: nil,
+        memoryTotalMiB: 65536, memoryUsagePercent: nil, numNics: 2, numHbas: 1, numVMsTotal: 0,
+        numVMsRunning: 0, esxVersion: "8.0", esxBuild: "24022515", vendor: nil, model: nil,
+        maintenanceMode: false, certNotAfter: certNotAfter
+    )
+}
+
+@Test func flagsExpiredCertificateAsRed() {
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [makeHostWithCert(daysUntilExpiry: -5)], cpus: []
+    )
+    let finding = try? #require(results.first { $0.rule == "Certificate expiry" })
+    #expect(finding?.severity == .red)
+}
+
+@Test func flagsCertificateExpiringSoonAsYellow() {
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [makeHostWithCert(daysUntilExpiry: 30)], cpus: [],
+        thresholds: HealthCheckThresholds(certificateExpiryWarningDays: 90)
+    )
+    let finding = try? #require(results.first { $0.rule == "Certificate expiry" })
+    #expect(finding?.severity == .yellow)
+}
+
+@Test func doesNotFlagCertificateFarFromExpiry() {
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [makeHostWithCert(daysUntilExpiry: 365)], cpus: [],
+        thresholds: HealthCheckThresholds(certificateExpiryWarningDays: 90)
+    )
+    #expect(!results.contains { $0.rule == "Certificate expiry" })
+}
+
+@Test func doesNotFlagWhenCertificateCouldNotBeRead() {
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [makeHostWithCert(daysUntilExpiry: nil)], cpus: []
+    )
+    #expect(!results.contains { $0.rule == "Certificate expiry" })
+}

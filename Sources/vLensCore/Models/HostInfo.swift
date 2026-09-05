@@ -36,6 +36,10 @@ public struct HostInfo: Codable, Identifiable, Sendable {
     public let sshEnabled: Bool
     public let ntpdRunning: Bool
     public let ntpServerCount: Int
+    /// Not a vHost column yet — only read by vHealth's #24 rule. `nil` if
+    /// the host's certificate couldn't be read (see `helper/main.go`'s
+    /// `collectHosts`, which tolerates that rather than failing collectAll).
+    public let certNotAfter: Date?
 
     public init(
         id: String, name: String, datacenterName: String?, clusterName: String?,
@@ -44,7 +48,7 @@ public struct HostInfo: Codable, Identifiable, Sendable {
         memoryUsagePercent: Double?, numNics: Int, numHbas: Int, numVMsTotal: Int,
         numVMsRunning: Int, esxVersion: String, esxBuild: String, vendor: String?, model: String?,
         maintenanceMode: Bool, esxiShellEnabled: Bool = false, sshEnabled: Bool = false,
-        ntpdRunning: Bool = true, ntpServerCount: Int = 1
+        ntpdRunning: Bool = true, ntpServerCount: Int = 1, certNotAfter: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -71,6 +75,7 @@ public struct HostInfo: Codable, Identifiable, Sendable {
         self.sshEnabled = sshEnabled
         self.ntpdRunning = ntpdRunning
         self.ntpServerCount = ntpServerCount
+        self.certNotAfter = certNotAfter
     }
 }
 

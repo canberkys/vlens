@@ -223,6 +223,10 @@ type hostInfo struct {
 	SSHEnabled       bool `json:"sshEnabled"`
 	NTPDRunning      bool `json:"ntpdRunning"`
 	NTPServerCount   int  `json:"ntpServerCount"`
+	// Same reasoning — only read by vHealth's #24 rule. RFC3339 UTC, or nil
+	// if the host's certificate couldn't be read (see collectHosts' own
+	// tolerance for that failure).
+	CertNotAfter *string `json:"certNotAfter"`
 }
 
 type datastoreInfo struct {
@@ -1111,11 +1115,40 @@ func collectHosts(ctx context.Context, client *govmomi.Client, clusterNames map[
 		"vm",
 		"config.service",
 		"config.dateTimeInfo",
+		"configManager",
 	}
 
 	var raw []mo.HostSystem
 	if err := cv.Retrieve(ctx, []string{"HostSystem"}, props, &raw); err != nil {
 		return nil, err
+	}
+
+	// #24 Certificate expiry: each host's own TLS certificate lives on a
+	// separate CertificateManager child object (configManager.certificateManager),
+	// not a plain HostSystem property — a real second, batched round trip,
+	// not free like config.service/config.dateTimeInfo above. Failure here
+	// (e.g. a permission restriction some environments apply) degrades to
+	// "no cert data" rather than failing the whole collectAll — same
+	// tolerance as collectLicenses.
+	certManagerRefByHost := map[types.ManagedObjectReference]types.ManagedObjectReference{}
+	var certManagerRefs []types.ManagedObjectReference
+	for _, h := range raw {
+		if h.ConfigManager.CertificateManager != nil {
+			ref := *h.ConfigManager.CertificateManager
+			certManagerRefByHost[h.Reference()] = ref
+			certManagerRefs = append(certManagerRefs, ref)
+		}
+	}
+	certNotAfterByManager := map[types.ManagedObjectReference]time.Time{}
+	if len(certManagerRefs) > 0 {
+		var certManagers []mo.HostCertificateManager
+		if err := property.DefaultCollector(client.Client).Retrieve(ctx, certManagerRefs, []string{"certificateInfo"}, &certManagers); err == nil {
+			for _, cm := range certManagers {
+				if cm.CertificateInfo.NotAfter != nil {
+					certNotAfterByManager[cm.Reference()] = *cm.CertificateInfo.NotAfter
+				}
+			}
+		}
 	}
 
 	datacenterNames, err := nameMap(ctx, client, "Datacenter")
@@ -1208,6 +1241,12 @@ func collectHosts(ctx context.Context, client *govmomi.Client, clusterNames map[
 			}
 			if dt := h.Config.DateTimeInfo; dt != nil && dt.NtpConfig != nil {
 				info.NTPServerCount = len(dt.NtpConfig.Server)
+			}
+		}
+		if ref, ok := certManagerRefByHost[h.Reference()]; ok {
+			if notAfter, ok := certNotAfterByManager[ref]; ok {
+				s := notAfter.UTC().Format(time.RFC3339)
+				info.CertNotAfter = &s
 			}
 		}
 
