@@ -141,12 +141,13 @@ Model: `VirtualMachineInfo` · View: `VInfoTabView` · Source: `mapVMInfo` in `h
 | Memory MiB | Int | `config.hardware.memoryMB` | ✓ |
 | Host | String | resolved from `runtime.host` | ✓ |
 | Cluster | String? | resolved from host's parent, **only if** it's a `ClusterComputeResource` (blank for standalone hosts — see the bugfix note in §9) | ✓ (optional) |
+| Folder | String? | resolved from `parent` (immediate containing Folder, vim25 `ManagedEntity.Parent` — distinct from `resourcePool`); also feeds vHealth #11 | ✓ (optional) |
 | IP | String? | `guest.ipAddress` | ✓ (optional) |
 | VMware Tools | String? | `guest.toolsStatus` | ✓ (optional) |
 
 Also carried but not yet a column: `template` (Bool, `config.template`), `resourcePoolName`
 (String?, resolved from `resourcePool`), `vmUUID` (String, `config.uuid`).
-Searchable: name, guestOSFullName, hostName, clusterName, primaryIPAddress.
+Searchable: name, guestOSFullName, hostName, clusterName, folderName, primaryIPAddress.
 
 ### vCPU
 
@@ -763,7 +764,7 @@ small icon next to entries that carry full detail.
 ## 5. vHealth rule status
 
 RVTools documents 24 built-in health-check rules (rvtools.txt's vHealth section).
-vLens implements 17 of them. All numeric thresholds are user-adjustable —
+vLens implements 18 of them. All numeric thresholds are user-adjustable —
 RVTools' equivalent is its Health Properties panel; vLens' is the standard macOS
 Settings scene (Cmd+,, `Sources/vLens/PreferencesView.swift`), backed by
 `HealthCheckPreferencesStore` (UserDefaults). Changing a threshold there
@@ -780,6 +781,7 @@ the main window and the shared `ConnectionViewModel` — no reconnect needed.
 | 6 | On datastore xx is yy% disk space available! | ✅ Implemented — default threshold 10%, adjustable in Preferences |
 | 7 | There are xx virtual CPUs active per core on this host! | ✅ Implemented — default threshold 4.0, adjustable in Preferences |
 | 8 | There are xx VMs active on this datastore! | ✅ Implemented — counts registered VMs (`numVMsTotal`), not power-state-filtered; default threshold 30, adjustable in Preferences |
+| 11 | Inconsistent Folder Names | ✅ Implemented — flags a VM whose name doesn't match its immediate containing Folder's name (`VirtualMachineInfo.folderName`, resolved from vim25 `ManagedEntity.Parent`); vCLS appliances excluded by their stable `"vCLS "` name prefix (a documented VMware naming convention, not a hidden API field). **Known limitation**: SRM Placeholder VMs are NOT excluded — RVTools' own exclusion relies on an undocumented `ManagedBy.ExtensionKey` string this project has no way to verify without a real SRM install (see the rule's own code comment). Also expect this to fire often in environments that don't follow a strict one-folder-per-VM naming convention — live-verified against vcsim, whose default VM folder ("vm") correctly doesn't match any VM name, confirming the rule is genuinely noisy under non-conforming layouts, not a bug |
 | 12 | Multipath operational state | ✅ Implemented — flags any path not in `active`/`standby` state |
 | 13 | Virtual machine consolidation needed | ✅ Implemented — reads `runtime.consolidationNeeded`, one finding per VM needing it |
 | 17 | NTP issues | ✅ Implemented — flags no servers configured OR ntpd not running, reads `config.dateTimeInfo`/`config.service` |
@@ -791,7 +793,6 @@ the main window and the shared `ConnectionViewModel` — no reconnect needed.
 | — | Host config status not green | ✅ Implemented (not a numbered RVTools rule, rolled into the general vHealth concept) |
 | 9 | Possibly a zombie vmdk file! | ❌ needs `vFileInfo` (datastore file browser — deliberately deferred, see §10) |
 | 10 | Possibly a zombie vm! | ❌ same dependency |
-| 11 | Inconsistent Folder Names | ❌ needs folder-path data vLens doesn't collect yet — semantics not yet fully confirmed against rvtools.txt, buildable without a real vCenter (vcsim) |
 | 14 | Search datastore errors | ❌ N/A without a datastore browser |
 | 15 | VM config issues | ❌ needs `configIssue` events, not fetched |
 | 16 | Host config issues | ❌ same |
@@ -988,7 +989,7 @@ Explicitly out of scope indefinitely since RVTools' own docs flag it as slow and
 rarely used interactively — this is the one tab that's a deliberate, permanent
 scope decision rather than a "not gotten to it yet."
 
-**vHealth**: 17 of 24 rules implemented, 7 remaining — see [§5](#5-vhealth-rule-status)
+**vHealth**: 18 of 24 rules implemented, 6 remaining — see [§5](#5-vhealth-rule-status)
 for the full table.
 
 **Export**: CSV and XLSX are both done — see [§6](#6-export). A PDF **report**

@@ -54,13 +54,13 @@ public enum CSVWriter {
 
 extension VirtualMachineInfo: CSVExportable {
     public static var csvHeader: [String] {
-        ["VM", "Powerstate", "Template", "Guest OS", "CPUs", "Memory MiB", "Host", "Cluster", "Resource Pool", "Primary IP", "VMware Tools", "VM UUID"]
+        ["VM", "Powerstate", "Template", "Guest OS", "CPUs", "Memory MiB", "Host", "Cluster", "Folder", "Resource Pool", "Primary IP", "VMware Tools", "VM UUID"]
     }
     public static var xlsxColumnTypes: [XLSXColumnType] {
-        [.text, .text, .text, .text, .number, .number, .text, .text, .text, .text, .text, .text]
+        [.text, .text, .text, .text, .number, .number, .text, .text, .text, .text, .text, .text, .text]
     }
     public var csvRow: [String] {
-        [name, powerState.rawValue, template ? "True" : "False", guestOSFullName ?? "", "\(cpuCount)", "\(memoryMiB)", hostName, clusterName ?? "", resourcePoolName ?? "", primaryIPAddress ?? "", vmwareToolsStatus ?? "", vmUUID]
+        [name, powerState.rawValue, template ? "True" : "False", guestOSFullName ?? "", "\(cpuCount)", "\(memoryMiB)", hostName, clusterName ?? "", folderName ?? "", resourcePoolName ?? "", primaryIPAddress ?? "", vmwareToolsStatus ?? "", vmUUID]
     }
 }
 

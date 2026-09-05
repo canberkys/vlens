@@ -111,6 +111,11 @@ type virtualMachineInfo struct {
 	PrimaryIPAddress  *string `json:"primaryIPAddress"`
 	VMwareToolsStatus *string `json:"vmwareToolsStatus"`
 	VMUUID            string  `json:"vmUUID"`
+	// The VM's immediate containing Folder in the vCenter inventory tree
+	// (vim25 ManagedEntity.Parent — distinct from ResourcePool/vApp
+	// placement). A real vInfo column, and also feeds the vHealth
+	// "Inconsistent Folder Names" rule (RVTools #11).
+	FolderName *string `json:"folderName"`
 	// Not a vInfo column — carried only for the vHealth "consolidation
 	// needed" rule (see HealthCheckEngine.swift), matching the doc comment's
 	// "don't pre-model fields nothing reads" rule: this one is read.
@@ -724,6 +729,10 @@ func collectAll(req helperRequest) (helperResponse, error) {
 	if err != nil {
 		return helperResponse{}, fmt.Errorf("resource pool lookup failed: %w", err)
 	}
+	folderNames, err := nameMap(ctx, client, "Folder")
+	if err != nil {
+		return helperResponse{}, fmt.Errorf("folder lookup failed: %w", err)
+	}
 	hostParents, err := parentMap(ctx, client, "HostSystem")
 	if err != nil {
 		return helperResponse{}, fmt.Errorf("host parent lookup failed: %w", err)
@@ -820,8 +829,14 @@ func collectAll(req helperRequest) (helperResponse, error) {
 				poolName = &name
 			}
 		}
+		var folderName *string
+		if vm.Parent != nil {
+			if name, ok := folderNames[*vm.Parent]; ok {
+				folderName = &name
+			}
+		}
 
-		resp.VMs = append(resp.VMs, mapVMInfo(vm, hostName, clusterName, poolName))
+		resp.VMs = append(resp.VMs, mapVMInfo(vm, hostName, clusterName, poolName, folderName))
 		resp.CPUs = append(resp.CPUs, mapVMCPU(vm, hostName, clusterName))
 		resp.Memory = append(resp.Memory, mapVMMemory(vm, hostName, clusterName))
 		resp.Disks = append(resp.Disks, mapVMDisks(vm, hostName)...)
@@ -1089,6 +1104,7 @@ func collectVMs(ctx context.Context, client *govmomi.Client) ([]mo.VirtualMachin
 		"config.memoryHotAddEnabled",
 		"config.version",
 		"config.uuid",
+		"parent",
 		"runtime.host",
 		"resourcePool",
 		"guest.ipAddress",
@@ -1829,12 +1845,13 @@ func collectMultipaths(ctx context.Context, client *govmomi.Client) ([]multipath
 
 // ---------- per-VM mapping ----------
 
-func mapVMInfo(vm mo.VirtualMachine, hostName string, clusterName *string, poolName *string) virtualMachineInfo {
+func mapVMInfo(vm mo.VirtualMachine, hostName string, clusterName *string, poolName *string, folderName *string) virtualMachineInfo {
 	info := virtualMachineInfo{
 		Name:                vm.Name,
 		PowerState:          string(vm.Runtime.PowerState),
 		HostName:            hostName,
 		ClusterName:         clusterName,
+		FolderName:          folderName,
 		ConsolidationNeeded: vm.Runtime.ConsolidationNeeded,
 		// vmID falls back to the VM's moref when Config is nil or Config.Uuid
 		// is empty — matching every other per-VM mapper (mapVMCPU, etc.).

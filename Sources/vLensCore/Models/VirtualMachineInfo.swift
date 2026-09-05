@@ -19,6 +19,11 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
     public let primaryIPAddress: String?
     public let vmwareToolsStatus: String?
     public let vmUUID: String
+    /// The VM's immediate containing Folder in the vCenter inventory tree —
+    /// distinct from `resourcePoolName` (compute placement). A real vInfo
+    /// column, and also feeds `HealthCheckEngine`'s "Inconsistent Folder
+    /// Names" rule (RVTools #11).
+    public let folderName: String?
     /// Not a vInfo column — only read by `HealthCheckEngine`'s "consolidation
     /// needed" rule (matches this doc comment's own "don't pre-model unread
     /// fields" rule: this one is read).
@@ -42,6 +47,7 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
         primaryIPAddress: String?,
         vmwareToolsStatus: String?,
         vmUUID: String,
+        folderName: String? = nil,
         consolidationNeeded: Bool = false,
         pvscsiControllerCount: Int = 0
     ) {
@@ -57,6 +63,7 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
         self.primaryIPAddress = primaryIPAddress
         self.vmwareToolsStatus = vmwareToolsStatus
         self.vmUUID = vmUUID
+        self.folderName = folderName
         self.consolidationNeeded = consolidationNeeded
         self.pvscsiControllerCount = pvscsiControllerCount
     }

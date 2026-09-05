@@ -14,6 +14,7 @@ struct VInfoTabView: View {
             TableColumn("Memory MiB", sortUsing: FieldComparator.value("memory", \.memoryMiB)) { Text("\($0.memoryMiB)") }
             TableColumn("Host", sortUsing: FieldComparator.value("host", \.hostName)) { Text($0.hostName) }
             TableColumn("Cluster", sortUsing: FieldComparator.optional("cluster", \.clusterName)) { Text($0.clusterName ?? "—") }
+            TableColumn("Folder", sortUsing: FieldComparator.optional("folder", \.folderName)) { Text($0.folderName ?? "—") }
             TableColumn("IP", sortUsing: FieldComparator.optional("ip", \.primaryIPAddress)) { Text($0.primaryIPAddress ?? "—") }
             TableColumn("VMware Tools", sortUsing: FieldComparator.optional("tools", \.vmwareToolsStatus)) { Text($0.vmwareToolsStatus ?? "—") }
         }

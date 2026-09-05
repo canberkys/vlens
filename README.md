@@ -44,7 +44,7 @@ simulator).
 |---|---|
 | **28 tabs** | vInfo, vCPU, vMemory, vDisk, vSnapshot, vTools, vNetwork, vCD, vFloppy, vUSB, vPartition, vApp, vHost, vDatastore, vCluster, vRP, vSwitch, vPort, dvSwitch, dvPort, vNic, vSC+VMK, vHBA, vMultipath, vLicense, vHealth, plus vLens' own vPerformance and Snapshots |
 | **RVTools parity** | Only `vFileInfo` (datastore file browser) is deliberately out of scope — RVTools' own docs flag it as slow and rarely used |
-| **vHealth** | 17 of RVTools' 24 documented health-check rules, thresholds adjustable in Preferences, re-evaluates instantly on change |
+| **vHealth** | 18 of RVTools' 24 documented health-check rules, thresholds adjustable in Preferences, re-evaluates instantly on change |
 | **vPerformance** *(not in RVTools)* | Historical CPU/RAM/disk-IO usage over a time window you choose (1 hour–30 days), not just an instantaneous snapshot |
 | **Snapshots & Compare** *(not in RVTools)* | Record a point-in-time set of inventory metrics, compare any two later with a color-coded delta |
 | **PDF report** *(not in RVTools)* | One-page management summary — vCenter identity, counts, charts, vHealth status — generated on demand |

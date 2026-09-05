@@ -7,7 +7,7 @@ import Foundation
 /// fallback" shape as `HelperLocator.resolve()`.
 enum AppVersion {
     static var shortVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.5.4"
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.5.5"
     }
 
     static var buildNumber: String {

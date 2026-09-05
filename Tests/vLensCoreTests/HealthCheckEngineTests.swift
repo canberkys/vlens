@@ -204,6 +204,63 @@ import Testing
     #expect(results.isEmpty)
 }
 
+@Test func flagsInconsistentFolderName() {
+    let vm = VirtualMachineInfo(
+        name: "web-01", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 2,
+        memoryMiB: 4096, hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "vm1", folderName: "Legacy-Migration"
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [], vms: [vm]
+    )
+
+    #expect(results.count == 1)
+    #expect(results[0].rule == "Inconsistent folder name")
+}
+
+@Test func doesNotFlagWhenFolderNameMatchesVMName() {
+    let vm = VirtualMachineInfo(
+        name: "web-01", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 2,
+        memoryMiB: 4096, hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "vm1", folderName: "web-01"
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [], vms: [vm]
+    )
+
+    #expect(results.isEmpty)
+}
+
+@Test func doesNotFlagWhenFolderNameIsUnknown() {
+    let vm = VirtualMachineInfo(
+        name: "web-01", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 2,
+        memoryMiB: 4096, hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "vm1"
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [], vms: [vm]
+    )
+
+    #expect(results.isEmpty)
+}
+
+@Test func doesNotFlagVCLSAppliancesDespiteMismatchedFolder() {
+    let vm = VirtualMachineInfo(
+        name: "vCLS (1)", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 1,
+        memoryMiB: 128, hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "vm1", folderName: "vCLS"
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [], vms: [vm]
+    )
+
+    #expect(results.isEmpty)
+}
+
 // #22 Disk I/O performance tip — RVTools: running VM, >3 disks, >750 GiB
 // total, <2 Paravirtual SCSI controllers.
 

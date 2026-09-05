@@ -3,6 +3,27 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.5.5] - 2026-09-05 (+03)
+
+### Added
+- **Folder column on vInfo + Inconsistent Folder Name vHealth rule** (RVTools
+  #11, 18 of 24 documented rules now implemented) — a VM's immediate
+  containing Folder name is now collected (`config.hardware.device`'s
+  sibling `parent` property, zero extra round-trip) and shown as a new
+  vInfo column. The matching vHealth rule flags a VM whose name doesn't
+  match its containing folder's name — a real, common organizational
+  convention some environments enforce, not a universal one. vCLS
+  appliance VMs are excluded by their stable `"vCLS "` name prefix (a
+  documented, stable VMware naming convention, not a hidden API field).
+  **Known limitation, documented rather than guessed at**: SRM Placeholder
+  VMs are NOT excluded — RVTools' own exclusion depends on an undocumented
+  `ManagedBy.ExtensionKey` string this project has no way to verify
+  without a real SRM install. Live-verified against vcsim: real folder
+  resolution works correctly (`"vm"`, vcsim's default VM folder), which
+  also confirms this rule will fire broadly in any environment that
+  doesn't follow a strict one-folder-per-VM naming convention — expected,
+  not a bug. 4 new tests.
+
 ## [1.5.4] - 2026-09-05 (+03)
 
 ### Added
