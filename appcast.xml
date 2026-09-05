@@ -6,23 +6,26 @@
         <description>vLens release updates</description>
         <language>en</language>
         <item>
-            <title>Version 1.2.2</title>
-            <pubDate>Fri, 04 Sep 2026 22:32:38 +0000</pubDate>
-            <sparkle:version>9</sparkle:version>
-            <sparkle:shortVersionString>1.2.2</sparkle:shortVersionString>
+            <title>Version 1.4.2</title>
+            <pubDate>Sat, 05 Sep 2026 08:31:33 +0000</pubDate>
+            <sparkle:version>17</sparkle:version>
+            <sparkle:shortVersionString>1.4.2</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[
-<h4>Added</h4>
+<h4>Fixed</h4>
 <ul>
-<li>Help ▸ What&#x27;s New: the full changelog, right in the app, rendered from the same <code>CHANGELOG.md</code> that ships with every release.</li>
-<li>Sparkle&#x27;s update dialog now shows that release&#x27;s notes inline (pulled from <code>CHANGELOG.md</code> at release time) instead of just a bare version number — no separate popup, it&#x27;s part of the update prompt you already see.</li>
+<li><strong>Certificate pinning was still conditional on CA trust (critical).</strong> The 1.3.0 fix used govmomi&#x27;s own <code>soap.Client.SetThumbprint</code>, which only ever consults the pinned fingerprint as a *fallback* — if the presented certificate happens to validate against the OS&#x27;s own trust store for any reason, the connection succeeds without the thumbprint being checked at all. Confirmed directly: a deliberately wrong pinned fingerprint was rejected against an untrusted cert as expected, but accepted once that same cert was trusted via a CA, with the exact same wrong pin still configured. Fixed by not delegating to govmomi&#x27;s dial logic at all: the transport&#x27;s dialer now skips Go&#x27;s chain verification entirely and unconditionally compares the presented certificate&#x27;s SHA-256 thumbprint against the pinned one — an exact match is the only way to connect, no CA-trust escape hatch.</li>
+<li>**Disconnecting during an in-flight refresh could resurrect the connection**, and — with &quot;Save this connection to Keychain&quot; on — save whatever the password field had already been cleared to by <code>disconnect()</code>, overwriting the real saved password with an empty one. Both <code>performCollection</code> and <code>collectPerformance</code> now capture a connection &quot;generation&quot; before their network call and discard the result if a disconnect (or another connect/refresh) has since superseded it.</li>
+<li>**A new connection could silently overwrite a previously-selected saved profile.** Selecting a saved connection, disconnecting, then manually connecting somewhere else with &quot;Save to Keychain&quot; still on reused the first profile&#x27;s id — since automation schedules pin a job to a profile by that same id, this could silently redirect a scheduled job too. Now only reuses the previous id when its stored host/username still match what&#x27;s being connected; otherwise a fresh profile is created.</li>
+<li>**Snapshot writes proceeded without their cross-process lock if the lock itself couldn&#x27;t be acquired** — the 1.3.0 fix for concurrent snapshot writes checked neither <code>open()</code>&#x27;s nor <code>flock()</code>&#x27;s failure, silently falling back to unlocked (and therefore unsafe) writes on exactly the kind of storage backend (a network share) most likely to hit that failure. Both failures now abort the write with an error instead.</li>
 </ul>
+<p>All four found and verified by a second, independent round of review (isolated tests against a delayed fake helper and real store instances, <code>go test -race</code>, and a locked-out lock file) — not by inspection alone.</p>
             ]]></description>
             <enclosure
-                url="https://github.com/canberkys/vlens/releases/download/v1.2.2/vLens-1.2.2.dmg"
-                length="12139644"
+                url="https://github.com/canberkys/vlens/releases/download/v1.4.2/vLens-1.4.2.dmg"
+                length="13181604"
                 type="application/octet-stream"
-                sparkle:edSignature="Iwy/zfvWEcZpZ1kkagFd4VtZpwgHTAeaRG5IZ8hXXWP683SNcLPk+R8dirJ5ezHmcaZ7ga0mRQDOM90FpHrJDg==" />
+                sparkle:edSignature="TZ93K5btQ7QxRQrOfnAQL3iM1tttf1D1fn5A68fIkP+YHQzEvq43w/K+/r9fSiv3/A1qTf2cobqcrKQH2IpCCA==" />
         </item>
     </channel>
 </rss>
