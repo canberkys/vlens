@@ -183,6 +183,22 @@ varsayılan davranış her zaman "merge ettiysen yayınla"dır.
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) #24 Sertifika bitişi vHealth kuralı (v1.5.3)** —
+      RVTools'un 24 kuralından 16'sı artık tamam. Diğer host kurallarından
+      (#17/#20/#21) farklı olarak sertifika verisi düz bir `HostSystem`
+      property'si değil — `configManager.certificateManager` referansı
+      üzerinden ayrı bir `CertificateManager` alt objesinin `certificateInfo`
+      property'si (govmomi kaynağından doğrulandı: `object/host_certificate_manager.go`).
+      Gerçek bir ikinci, ama TOPLU (host sayısı kadar ayrı çağrı değil, tek
+      `pc.Retrieve` ile tüm certManager referansları birden) round-trip
+      gerektiriyor. Sertifika okunamayan bir host (bazı ortamlarda yetki
+      kısıtı olabilir) sessizce atlanıyor, tüm `collectAll`'ı düşürmüyor.
+      Varsayılan eşik 90 gün (RVTools'un kendi varsayılanı), Preferences'tan
+      ayarlanabilir. Canlı vcsim'e karşı doğrulandı (gerçek sertifika,
+      2084 bitiş tarihi — vcsim'in kendi ürettiği test sertifikası). 4 yeni
+      test. `swift build`/`swift test` temiz (95/95), `go build`/`go vet`/
+      `go test` temiz. **Sırada**: #2 (Floppy — yeni küçük bir collector),
+      #11 (Inconsistent Folder Names — tam semantiği hâlâ net değil).
 - [x] **(2026-09-05) 3 vHealth kuralı daha: ESXi Shell/SSH/NTP (v1.5.2)** —
       issue #19 kapatıldıktan sonra kullanıcı roadmap'i belirleyip
       (Faz 5.1 en sona) uygulamaya başlamamı istedi. #20/#21 (ESXi Shell/SSH

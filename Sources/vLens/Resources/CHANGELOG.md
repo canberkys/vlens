@@ -3,6 +3,21 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.5.3] - 2026-09-05 (+03)
+
+### Added
+- **Certificate expiry vHealth rule** (RVTools #24, 16 of 24 documented
+  rules now implemented) — warns when a host's own TLS certificate is
+  within a configurable number of days of expiring (default 90, matching
+  RVTools' own default), or flags it red if already expired. Adjustable in
+  Preferences alongside the other vHealth thresholds. A host's certificate
+  lives on a separate `CertificateManager` child object, not a plain
+  `HostSystem` property — a real second, batched round trip per collection,
+  not free like the other recent host-level rules; a host whose
+  certificate can't be read (e.g. a permission restriction some
+  environments apply) is silently skipped rather than failing the whole
+  collection.
+
 ## [1.5.2] - 2026-09-05 (+03)
 
 ### Added

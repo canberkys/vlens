@@ -21,11 +21,13 @@ public struct HealthCheckPreferencesStore: @unchecked Sendable {
         let vCPUsPerCoreWarning = defaults.object(forKey: Keys.vCPUsPerCoreWarning) as? Double
         let guestDiskFreeSpacePercent = defaults.object(forKey: Keys.guestDiskFreeSpacePercent) as? Double
         let maxVMsPerDatastore = defaults.object(forKey: Keys.maxVMsPerDatastore) as? Int
+        let certificateExpiryWarningDays = defaults.object(forKey: Keys.certificateExpiryWarningDays) as? Int
         return HealthCheckThresholds(
             datastoreFreeSpacePercent: datastoreFreeSpacePercent ?? fallback.datastoreFreeSpacePercent,
             vCPUsPerCoreWarning: vCPUsPerCoreWarning ?? fallback.vCPUsPerCoreWarning,
             guestDiskFreeSpacePercent: guestDiskFreeSpacePercent ?? fallback.guestDiskFreeSpacePercent,
-            maxVMsPerDatastore: maxVMsPerDatastore ?? fallback.maxVMsPerDatastore
+            maxVMsPerDatastore: maxVMsPerDatastore ?? fallback.maxVMsPerDatastore,
+            certificateExpiryWarningDays: certificateExpiryWarningDays ?? fallback.certificateExpiryWarningDays
         )
     }
 
@@ -34,6 +36,7 @@ public struct HealthCheckPreferencesStore: @unchecked Sendable {
         defaults.set(thresholds.vCPUsPerCoreWarning, forKey: Keys.vCPUsPerCoreWarning)
         defaults.set(thresholds.guestDiskFreeSpacePercent, forKey: Keys.guestDiskFreeSpacePercent)
         defaults.set(thresholds.maxVMsPerDatastore, forKey: Keys.maxVMsPerDatastore)
+        defaults.set(thresholds.certificateExpiryWarningDays, forKey: Keys.certificateExpiryWarningDays)
     }
 
     private enum Keys {
@@ -41,5 +44,6 @@ public struct HealthCheckPreferencesStore: @unchecked Sendable {
         static let vCPUsPerCoreWarning = "com.vlens.healthCheck.vCPUsPerCoreWarning"
         static let guestDiskFreeSpacePercent = "com.vlens.healthCheck.guestDiskFreeSpacePercent"
         static let maxVMsPerDatastore = "com.vlens.healthCheck.maxVMsPerDatastore"
+        static let certificateExpiryWarningDays = "com.vlens.healthCheck.certificateExpiryWarningDays"
     }
 }

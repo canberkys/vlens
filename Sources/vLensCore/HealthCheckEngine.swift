@@ -4,7 +4,7 @@ import Foundation
 /// tabs — matches RVTools' own model (vHealth doesn't do a separate
 /// collection pass, it evaluates rules over vInfo/vSnapshot/vTools/etc.).
 ///
-/// Implements 15 of RVTools' 24 documented rules (numbering matches
+/// Implements 16 of RVTools' 24 documented rules (numbering matches
 /// rvtools.txt's vHealth section):
 ///   #1  VM has a CDROM device connected!
 ///   #3  VM has an active snapshot!
@@ -20,9 +20,10 @@ import Foundation
 ///   #21 Warning if SSH is enabled on host
 ///   #22 Disk I/O performance tip (PVSCSI controller count vs. disk count/size)
 ///   #23 In-memory performance tip (NUMA exposure vs. hot-add/cores-per-socket)
+///   #24 Certificate within xx days of expiring or has expired
 ///   host config status not green (rolled into the vHealth concept generally)
-/// The remaining 9 rules (floppy connected, zombie VMDK/VM, certificate
-/// expiry, inconsistent folder names, config-issue events, etc.) need
+/// The remaining 8 rules (floppy connected, zombie VMDK/VM,
+/// inconsistent folder names, config-issue events, etc.) need
 /// data this app doesn't collect
 /// yet — add them incrementally as their source tabs are built.
 public enum HealthCheckEngine {
@@ -178,6 +179,25 @@ public enum HealthCheckEngine {
                     message: "\(host.name): \(reason).",
                     relatedObject: host.name
                 ))
+            }
+
+            // #24 — `certNotAfter` is nil when the host's certificate
+            // couldn't be read at all (see `helper/main.go`'s tolerance for
+            // that); nothing to warn about without a real expiry date.
+            if let certNotAfter = host.certNotAfter {
+                let daysUntilExpiry = Calendar.current.dateComponents([.day], from: Date(), to: certNotAfter).day ?? Int.max
+                if daysUntilExpiry <= thresholds.certificateExpiryWarningDays {
+                    let message = daysUntilExpiry < 0
+                        ? "\(host.name): certificate expired \(-daysUntilExpiry) day(s) ago."
+                        : "\(host.name): certificate expires in \(daysUntilExpiry) day(s) (threshold: \(thresholds.certificateExpiryWarningDays))."
+                    results.append(HealthCheckResult(
+                        id: "host.cert.\(host.id)",
+                        severity: daysUntilExpiry < 0 ? .red : .yellow,
+                        rule: "Certificate expiry",
+                        message: message,
+                        relatedObject: host.name
+                    ))
+                }
             }
 
             let activeVCPUs = cpus
