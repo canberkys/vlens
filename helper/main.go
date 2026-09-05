@@ -590,24 +590,58 @@ func fetchCertificate(req helperRequest) (*certificateInfo, error) {
 // fingerprint that was just "verified". A MITM only needs to let the first
 // probe through untouched and can freely intercept the second.
 //
-// This builds the soap/vim25 client by hand (mirrors govmomi.NewClient's
-// own body) specifically to call `soap.Client.SetThumbprint` — govmomi's
-// own first-class pinning mechanism, also used by govc/terraform-provider-
-// vsphere. Constructed with `insecure=false`, so the initial dial attempts
-// normal CA verification (expected to fail for the self-signed/internal-CA
-// certs almost every on-prem vCenter uses), and *only on that specific
-// failure* falls back to comparing the presented certificate's SHA-256/
-// SHA-1 thumbprint against the one passed in here — hard error if it
-// doesn't match, never a silent connect. ExpectedFingerprint is therefore
-// required, not optional: an authenticated connection with nothing to pin
-// against is exactly the bug being fixed.
+// A first attempt at this fix used govmomi's own `soap.Client.SetThumbprint`
+// (the mechanism govc/terraform-provider-vsphere also use). That turned out
+// to be insufficient pinning, not a full fix: govmomi's `dialTLSContext`
+// only ever consults the pinned thumbprint as a *fallback*, after a normal
+// CA-trust `tls.Dial` fails — if the presented certificate happens to
+// validate against the OS's own trust store for any reason (a legitimately
+// re-issued cert, or a maliciously-issued one from some CA the OS trusts
+// for this hostname), the connection succeeds without the thumbprint ever
+// being checked at all. That's "CA trust OR pinned thumbprint", not real
+// pinning. Confirmed directly: a deliberately wrong pinned fingerprint was
+// rejected against an untrusted (self-signed) cert as expected, but
+// accepted — HTTP 200, login succeeded — once that same cert was trusted
+// via a CA, with the exact same wrong pin still configured.
+//
+// Fixed by not delegating to govmomi's built-in dial logic at all: the
+// transport's `DialTLSContext` is replaced with a dialer that skips Go's
+// chain verification entirely (`InsecureSkipVerify: true` — we are doing
+// our own, different verification) and unconditionally compares the
+// presented leaf certificate's SHA-256 thumbprint (`soap.ThumbprintSHA256`,
+// the same format `ExpectedFingerprint` already arrives in) against
+// `expectedFingerprint`. The only way to connect is an exact pin match —
+// no CA-trust escape hatch, no fallback-only logic.
 func newPinnedClient(ctx context.Context, u *url.URL, expectedFingerprint string) (*govmomi.Client, error) {
 	if expectedFingerprint == "" {
 		return nil, fmt.Errorf("expectedFingerprint is required — refusing to connect without certificate pinning")
 	}
 
-	soapClient := soap.NewClient(u, false)
-	soapClient.SetThumbprint(u.Host, expectedFingerprint)
+	soapClient := soap.NewClient(u, true)
+	transport := soapClient.DefaultTransport()
+	transport.DialTLSContext = func(dialCtx context.Context, network, addr string) (net.Conn, error) {
+		dialer := tls.Dialer{Config: &tls.Config{InsecureSkipVerify: true}} //nolint:gosec // intentional — see doc comment, verification happens below
+		conn, err := dialer.DialContext(dialCtx, network, addr)
+		if err != nil {
+			return nil, err
+		}
+		tlsConn, ok := conn.(*tls.Conn)
+		if !ok {
+			_ = conn.Close()
+			return nil, fmt.Errorf("unexpected connection type dialing %q", addr)
+		}
+		certs := tlsConn.ConnectionState().PeerCertificates
+		if len(certs) == 0 {
+			_ = conn.Close()
+			return nil, fmt.Errorf("host %q presented no certificate", addr)
+		}
+		actual := soap.ThumbprintSHA256(certs[0])
+		if !strings.EqualFold(actual, expectedFingerprint) {
+			_ = conn.Close()
+			return nil, fmt.Errorf("host %q certificate does not match the pinned fingerprint (expected %s, got %s)", addr, expectedFingerprint, actual)
+		}
+		return conn, nil
+	}
 
 	vimClient, err := vim25.NewClient(ctx, soapClient)
 	if err != nil {

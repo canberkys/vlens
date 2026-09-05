@@ -160,6 +160,50 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) İkinci bağımsız review turu — 1 kritik + 3 P2 bulgu
+      daha düzeltildi (v1.4.2)** — kullanıcı "12/12 kapandı" sonucunu
+      izole testlerle sorguladı, 4 yeni gerçek bulgu getirdi; hepsi kod
+      okunarak ve canlı/testle doğrulandı, hiçbiri reddedilmedi.
+      **(Kritik) Sertifika pinleme hâlâ CA güvenine koşulluydu** —
+      govmomi'nin `SetThumbprint` mekanizması, kaynak koddan doğrulandı:
+      `dialTLSContext` normal CA doğrulaması BAŞARILI olursa thumbprint'e
+      hiç bakmıyor, sadece CA doğrulaması BAŞARISIZ olduğunda fallback
+      olarak devreye giriyor — yani "CA güveni VEYA pin", gerçek pinleme
+      değil. Canlı doğrulandı: yanlış fingerprint + güvenilmeyen sertifika
+      → reddedildi (doğru); yanlış fingerprint + CA'ya güvenilen aynı
+      sertifika → HTTP 200, giriş başarılı (bug). Düzeltme: govmomi'nin
+      kendi dial mantığına hiç güvenmeden, transport'un `DialTLSContext`'i
+      tamamen kendi fonksiyonumuzla değiştirildi — Go'nun zincir
+      doğrulaması tamamen atlanıyor (`InsecureSkipVerify`), sunulan
+      sertifikanın SHA-256 thumbprint'i (`soap.ThumbprintSHA256`) koşulsuz
+      olarak `expectedFingerprint`'e karşı kontrol ediliyor — CA güveni
+      artık hiçbir rol oynamıyor, tek kabul yolu tam pin eşleşmesi. Canlı
+      vcsim'e karşı hem doğru hem yanlış fingerprint senaryosu tekrar
+      doğrulandı. **Disconnect, bekleyen bir refresh'i geçersiz kılmıyordu**
+      — `performCollection`/`collectPerformance`'a yeni bir
+      `connectionGeneration` sayacı eklendi (`disconnect()` artırıyor,
+      her çağrı `await`'ten önce yerel bir kopyasını yakalayıp sonradan
+      karşılaştırıyor) — disconnect sırasında uçan eski bir istek artık
+      sessizce bağlantıyı diriltemiyor, ve `saveCredentials` açıkken
+      `password`'un disconnect'in boşalttığı haliyle Keychain'e yazılması
+      engelleniyor. **Yeni bağlantı eski profilin üzerine yazabiliyordu**
+      — `persistCurrentConnection()` artık `activeProfileID`'yi sadece o
+      ID'nin kayıtlı profilinin host/username'i mevcut bağlantıyla
+      birebir eşleşiyorsa yeniden kullanıyor (fresh `profileStore.loadAll()`
+      ile, cache'e güvenmeden); eşleşmiyorsa yeni bir UUID ile ayrı bir
+      profil oluşturuyor — otomasyonun UUID'ye bağladığı hedefin sessizce
+      değişmesi de bu yolla önleniyor. **Kilit alınamazsa snapshot yazımı
+      kilitsiz devam ediyordu** — `withFileLock`'ta hem `open()` hem
+      `flock()`'un dönüş değeri artık kontrol ediliyor, ikisi de
+      başarısız olursa yazma işlemi hata fırlatıp duruyor (sessizce
+      kilitsiz devam etmek yerine) — yeni `SnapshotStoreError`. 2 yeni
+      test (SnapshotStore'un kilit-alınamaz senaryosu + canlı vcsim
+      pin doğrulaması). `swift build`/`swift test` temiz (69/69), `go
+      test`/`go vet` temiz. ConnectionViewModel'in test target'ı olmadığı
+      için #2/#3'ün concurrency mantığı empirik olarak GUI'de test
+      edilmedi (main-actor serileştirmesi ile mantıksal olarak doğrulandı) —
+      kullanıcının kendi izole test harness'ı bu ikisini zaten ayrı ayrı
+      doğrulamıştı.
 - [x] **(2026-09-05) #9: Otomasyon artık UUID'yle çözülüyor + gerçek launchd
       durumu + son çalışma sonucu (v1.4.1) — review'daki 12 bulgunun
       sonuncusu tamamlandı** — kullanıcının belirlediği sıranın son maddesi.
