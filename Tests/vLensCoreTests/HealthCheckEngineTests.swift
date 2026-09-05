@@ -312,3 +312,57 @@ private func makeDisk(vmName: String, capacityMiB: Int, index: Int) -> VMDiskInf
 
     #expect(results.isEmpty)
 }
+
+// #20/#21/#17 — ESXi Shell, SSH, NTP. Defaults on HostInfo's initializer
+// (esxiShellEnabled/sshEnabled false, ntpdRunning true, ntpServerCount 1)
+// are deliberately the "healthy" state, so a host built without
+// overriding them never spuriously triggers these rules.
+
+private func makeHost(
+    esxiShellEnabled: Bool = false, sshEnabled: Bool = false,
+    ntpdRunning: Bool = true, ntpServerCount: Int = 1
+) -> HostInfo {
+    HostInfo(
+        id: "h1", name: "esxi-01", datacenterName: nil, clusterName: nil, configStatus: .green,
+        cpuModel: "Xeon", cpuMhz: 2000, numCpuCores: 4, numCpuThreads: 8, cpuUsagePercent: nil,
+        memoryTotalMiB: 65536, memoryUsagePercent: nil, numNics: 2, numHbas: 1, numVMsTotal: 0,
+        numVMsRunning: 0, esxVersion: "8.0", esxBuild: "24022515", vendor: nil, model: nil,
+        maintenanceMode: false, esxiShellEnabled: esxiShellEnabled, sshEnabled: sshEnabled,
+        ntpdRunning: ntpdRunning, ntpServerCount: ntpServerCount
+    )
+}
+
+@Test func flagsESXiShellEnabled() {
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [makeHost(esxiShellEnabled: true)], cpus: []
+    )
+    #expect(results.contains { $0.rule == "ESXi Shell enabled" })
+}
+
+@Test func flagsSSHEnabled() {
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [makeHost(sshEnabled: true)], cpus: []
+    )
+    #expect(results.contains { $0.rule == "SSH enabled" })
+}
+
+@Test func flagsNoNTPServersConfigured() {
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [makeHost(ntpServerCount: 0)], cpus: []
+    )
+    #expect(results.contains { $0.rule == "NTP issue" })
+}
+
+@Test func flagsNtpdNotRunningDespiteConfiguredServers() {
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [makeHost(ntpdRunning: false, ntpServerCount: 2)], cpus: []
+    )
+    #expect(results.contains { $0.rule == "NTP issue" })
+}
+
+@Test func doesNotFlagHealthyHostServices() {
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [makeHost()], cpus: []
+    )
+    #expect(!results.contains { $0.rule == "ESXi Shell enabled" || $0.rule == "SSH enabled" || $0.rule == "NTP issue" })
+}

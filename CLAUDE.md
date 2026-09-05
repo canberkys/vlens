@@ -183,6 +183,23 @@ varsayılan davranış her zaman "merge ettiysen yayınla"dır.
 
 ## Durum (2026-09-03, son maddeler 2026-09-05)
 
+- [x] **(2026-09-05) 3 vHealth kuralı daha: ESXi Shell/SSH/NTP (v1.5.2)** —
+      issue #19 kapatıldıktan sonra kullanıcı roadmap'i belirleyip
+      (Faz 5.1 en sona) uygulamaya başlamamı istedi. #20/#21 (ESXi Shell/SSH
+      açık uyarısı) ve #17 (NTP sorunu — hiç sunucu yapılandırılmamış YA DA
+      ntpd servisi çalışmıyor) eklendi. Gerçek vim25 alanları govmomi kaynak
+      kodundan doğrulandı (`HostConfigInfo.Service`/`.DateTimeInfo`, servis
+      key'leri "TSM"/"TSM-SSH"/"ntpd" — govmomi'nin kendi simulator fixture'ında
+      da aynı key'ler kullanılıyor), zaten toplanan host property fetch'ine
+      2 alan eklenerek (`config.service`, `config.dateTimeInfo`) hiç ekstra
+      round-trip gerekmeden yapıldı. Canlı vcsim'e karşı doğrulandı (vcsim'in
+      varsayılan fixture'ı: shell=false, ssh=false, ntpd=false — üçü de
+      helper JSON'ında doğru geldi). 5 yeni test. `swift build`/`swift test`
+      temiz (91/91), `go build`/`go vet`/`go test` temiz. **Sırada**:
+      #24 (sertifika bitişi — host başına ekstra bir CertificateManager
+      çağrısı gerektiriyor, biraz daha iş), #2 (Floppy — yeni bir küçük
+      collector), #11 (Inconsistent Folder Names — tam semantiği net değil,
+      muhtemelen atlanacak/kullanıcıya sorulacak).
 - [x] **(2026-09-05) Faz 11'in en ucuz 2 vHealth kuralı + mesajlaşma
       düzeltmeleri (v1.5.1)** — kullanıcının onayladığı günlük backlog'un
       son 2 maddesi. **#22 Disk I/O performance tip**: çalışan bir VM'de
