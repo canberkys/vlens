@@ -6,26 +6,22 @@
         <description>vLens release updates</description>
         <language>en</language>
         <item>
-            <title>Version 1.5.1</title>
-            <pubDate>Sat, 05 Sep 2026 11:45:13 +0000</pubDate>
-            <sparkle:version>20</sparkle:version>
-            <sparkle:shortVersionString>1.5.1</sparkle:shortVersionString>
+            <title>Version 1.5.2</title>
+            <pubDate>Sat, 05 Sep 2026 18:32:00 +0000</pubDate>
+            <sparkle:version>21</sparkle:version>
+            <sparkle:shortVersionString>1.5.2</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[
 <h4>Added</h4>
 <ul>
-<li><strong>2 more vHealth rules</strong> (RVTools #22/#23, 12 of 24 documented rules now implemented): <strong>Disk I/O performance tip</strong> — a running VM with more than 3 disks totaling over 750 GiB on fewer than 2 Paravirtual SCSI controllers funnels all that I/O through a single controller queue. <strong>In-memory performance tip</strong> — a running VM with 4+ vCPUs where CPU Hot Add, Memory Hot Add, or a single core per socket is configured can prevent virtual NUMA from being exposed to the guest, hurting memory-latency-sensitive workloads. RVTools&#x27; exact rule #23 also checks a <code>vnumaOnCpuHotaddExposed</code> VM setting, which isn&#x27;t a documented, reliably-sourceable vim25 API property — left out rather than guessed at; the other three conditions are each real collected fields.</li>
-</ul>
-<h4>Changed</h4>
-<ul>
-<li>README&#x27;s &quot;historical performance trends&quot; reworded — vPerformance reports avg/max for a chosen window, not a trend. Snapshot Compare&#x27;s &quot;VM Changes&quot; section renamed to &quot;VM Membership Changes&quot; — it only ever reports added/removed VMs, never a field-by-field diff.</li>
+<li><strong>3 more vHealth rules</strong> (RVTools #17/#20/#21, 15 of 24 documented rules now implemented): <strong>ESXi Shell enabled</strong> and <strong>SSH enabled</strong> — a plain warning when either management service is running on a host (<code>TSM</code>/ <code>TSM-SSH</code>, confirmed against govmomi&#x27;s own simulator fixtures). <strong>NTP issue</strong> — flags a host with no NTP servers configured at all, or one where servers are configured but the <code>ntpd</code> service isn&#x27;t actually running (a real, common misconfiguration that config alone doesn&#x27;t catch — a server list existing doesn&#x27;t mean time is actually being synced). All three read directly off the same host property fetch <code>collectAll</code> already does (<code>config.service</code>, <code>config.dateTimeInfo</code>) — no extra vCenter round-trip.</li>
 </ul>
             ]]></description>
             <enclosure
-                url="https://github.com/canberkys/vlens/releases/download/v1.5.1/vLens-1.5.1.dmg"
-                length="13255517"
+                url="https://github.com/canberkys/vlens/releases/download/v1.5.2/vLens-1.5.2.dmg"
+                length="13259248"
                 type="application/octet-stream"
-                sparkle:edSignature="hSZfHM00ViyxH3MZ0nQNM9pF4n92077kj9JQtFT1IP5uKNj4cLytbyrMQjlppXZ2sL4EV6AgllSicHydGZAFAw==" />
+                sparkle:edSignature="cvidAcVENEXEnfb/tvXiivQy9J4GMaJ2WD7T7vQZDxbtGzVo8DnL9/CwBXWrbKsnp1BxRBpc1btZhXDOH4PkCA==" />
         </item>
     </channel>
 </rss>
