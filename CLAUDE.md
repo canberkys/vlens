@@ -212,12 +212,35 @@ varsayılan davranış her zaman "merge ettiysen yayınla"dır.
       healthChecks yolu) için ayrı ayrı test edildi. `swift build`/`swift
       test` temiz (104/104, regresyon yok). **Kapsam dışı bırakılan (v1)**:
       tüm tab'ları tek çok-sayfalı XLSX'te birleştirmek (XLSXWriter şu an
-      tek-sayfa üretiyor, gerçek bir ek iş — istenirse v2), ve GUI'ye bir
-      "Merge" butonu eklemek (CLI-öncelikli tasarım kasıtlı — canlı
-      çoklu-bağlantı `ConnectionViewModel`'i yeniden yazmayı gerektirmiyor).
+      tek-sayfa üretiyor, gerçek bir ek iş — istenirse v2).
       Bonus: mevcut Automation/launchd zamanlayıcısına ileride bir `.merge`
       action'ı eklenip periyodik çalıştırılabilir (henüz yapılmadı).
-      **Kullanıcı kendi local testini yapacak, PR/build/release bekliyor.**
+
+      **2026-09-06 ikinci tur — GUI'ye bir "Merge…" penceresi denendi, sonra
+      geri alındı**: kullanıcı "arayüzde nasıl deneyimleyeceğiz" diye sorunca
+      önce Demo Mode'da SENTETİK iki kaynakla çalışan bir önizleme eklendi —
+      ama bu kullanıcının gerçek DC/DRC ihtiyacını çözmüyordu, sadece "böyle
+      görünür" gösteriyordu. Kullanıcı "ben buna emin olamadım" dedi, ben de
+      dürüstçe aynı fikirde olduğumu söyledim; ikinci deneme GERÇEK
+      bağlantılarla çalışan bir `MergeView`/`MergeCoordinator` (2 kayıtlı
+      profili seçip gerçekten bağlanıp birleştiren bir sheet) oldu ve
+      gerçekten çalıştı (iki vcsim'e karşı canlı doğrulandı) — ama bu sefer
+      kullanıcıyla birlikte vardığımız sonuç: GUI penceresi işlevsel olsa
+      da mimari olarak "bolt-on" hissettiriyor (ana pencerenin bağlantı
+      durumundan tamamen kopuk, arka planda görünmeyen 2 ayrı bağlantı
+      açıyor) ve DC/DRC karşılaştırması muhtemelen periyodik bir ihtiyaç —
+      bu da zaten var olan Automation/launchd zamanlayıcısıyla doğal olarak
+      eşleşen CLI'yı GUI'den daha uygun kılıyor. **Karar: GUI penceresi
+      tamamen geri alındı** (`MergeView.swift`/`MergeCoordinator.swift`
+      silindi, `ContentView`'daki "Merge…" butonu, `vLensApp.swift`'teki
+      `Window("merge")` sahnesi, `ConnectionViewModel.initialMergeTab`,
+      `AppTab.exportTabKey` hepsi kaldırıldı) — **özellik kalıcı olarak
+      CLI-only**. Tek kalıcı yan etki: `ExportPanel.save*` fonksiyonları
+      artık kaydetmenin gerçekten olup olmadığını (`Bool`, iptal edilirse
+      `false`) döndürüyor — genel olarak yararlı, geriye dönük uyumlu bir
+      iyileştirme, o yüzden bırakıldı. `swift build`/`swift test` temiz
+      (104/104). **Kullanıcı kendi local testini yapacak, PR/build/release
+      bekliyor.**
 
 - [x] **(2026-09-06) Export artık UI sıralamasını taşıyor (v1.5.7) — ve
       vLens GPLv3 ile lisanslandı (LICENSE, ek §7 izinleriyle — kapalı
