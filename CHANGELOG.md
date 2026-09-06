@@ -3,6 +3,20 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.5.7] - 2026-09-06 (+03)
+
+### Fixed
+- **Export now respects the UI's current sort order.** Every sortable tab
+  (27 of them) previously exported rows in raw collection order regardless
+  of which column you'd clicked to sort by. Each tab's sort state moved
+  from a local, per-view `@State` up to `ContentView`, so the same order
+  shown on screen is now what CSV/XLSX export writes out.
+
+### Other
+- vLens is now licensed under GPLv3, with a short additional-permissions
+  section (see `LICENSE`) that keeps a modified version from being passed
+  off as the official project.
+
 ## [1.5.6] - 2026-09-06 (+03)
 
 ### Added
