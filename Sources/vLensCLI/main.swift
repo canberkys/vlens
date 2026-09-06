@@ -65,6 +65,8 @@ func printUsage() {
       vlens-cli list-tabs
       vlens-cli snapshot --profile <name> [--label <text>] [--full-detail]
       vlens-cli export --profile <name> --tab <key> --format csv|xlsx --output <path>
+      vlens-cli merge --profiles <name1,name2,...> --tab <key> --format csv|xlsx --output <path>
+      vlens-cli merge --demo --tab <key> --format csv|xlsx --output <path>
 
     <name> matches a connection already saved (with "Save this connection to
     Keychain" enabled) from the vLens app. The host's TLS certificate must
@@ -73,6 +75,12 @@ func printUsage() {
     --profile-id <uuid> resolves by the profile's stable id instead of its
     name — used internally by scheduled automation (Preferences), not meant
     for manual use.
+
+    merge connects to each named profile in turn (not simultaneously — same
+    idea as RVTools' RVToolsMergeExcelFiles) and writes one combined file
+    with a "vCenter" column tagging each row's source. --demo tries it with
+    two synthetic mock datasets ("Demo DC" / "Demo DRC") — no saved
+    connection needed.
     """)
 }
 
@@ -292,6 +300,45 @@ case "export":
     }
     print("Exported \(tab.rawValue) as \(format.rawValue) to \(outputPath)")
     recordAutomationSuccessIfNeeded()
+
+case "merge":
+    guard let tabKey = opts["tab"], let tab = ExportTab(rawValue: tabKey) else {
+        fail("--tab <key> is required and must be one of: \(ExportTab.allCases.map(\.rawValue).joined(separator: ", "))")
+    }
+    guard let formatKey = opts["format"], let format = ExportFormat(rawValue: formatKey) else {
+        fail("--format must be csv or xlsx")
+    }
+    guard let outputPath = opts["output"] else { fail("--output <path> is required") }
+
+    var sources: [MergeSource] = []
+    if opts.has("demo") {
+        for label in ["Demo DC", "Demo DRC"] {
+            let inventory = DemoData.collectedInventory()
+            let healthChecks = evaluateHealth(inventory)
+            sources.append(MergeSource(name: label, inventory: inventory, healthChecks: healthChecks))
+        }
+    } else {
+        guard let profilesArg = opts["profiles"] else {
+            fail("--profiles <name1,name2,...> is required (or use --demo to try it with mock data)")
+        }
+        let profileNames = profilesArg.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        guard profileNames.count >= 2 else { fail("--profiles needs at least 2 names, comma-separated") }
+        for name in profileNames {
+            let profile = resolveProfile(named: name)
+            let password = resolvePassword(for: profile)
+            let inventory = await collect(profile: profile, password: password)
+            let healthChecks = evaluateHealth(inventory)
+            sources.append(MergeSource(name: name, inventory: inventory, healthChecks: healthChecks))
+        }
+    }
+
+    do {
+        let data = try mergedExportData(tab: tab, format: format, sources: sources)
+        try data.write(to: URL(fileURLWithPath: outputPath), options: .atomic)
+    } catch {
+        fail("Merge export failed: \(error)")
+    }
+    print("Merged \(sources.map(\.name).joined(separator: " + ")) — \(tab.rawValue) as \(format.rawValue) to \(outputPath)")
 
 case "help", "-h", "--help":
     printUsage()

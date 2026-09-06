@@ -187,6 +187,38 @@ varsayılan davranış her zaman "merge ettiysen yayınla"dır.
 
 ## Durum (2026-09-03, son maddeler 2026-09-06)
 
+- [x] **(2026-09-06) Multi-vCenter merge — `vlens-cli merge` (`feat/multi-vcenter-merge`
+      branch'inde, kullanıcı "önce local'de test edelim" dedi, henüz main'e
+      alınmadı)** — kullanıcının gerçek bir kullanım senaryosu var: DC/DRC,
+      ELM (Enhanced Linked Mode) ile bağlı olmayan 2 ayrı vCenter. RVTools'un
+      `RVToolsMergeExcelFiles.exe`'siyle aynı fikir — eşzamanlı bağlantı
+      değil, sırayla toplayıp tek dosyada birleştiren offline bir araç.
+      Beklenenden ucuz çıktı: her model zaten `CSVExportable` olduğu için
+      20+ modele alan eklemek yerine tek bir generic `MergedRow<T>` wrapper'ı
+      (`Sources/vLensCore/MergedExport.swift`) yeterli oldu — hiçbir mevcut
+      modele dokunulmadı. `vlens-cli merge --profiles "DC,DRC" --tab <key>
+      --format csv|xlsx --output <path>` her profile'a sırayla bağlanıp
+      `collectAll` çalıştırıyor, sonuçları "vCenter" kolonuyla etiketleyip
+      birleştiriyor. **`--demo` modu** (`vlens-cli merge --demo --tab <key>
+      ...`) — kullanıcının "try demo'ya ekleyelim" isteği — hiç kayıtlı
+      bağlantı/Keychain/vcsim gerektirmeden `DemoData.collectedInventory()`
+      ile iki sentetik "Demo DC"/"Demo DRC" seti üretip aynı merge mantığını
+      çalıştırıyor, sıfır kurulumla denenebilir. Gerçek uçtan uca doğrulama
+      YAPILDI: iki ayrı vcsim instance'ı (DC/DRC rolünde) ayağa kaldırılıp
+      gerçek profil/Keychain/trust store girdileri seed edildi, `merge
+      --profiles "DC,DRC" --tab vhost` gerçekten her iki host setini doğru
+      "vCenter" etiketiyle birleştirdi (test verisi sonrasında temizlendi).
+      `--demo` modu da hem CSV (vInfo, 40+40 satır) hem XLSX (vHealth,
+      healthChecks yolu) için ayrı ayrı test edildi. `swift build`/`swift
+      test` temiz (104/104, regresyon yok). **Kapsam dışı bırakılan (v1)**:
+      tüm tab'ları tek çok-sayfalı XLSX'te birleştirmek (XLSXWriter şu an
+      tek-sayfa üretiyor, gerçek bir ek iş — istenirse v2), ve GUI'ye bir
+      "Merge" butonu eklemek (CLI-öncelikli tasarım kasıtlı — canlı
+      çoklu-bağlantı `ConnectionViewModel`'i yeniden yazmayı gerektirmiyor).
+      Bonus: mevcut Automation/launchd zamanlayıcısına ileride bir `.merge`
+      action'ı eklenip periyodik çalıştırılabilir (henüz yapılmadı).
+      **Kullanıcı kendi local testini yapacak, PR/build/release bekliyor.**
+
 - [x] **(2026-09-06) Export artık UI sıralamasını taşıyor (v1.5.7) — ve
       vLens GPLv3 ile lisanslandı (LICENSE, ek §7 izinleriyle — kapalı
       kaynak/resmi-gibi-gösterme yasak, fork+farklı isim yasal olarak

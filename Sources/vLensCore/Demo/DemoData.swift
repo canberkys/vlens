@@ -1,11 +1,10 @@
 import Foundation
 
-/// Mock data for exercising the UI without a live vCenter connection. Not
-/// wired into any production/export path — purely a development and
-/// screenshot aid, same role as vInventory's mockData.js. Every generator
-/// below derives from the same `virtualMachines()` list so VM names/hosts/
-/// clusters line up consistently across tabs, the way a real collection
-/// would.
+/// Mock data for exercising the UI without a live vCenter connection —
+/// GUI "Try demo mode", and `vlens-cli merge --demo` (see
+/// `collectedInventory(count:)`). Every generator below derives from the
+/// same `virtualMachines()` list so VM names/hosts/clusters line up
+/// consistently across tabs, the way a real collection would.
 public enum DemoData {
     private static let clusters = ["prod-cluster-01", "prod-cluster-02", "dev-cluster-01"]
     private static let hostNames = ["esxi-01.lab.local", "esxi-02.lab.local", "esxi-03.lab.local", "esxi-04.lab.local"]
@@ -402,5 +401,25 @@ public enum DemoData {
             let free = Int(Double(capacity) * Double.random(in: 0.08...0.6))
             return PartitionInfo(id: "\(vm.vmUUID)-c", vmName: vm.name, diskPath: "C:\\", capacityMiB: capacity, freeMiB: free)
         }
+    }
+
+    /// Every generator above, bundled into one `CollectedInventory` — used
+    /// by `vlens-cli merge --demo` so multi-vCenter merge is triable with
+    /// zero setup (no saved connection, no Keychain entry, no vcsim). Each
+    /// call regenerates a fresh set (VM UUIDs are random per `virtualMachines()`
+    /// call), which is exactly what's wanted here: a synthetic "second
+    /// vCenter" distinct from whichever call produced the first one.
+    public static func collectedInventory(count: Int = 40) -> CollectedInventory {
+        let vms = virtualMachines(count: count)
+        return CollectedInventory(
+            vms: vms, cpus: cpus(for: vms), memory: memory(for: vms), disks: disks(for: vms),
+            snapshots: snapshots(for: vms), tools: tools(for: vms), hosts: hosts(),
+            datastores: datastores(), clusters: clusterInfos(), licenses: licenses(),
+            vSwitches: vSwitches(), ports: vPorts(), dvSwitches: dvSwitches(), dvPorts: dvPorts(),
+            resourcePools: resourcePools(), vApps: vApps(), hbas: hbas(), nics: nics(),
+            vmKernels: vmKernels(), multipaths: multipaths(), cds: cds(for: vms), usbs: usbs(for: vms),
+            floppies: floppies(for: vms), partitions: partitions(for: vms), networks: networks(for: vms),
+            vCenter: nil
+        )
     }
 }
