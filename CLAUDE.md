@@ -181,8 +181,32 @@ derse (örn. bir feature'ı demo modda deneme aşamasında), bu checklist o
 özellik production'a alınana kadar uygulanmaz — ama karar kullanıcıya ait,
 varsayılan davranış her zaman "merge ettiysen yayınla"dır.
 
-## Durum (2026-09-03, son maddeler 2026-09-05)
+## Durum (2026-09-03, son maddeler 2026-09-06)
 
+- [x] **(2026-09-06) Preferences backlog + erişilebilirlik turu (v1.5.6)** —
+      "5.1 en sona bırakalım... roadmapi belirle" direktifinin devamı,
+      kullanıcı "önce test et, PR/build sonra beraber yapalım" dedi, iki
+      ayrı branch'te hazırlanıp bu turda birlikte tek bir release'e alındı
+      (PR #28 + #29). **Preferences backlog** (7 maddelik eski listeden 5'i,
+      1'i zaten yapılmıştı, 1'i kasıtlı atlandı): sayısal threshold alanları
+      artık `PreferencesView.clampedThreshold(_:in:)` ile clamp ediliyor
+      (negatif %, sıfır VM sayısı gibi artık girilemiyor); yeni "Privacy"
+      bölümü VMSA kontrolünü kapatabiliyor (`SecurityAdvisoryPreferencesStore`,
+      varsayılan açık); yeni "Saved connections" bölümü mevcut
+      `deleteSavedProfile(_:)`'ı tekrar kullanarak listeleme/silme sağlıyor
+      (Automation'ın kullandığı profil silinirse uyarı ikonu, engellemiyor);
+      Help'e "Keyboard Shortcuts" konusu (kodda gerçekten var olan 3
+      kısayol — Cmd+,, Cmd+F, Cmd+Shift+? — doğrulanarak yazıldı);
+      vHealth thresholds'a "Reset to Defaults". Yapılmayan: tek bir "reset
+      everything" butonu ve ayrı bir Genel/App bölümü (versiyon+Check for
+      Updates zaten About/Sparkle'da var). **Erişilebilirlik**: 5 ikon-only
+      butona (sidebar toggle, clear-search, copy-fingerprint, delete-snapshot,
+      welcome-dismiss) `.accessibilityLabel` eklendi — Report/Export/Refresh/
+      Disconnect gibi zaten `Label(icon+metin)` kullananlara dokunulmadı
+      (zaten VoiceOver-uyumlu). `swift build`/`swift test` temiz (104/104,
+      +3 yeni test), `go build`/`go vet`/`go test` temiz, `swift run vLens`
+      çökmedi. **Sırada**: Export'un UI sıralamasını taşıması (26 dosyalık
+      mekanik refactor), sonra multi-vCenter merge (tasarımı bile yok).
 - [x] **(2026-09-05) #11 Inconsistent Folder Name vHealth kuralı + vInfo'ya
       Folder kolonu (v1.5.5)** — kullanıcıya AskUserQuestion ile sorulup
       "vCLS ad-tabanlı istisnayla uygula" seçeneği onaylandı. RVTools'un

@@ -3,6 +3,23 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.5.6] - 2026-09-06 (+03)
+
+### Added
+- **Preferences backlog pass**: vHealth threshold fields now clamp on write
+  instead of accepting a negative percentage or a zero VM count. New
+  "Privacy" section lets you turn off the VMware security advisory check
+  entirely (default stays on). New "Saved connections" section lists and
+  deletes saved connections right from Preferences, reusing the existing
+  Keychain-aware delete path — warns (doesn't block) if the connection is
+  in use by the Automation schedule. New "Keyboard Shortcuts" Help topic.
+  "Reset to Defaults" added to the vHealth thresholds section.
+- **VoiceOver labels** on 5 icon-only buttons that had none (sidebar
+  toggle, clear-search, copy-fingerprint, delete-snapshot, welcome-dismiss)
+  — VoiceOver previously only read the underlying SF Symbol's generic
+  name. Buttons that already paired an icon with visible text needed no
+  change.
+
 ## [1.5.5] - 2026-09-05 (+03)
 
 ### Added
