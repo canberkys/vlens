@@ -6,23 +6,26 @@
         <description>vLens release updates</description>
         <language>en</language>
         <item>
-            <title>Version 1.5.6</title>
-            <pubDate>Sun, 06 Sep 2026 14:06:29 +0000</pubDate>
-            <sparkle:version>25</sparkle:version>
-            <sparkle:shortVersionString>1.5.6</sparkle:shortVersionString>
+            <title>Version 1.5.7</title>
+            <pubDate>Sun, 06 Sep 2026 14:27:17 +0000</pubDate>
+            <sparkle:version>26</sparkle:version>
+            <sparkle:shortVersionString>1.5.7</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[
-<h4>Added</h4>
+<h4>Fixed</h4>
 <ul>
-<li><strong>Preferences backlog pass</strong>: vHealth threshold fields now clamp on write instead of accepting a negative percentage or a zero VM count. New &quot;Privacy&quot; section lets you turn off the VMware security advisory check entirely (default stays on). New &quot;Saved connections&quot; section lists and deletes saved connections right from Preferences, reusing the existing Keychain-aware delete path — warns (doesn&#x27;t block) if the connection is in use by the Automation schedule. New &quot;Keyboard Shortcuts&quot; Help topic. &quot;Reset to Defaults&quot; added to the vHealth thresholds section.</li>
-<li><strong>VoiceOver labels</strong> on 5 icon-only buttons that had none (sidebar toggle, clear-search, copy-fingerprint, delete-snapshot, welcome-dismiss) — VoiceOver previously only read the underlying SF Symbol&#x27;s generic name. Buttons that already paired an icon with visible text needed no change.</li>
+<li><strong>Export now respects the UI&#x27;s current sort order.</strong> Every sortable tab (27 of them) previously exported rows in raw collection order regardless of which column you&#x27;d clicked to sort by. Each tab&#x27;s sort state moved from a local, per-view <code>@State</code> up to <code>ContentView</code>, so the same order shown on screen is now what CSV/XLSX export writes out.</li>
+</ul>
+<h4>Other</h4>
+<ul>
+<li>vLens is now licensed under GPLv3, with a short additional-permissions section (see <code>LICENSE</code>) that keeps a modified version from being passed off as the official project.</li>
 </ul>
             ]]></description>
             <enclosure
-                url="https://github.com/canberkys/vlens/releases/download/v1.5.6/vLens-1.5.6.dmg"
-                length="13305032"
+                url="https://github.com/canberkys/vlens/releases/download/v1.5.7/vLens-1.5.7.dmg"
+                length="13313361"
                 type="application/octet-stream"
-                sparkle:edSignature="MfW2ywnYLqVZojBmiAGnMAgUYoL9lqZtR+X792JumnqsMKE0uyu1N+QlRB6cZfo/m39uDlzRdvrNHTTqevHnAw==" />
+                sparkle:edSignature="qzc6VDZUgHFCswAwnB4qDdCqmC3xNwhJzg5xRjbf1nK+sATCWpBED7zW7INNAN97F/GW8PMyJFVSLMsLfbgABw==" />
         </item>
     </channel>
 </rss>
