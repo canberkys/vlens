@@ -80,6 +80,8 @@ struct WelcomeOverlayView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
+                .help("Dismiss")
+                .accessibilityLabel("Dismiss welcome message")
             }
 
             VStack(alignment: .leading, spacing: 10) {

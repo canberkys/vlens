@@ -219,6 +219,7 @@ struct ContentView: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
                     .help("Copy fingerprint")
+                    .accessibilityLabel("Copy fingerprint")
                 }
                 .font(.callout)
             }
@@ -285,6 +286,7 @@ struct ContentView: View {
                 Image(systemName: "sidebar.leading")
             }
             .help("Toggle Sidebar")
+            .accessibilityLabel("Toggle Sidebar")
 
             Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
             TextField("Search (VM, host, cluster...)", text: $viewModel.searchText)
@@ -304,6 +306,8 @@ struct ContentView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
+                .help("Clear search")
+                .accessibilityLabel("Clear search")
             }
 
             Spacer()
