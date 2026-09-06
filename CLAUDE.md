@@ -239,8 +239,20 @@ varsayılan davranış her zaman "merge ettiysen yayınla"dır.
       artık kaydetmenin gerçekten olup olmadığını (`Bool`, iptal edilirse
       `false`) döndürüyor — genel olarak yararlı, geriye dönük uyumlu bir
       iyileştirme, o yüzden bırakıldı. `swift build`/`swift test` temiz
-      (104/104). **Kullanıcı kendi local testini yapacak, PR/build/release
-      bekliyor.**
+      (104/104). **(2026-09-06 üçüncü tur, v1.6.0'a alındı)**: Help'e
+      "Command Line (vlens-cli)" konusu eklendi (snapshot/export/merge
+      dokümante edildi — daha önce hiç yoktu), GitHub repo description'ı
+      düzeltildi ("RVTools alternative" → "esinlenildi, Mac için
+      geliştirildi"), gerçek ekran görüntüleri alınıp README'ye eklendi
+      (`.github/screenshots/` — bu oturumda ilk kez otomatik ekran
+      görüntüsü alma denemesi güvenilir çalıştı, `screencapture -R` ile
+      belirli bölge hedeflenerek), ve `macos-ui-ux` agent'ı ile connect
+      ekranının görsel tasarımı yenilendi (native gruplu `Form`, büyük
+      ortalanmış ikon, hafif accent-color wash, ikon'lu hata banner'ı —
+      alan seti/akış değişmedi). Kullanıcı beğendi, "prod'a alalım" dedi —
+      **v1.6.0 olarak yayınlandı** (feature yeterince büyük olduğu için
+      minor bump — bu projede önemli özellikler minor, küçük
+      düzeltmeler patch alıyor).
 
 - [x] **(2026-09-06) Export artık UI sıralamasını taşıyor (v1.5.7) — ve
       vLens GPLv3 ile lisanslandı (LICENSE, ek §7 izinleriyle — kapalı

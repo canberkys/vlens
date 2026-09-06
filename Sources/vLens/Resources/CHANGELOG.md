@@ -3,6 +3,34 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.6.0] - 2026-09-06 (+03)
+
+### Added
+- **Multi-vCenter merge (`vlens-cli merge`)** — vLens' equivalent of
+  RVTools' separate `RVToolsMergeExcelFiles` tool, for vCenters that
+  aren't linked via Enhanced Linked Mode (e.g. a DC/DRC pair).
+  `vlens-cli merge --profiles "A,B" --tab <key> --format csv|xlsx
+  --output <path>` connects to each saved connection in turn (not
+  simultaneously) and writes one combined file, tagging every row with
+  which vCenter it came from. Try it with zero setup via `--demo`
+  instead of `--profiles` — two synthetic mock vCenters, no saved
+  connection needed. CLI-only by design — a GUI version was built and
+  tested against real connections, but ultimately dropped: it felt
+  architecturally disconnected from the main window's own connection
+  state, and this is more naturally a scheduled/periodic task (which
+  the existing Automation/launchd scheduler already covers) than a
+  manual GUI action.
+- **New "Command Line (vlens-cli)" Help topic** documenting `snapshot`/
+  `export`/`merge` — closes a real gap, `vlens-cli` had never been
+  mentioned anywhere in the app itself.
+- **Connect screen redesign** — native grouped `Form` (persistent field
+  labels instead of placeholder-only text), a larger centered app icon
+  with a subtle accent-color wash, and an inline warning-icon error
+  banner instead of plain red text. Field set and connect flow are
+  unchanged.
+- **README screenshots** — the connect screen and the vInfo tab in Demo
+  Mode; previously the README had none.
+
 ## [1.5.7] - 2026-09-06 (+03)
 
 ### Fixed
