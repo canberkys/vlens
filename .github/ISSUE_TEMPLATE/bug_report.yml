@@ -1,0 +1,44 @@
+name: Bug Report
+description: Something in vLens isn't working the way it should
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what did you get instead?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: vLens version
+      description: Help ▸ vLens Help ▸ What's New shows the current version, or check About vLens
+      placeholder: e.g. 1.6.1
+    validations:
+      required: true
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      placeholder: e.g. macOS 15.1
+    validations:
+      required: true
+  - type: dropdown
+    id: connection-type
+    attributes:
+      label: Connected to
+      options:
+        - Real vCenter
+        - Real standalone ESXi host
+        - Demo Mode
+        - Not connected / doesn't apply
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Logs, screenshots, or steps to reproduce, if you have them. Never paste real hostnames, usernames, or passwords here.
+    validations:
+      required: false

@@ -1,0 +1,24 @@
+name: Feature Request
+description: Something you'd like vLens to do that it doesn't today
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like vLens to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: What's the use case?
+      description: What are you trying to accomplish, and how do you work around it today (RVTools, a script, manual checking, etc.)?
+    validations:
+      required: false
+  - type: checkboxes
+    id: rvtools-parity
+    attributes:
+      label: Is this something RVTools already does?
+      options:
+        - label: "Yes — vLens should match an existing RVTools tab/feature"
+        - label: "No — this would be new, not in RVTools"
