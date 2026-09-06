@@ -158,15 +158,19 @@ swift run vlens-cli export --profile <ad> --tab vinfo --format csv --output ~/De
 `VLENS_HELPER_PATH` env var → dev fallback (`helper/vlens-helper`, proje kökünde
 `go build` ile üretilmiş olmalı).
 
-## PR merge sonrası release checklist — ASLA ATLAMA
+## Merge sonrası release checklist — ASLA ATLAMA
 
 **2026-09-05'te v1.2.2 → v1.4.2 arası ~4 aylık bir boşluk oluştu**: 7 PR
 (16 gerçek review bulgusu, 4'ü P1/kritik dahil) `main`'e merge edildi ve
 versiyon numarası her seferinde bump edildi, ama hiçbiri gerçek bir GitHub
 Release olarak yayınlanmadı — bir test cihazından gelen crash raporuyla
 fark edildi. Bu bir daha olmasın diye: **her `main`'e merge'den sonra**
-(versiyon bump + CHANGELOG içeren her PR), aşağıdaki adımlar tamamlanmadan
-o değişiklik "bitmiş" sayılmaz:
+(versiyon bump + CHANGELOG içeren her değişiklik), aşağıdaki adımlar
+tamamlanmadan o değişiklik "bitmiş" sayılmaz. **Not (2026-09-06)**: kullanıcı
+GitHub PR adımını atlamayı istedi ("süreci uzatıyor") — artık her değişiklik
+kendi branch'inde hazırlanıp `git merge --no-ff` ile doğrudan `main`'e
+alınıyor, `gh pr create`/`gh pr merge` kullanılmıyor; checklist'in geri
+kalanı (build/test/release/appcast/GitHub Release) aynen geçerli.
 
 1. `git checkout main && git pull` — merge edilen değişiklik gerçekten orada mı doğrula.
 2. `swift build -c release && swift test` (+ `helper`: `go build`/`go test`) — temiz olmalı.
@@ -183,8 +187,13 @@ varsayılan davranış her zaman "merge ettiysen yayınla"dır.
 
 ## Durum (2026-09-03, son maddeler 2026-09-06)
 
-- [x] **(2026-09-06) Export artık UI sıralamasını taşıyor — henüz release'e
-      alınmadı, `feat/export-respects-sort-order` branch'inde** — daha önce
+- [x] **(2026-09-06) Export artık UI sıralamasını taşıyor (v1.5.7) — ve
+      vLens GPLv3 ile lisanslandı (LICENSE, ek §7 izinleriyle — kapalı
+      kaynak/resmi-gibi-gösterme yasak, fork+farklı isim yasal olarak
+      engellenemiyor, bu bilinçli bir tercih).** Bu turdan itibaren
+      kullanıcı "PR açmadan ilerleyelim, süreci uzatıyor" dedi — standart
+      workflow artık **branch → direkt main'e merge (PR yok) → release**,
+      `gh pr create`/`gh pr merge` adımları atlanıyor. daha önce
       "beklenenden büyük" diye ertelenen madde: 27 tab'ın her biri kendi
       local `@State sortOrder`'ını tutuyordu, Export her zaman ham koleksiyon
       sırasıyla yazıyordu. Mekanik ama gerçek bir refactor: her
