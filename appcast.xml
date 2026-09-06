@@ -6,26 +6,25 @@
         <description>vLens release updates</description>
         <language>en</language>
         <item>
-            <title>Version 1.5.7</title>
-            <pubDate>Sun, 06 Sep 2026 14:27:17 +0000</pubDate>
-            <sparkle:version>26</sparkle:version>
-            <sparkle:shortVersionString>1.5.7</sparkle:shortVersionString>
+            <title>Version 1.6.0</title>
+            <pubDate>Sun, 06 Sep 2026 18:36:04 +0000</pubDate>
+            <sparkle:version>27</sparkle:version>
+            <sparkle:shortVersionString>1.6.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[
-<h4>Fixed</h4>
+<h4>Added</h4>
 <ul>
-<li><strong>Export now respects the UI&#x27;s current sort order.</strong> Every sortable tab (27 of them) previously exported rows in raw collection order regardless of which column you&#x27;d clicked to sort by. Each tab&#x27;s sort state moved from a local, per-view <code>@State</code> up to <code>ContentView</code>, so the same order shown on screen is now what CSV/XLSX export writes out.</li>
-</ul>
-<h4>Other</h4>
-<ul>
-<li>vLens is now licensed under GPLv3, with a short additional-permissions section (see <code>LICENSE</code>) that keeps a modified version from being passed off as the official project.</li>
+<li><strong>Multi-vCenter merge (<code>vlens-cli merge</code>)</strong> — vLens&#x27; equivalent of RVTools&#x27; separate <code>RVToolsMergeExcelFiles</code> tool, for vCenters that aren&#x27;t linked via Enhanced Linked Mode (e.g. a DC/DRC pair). <code>vlens-cli merge --profiles &quot;A,B&quot; --tab &lt;key&gt; --format csv|xlsx --output &lt;path&gt;</code> connects to each saved connection in turn (not simultaneously) and writes one combined file, tagging every row with which vCenter it came from. Try it with zero setup via <code>--demo</code> instead of <code>--profiles</code> — two synthetic mock vCenters, no saved connection needed. CLI-only by design — a GUI version was built and tested against real connections, but ultimately dropped: it felt architecturally disconnected from the main window&#x27;s own connection state, and this is more naturally a scheduled/periodic task (which the existing Automation/launchd scheduler already covers) than a manual GUI action.</li>
+<li><strong>New &quot;Command Line (vlens-cli)&quot; Help topic</strong> documenting <code>snapshot</code>/ <code>export</code>/<code>merge</code> — closes a real gap, <code>vlens-cli</code> had never been mentioned anywhere in the app itself.</li>
+<li><strong>Connect screen redesign</strong> — native grouped <code>Form</code> (persistent field labels instead of placeholder-only text), a larger centered app icon with a subtle accent-color wash, and an inline warning-icon error banner instead of plain red text. Field set and connect flow are unchanged.</li>
+<li><strong>README screenshots</strong> — the connect screen and the vInfo tab in Demo Mode; previously the README had none.</li>
 </ul>
             ]]></description>
             <enclosure
-                url="https://github.com/canberkys/vlens/releases/download/v1.5.7/vLens-1.5.7.dmg"
-                length="13313361"
+                url="https://github.com/canberkys/vlens/releases/download/v1.6.0/vLens-1.6.0.dmg"
+                length="13426959"
                 type="application/octet-stream"
-                sparkle:edSignature="qzc6VDZUgHFCswAwnB4qDdCqmC3xNwhJzg5xRjbf1nK+sATCWpBED7zW7INNAN97F/GW8PMyJFVSLMsLfbgABw==" />
+                sparkle:edSignature="o1AcUizCgrfIBZoZpJPtJ/9FhLIVPTfdJ/MDG5KRRrnLMOdC5EMhjTHURYxyYJcmYSld32Pm95B2sf+zUuNcAQ==" />
         </item>
     </channel>
 </rss>
