@@ -169,6 +169,17 @@ final class ConnectionViewModel {
         }
     }
 
+    /// Preferences' "Privacy" toggle — some admins don't want any outbound
+    /// network call before they've connected to anything, even one this
+    /// quiet. `checkSecurityAdvisories()` reads this before doing anything.
+    var securityAdvisoriesEnabled: Bool {
+        didSet {
+            guard securityAdvisoriesEnabled != oldValue else { return }
+            securityAdvisoryPreferencesStore.setEnabled(securityAdvisoriesEnabled)
+            if !securityAdvisoriesEnabled { securityAdvisories = [] }
+        }
+    }
+
     private let helperClient = VSphereHelperClient(helperURL: HelperLocator.resolve())
     private let profileStore = ConnectionProfileStore()
     private let credentialStore: CredentialStoreProtocol = KeychainCredentialStore()
@@ -184,12 +195,14 @@ final class ConnectionViewModel {
     private let automationPreferencesStore = AutomationPreferencesStore()
     private let vmsaClient = VMSAClient()
     private let endOfLifeClient = EndOfLifeClient()
+    private let securityAdvisoryPreferencesStore = SecurityAdvisoryPreferencesStore()
 
     init() {
         savedProfiles = profileStore.loadAll()
         healthCheckThresholds = healthCheckPreferencesStore.load()
         enabledSnapshotMetricKeys = snapshotPreferencesStore.loadEnabledMetricKeys()
         automationSchedule = automationPreferencesStore.load()
+        securityAdvisoriesEnabled = securityAdvisoryPreferencesStore.isEnabled()
     }
 
     /// Persists the schedule and (re)installs the launchd job — called from
@@ -554,6 +567,7 @@ final class ConnectionViewModel {
     /// etc.). This is a nice-to-have awareness feature, not something that
     /// should ever interrupt or alarm the user with an error dialog.
     func checkSecurityAdvisories() async {
+        guard securityAdvisoriesEnabled else { return }
         securityAdvisories = (try? await vmsaClient.fetchRecentAdvisories()) ?? []
     }
 

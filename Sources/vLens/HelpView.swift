@@ -7,7 +7,7 @@ import SwiftUI
 /// own Tips app — a colored icon badge per topic, sidebar and detail pane
 /// both using it, rather than a plain text-only list.
 enum HelpTopic: String, CaseIterable, Identifiable {
-    case whatsNew, gettingStarted, tabs, snapshots, performance, securityAdvisories, exportReports, feedback, preferences
+    case whatsNew, gettingStarted, tabs, snapshots, performance, securityAdvisories, exportReports, feedback, preferences, keyboardShortcuts
 
     var id: String { rawValue }
 
@@ -22,6 +22,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         case .exportReports: return "Export & Reports"
         case .feedback: return "Feedback & Bug Reports"
         case .preferences: return "Preferences"
+        case .keyboardShortcuts: return "Keyboard Shortcuts"
         }
     }
 
@@ -36,6 +37,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         case .exportReports: return "square.and.arrow.up.fill"
         case .feedback: return "bubble.left.and.text.bubble.right.fill"
         case .preferences: return "gearshape.fill"
+        case .keyboardShortcuts: return "keyboard.fill"
         }
     }
 
@@ -53,6 +55,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         case .exportReports: return .teal
         case .feedback: return .pink
         case .preferences: return .gray
+        case .keyboardShortcuts: return .indigo
         }
     }
 
@@ -112,9 +115,17 @@ enum HelpTopic: String, CaseIterable, Identifiable {
             """
         case .preferences:
             return """
-            Cmd+, opens Preferences. vHealth thresholds (datastore free space, vCPU-per-core ratio, guest disk free space, max VMs per datastore) control when a finding shows up on the vHealth tab — change one and every already-collected finding re-evaluates immediately, no reconnect needed.
+            Cmd+, opens Preferences. vHealth thresholds (datastore free space, vCPU-per-core ratio, guest disk free space, max VMs per datastore, certificate expiry) control when a finding shows up on the vHealth tab — change one and every already-collected finding re-evaluates immediately, no reconnect needed. Each has its own "Reset to Defaults."
 
-            Preferences also controls which metrics the Snapshots tab's Compare panel shows.
+            Preferences also controls which metrics the Snapshots tab's Compare panel shows, whether vLens checks for security advisories at all, where snapshot history is stored, saved connections, and scheduled automation.
+            """
+        case .keyboardShortcuts:
+            return """
+            Cmd+, — Preferences
+
+            Cmd+F — Focus the search box (filters whatever tab you're currently looking at)
+
+            Cmd+Shift+? — vLens Help (this window)
             """
         }
     }
