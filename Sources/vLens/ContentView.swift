@@ -99,14 +99,16 @@ struct ContentView: View {
     // MARK: - Connect form
     //
     // Second design pass on this screen (first pass only fixed spacing/
-    // redundant headers). This pass changes the actual visual language:
-    // a real hero header (bigger icon, centered) sitting above a native
-    // macOS *grouped Form* for the fields — the same construction System
-    // Settings uses for its own sign-in/account panes (leading label,
-    // trailing control, in a soft inset card) — instead of a flat stack of
-    // bare `.roundedBorder` text fields. A faint radial accent-color wash
-    // behind the header adds depth without introducing any non-native
-    // chrome. Field set, flow, and underlying logic are unchanged.
+    // redundant headers). This pass changes the actual visual language: a
+    // real hero header (bigger icon, centered) above two inset, materialed
+    // cards for the fields and the Keychain toggle — the same soft-card
+    // grouping System Settings uses, but each field is a caption label
+    // above a plain, full-width `.roundedBorder` field rather than a
+    // `Form` row (a `Form` row's shrink-wrapped trailing control put the
+    // caret hard against the placeholder — see `connectFormFields`'s own
+    // comment). A faint radial accent-color wash behind the header adds
+    // depth without introducing any non-native chrome. Field set, flow,
+    // and underlying logic are unchanged.
 
     private var connectForm: some View {
         ZStack {
@@ -156,32 +158,58 @@ struct ContentView: View {
     /// fields — this is the same leading-label/trailing-control, inset-card
     /// construction System Settings uses for its own account/sign-in
     /// panes, so it reads as system chrome rather than a custom form.
+    /// Deliberately not a `Form`: a grouped `Form`'s row layout always
+    /// shrink-wraps a trailing "value" control against the row's right
+    /// edge (fine for a glanceable value, e.g. a picker's current
+    /// selection) — for a field you're actively typing into, that put the
+    /// caret hard against the placeholder instead of where typing
+    /// naturally starts, and neither `LabeledContent` nor an explicit
+    /// `.multilineTextAlignment(.leading)` on the field overrode it. A
+    /// caption label above a plain, full-width `.roundedBorder` field —
+    /// still grouped in the same card look via a manual background —
+    /// sidesteps the whole issue: this is exactly how these fields
+    /// behaved before any of this styling pass, with no caret problem.
     private var connectFormFields: some View {
-        Form {
-            Section {
-                TextField("Host", text: $viewModel.host, prompt: Text("vcenter.local"))
-                TextField("Username", text: $viewModel.username, prompt: Text("administrator@vsphere.local"))
-                SecureField("Password", text: $viewModel.password)
-            } header: {
-                // Tied visually to the fields it populates (trailing edge of
-                // this section's own header) rather than a standalone row
-                // above the card that used to read like a stray toolbar
-                // button. Only takes header space at all once there's
-                // something to show.
-                if !viewModel.savedProfiles.isEmpty {
-                    HStack {
-                        Spacer()
-                        savedProfilesMenu
-                    }
+        VStack(alignment: .leading, spacing: 16) {
+            if !viewModel.savedProfiles.isEmpty {
+                HStack {
+                    Spacer()
+                    savedProfilesMenu
                 }
             }
 
-            Section {
-                Toggle("Save this connection to Keychain", isOn: $viewModel.saveCredentials)
+            VStack(alignment: .leading, spacing: 12) {
+                connectFieldGroup(label: "Host") {
+                    TextField("", text: $viewModel.host, prompt: Text("vcenter.local"))
+                }
+                connectFieldGroup(label: "Username") {
+                    TextField("", text: $viewModel.username, prompt: Text("administrator@vsphere.local"))
+                }
+                connectFieldGroup(label: "Password") {
+                    SecureField("", text: $viewModel.password)
+                }
             }
+            .padding(16)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(.regularMaterial))
+
+            Toggle("Save this connection to Keychain", isOn: $viewModel.saveCredentials)
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(.regularMaterial))
         }
-        .formStyle(.grouped)
-        .scrollDisabled(true)
+    }
+
+    /// One "caption label, field below" group for `connectFormFields` —
+    /// see that property's doc comment for why this replaced a Form row.
+    @ViewBuilder
+    private func connectFieldGroup<Content: View>(label: String, @ViewBuilder field: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            field()
+                .textFieldStyle(.roundedBorder)
+        }
     }
 
     private var connectFormActions: some View {
