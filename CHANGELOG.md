@@ -3,6 +3,17 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.6.1] - 2026-09-06 (+03)
+
+### Fixed
+- **Connect screen text fields no longer put the caret against the right
+  edge.** A grouped `Form` row shrink-wraps its trailing control against
+  the row's right edge — fine for a glanceable value, but for an empty
+  field you're about to type into, the caret ended up resting right
+  against the placeholder text instead of where typing naturally starts.
+  Replaced the three field rows with a caption label above a plain,
+  full-width field each, still grouped in the same card look.
+
 ## [1.6.0] - 2026-09-06 (+03)
 
 ### Added

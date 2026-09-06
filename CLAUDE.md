@@ -187,6 +187,17 @@ varsayılan davranış her zaman "merge ettiysen yayınla"dır.
 
 ## Durum (2026-09-03, son maddeler 2026-09-06)
 
+- [x] **(2026-09-06) Connect ekranı caret hizalama düzeltmesi (v1.6.1)** —
+      kullanıcı bir ekran görüntüsünde fark etti: boş Host alanında cursor
+      placeholder'ın hemen arkasında, sağda duruyordu. Kök neden: gruplu
+      `Form`'un satırı, trailing kontrolü her zaman satırın sağ kenarına
+      shrink-wrap ediyor — `LabeledContent` da, `.multilineTextAlignment(.leading)`
+      da bunu değiştirmedi (birkaç yöntem denendi). Çözüm: 3 alanı Form
+      satır mantığından tamamen çıkarıp, redesign öncesi hiç sorun
+      çıkarmamış düz `.roundedBorder` TextField yapısına dönüldü (label artık
+      alanın üstünde, kutu tam genişlikte) — kart görünümü manuel
+      background ile korundu. `swift build`/`swift test` temiz (104/104).
+
 - [x] **(2026-09-06) Multi-vCenter merge — `vlens-cli merge` (`feat/multi-vcenter-merge`
       branch'inde, kullanıcı "önce local'de test edelim" dedi, henüz main'e
       alınmadı)** — kullanıcının gerçek bir kullanım senaryosu var: DC/DRC,
