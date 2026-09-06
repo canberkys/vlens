@@ -3,7 +3,7 @@ import vLensCore
 
 struct VHostTabView: View {
     let rows: [HostInfo]
-    @State private var sortOrder = [FieldComparator<HostInfo>.value("name", \.name)]
+    @Binding var sortOrder: [FieldComparator<HostInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

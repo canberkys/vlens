@@ -3,7 +3,7 @@ import vLensCore
 
 struct VHBATabView: View {
     let rows: [HBAInfo]
-    @State private var sortOrder = [FieldComparator<HBAInfo>.value("host", \.hostName)]
+    @Binding var sortOrder: [FieldComparator<HBAInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

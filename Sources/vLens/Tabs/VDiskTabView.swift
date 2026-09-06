@@ -3,7 +3,7 @@ import vLensCore
 
 struct VDiskTabView: View {
     let rows: [VMDiskInfo]
-    @State private var sortOrder = [FieldComparator<VMDiskInfo>.value("vm", \.vmName)]
+    @Binding var sortOrder: [FieldComparator<VMDiskInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

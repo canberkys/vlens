@@ -3,7 +3,7 @@ import vLensCore
 
 struct VNicTabView: View {
     let rows: [NicInfo]
-    @State private var sortOrder = [FieldComparator<NicInfo>.value("host", \.hostName)]
+    @Binding var sortOrder: [FieldComparator<NicInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

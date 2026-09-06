@@ -3,7 +3,7 @@ import vLensCore
 
 struct VSnapshotTabView: View {
     let rows: [VMSnapshotInfo]
-    @State private var sortOrder = [FieldComparator<VMSnapshotInfo>.value("created", \.createdDate)]
+    @Binding var sortOrder: [FieldComparator<VMSnapshotInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

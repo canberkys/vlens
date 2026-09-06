@@ -3,7 +3,7 @@ import vLensCore
 
 struct VMKTabView: View {
     let rows: [VMKernelInfo]
-    @State private var sortOrder = [FieldComparator<VMKernelInfo>.value("host", \.hostName)]
+    @Binding var sortOrder: [FieldComparator<VMKernelInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

@@ -3,7 +3,7 @@ import vLensCore
 
 struct VHealthTabView: View {
     let rows: [HealthCheckResult]
-    @State private var sortOrder = [FieldComparator<HealthCheckResult>.value("severity", \.severity.rawValue)]
+    @Binding var sortOrder: [FieldComparator<HealthCheckResult>]
 
     var body: some View {
         Group {

@@ -3,7 +3,7 @@ import vLensCore
 
 struct VFloppyTabView: View {
     let rows: [FloppyInfo]
-    @State private var sortOrder = [FieldComparator<FloppyInfo>.value("vm", \.vmName)]
+    @Binding var sortOrder: [FieldComparator<FloppyInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

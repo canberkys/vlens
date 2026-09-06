@@ -3,7 +3,7 @@ import vLensCore
 
 struct VClusterTabView: View {
     let rows: [ClusterInfo]
-    @State private var sortOrder = [FieldComparator<ClusterInfo>.value("name", \.name)]
+    @Binding var sortOrder: [FieldComparator<ClusterInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

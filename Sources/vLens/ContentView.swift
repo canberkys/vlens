@@ -478,6 +478,39 @@ struct ContentView: View {
     private var filteredHealthChecks: [HealthCheckResult] { viewModel.healthChecks.filter { $0.matches(viewModel.searchText) } }
     private var filteredSnapshotHistory: [InventorySnapshot] { viewModel.snapshotHistory.filter { $0.matches(viewModel.searchText) } }
 
+    // MARK: - Sort order (per tab, lifted up from each Tab view's own local
+    // @State so Export can sort by the same order the Table is showing —
+    // previously each V*TabView owned this itself and Export always used
+    // unsorted collection order regardless of what was on screen).
+
+    @State private var vInfoSortOrder = [FieldComparator<VirtualMachineInfo>.value("name", \.name)]
+    @State private var vCpuSortOrder = [FieldComparator<VMCpuInfo>.value("vm", \.vmName)]
+    @State private var vMemorySortOrder = [FieldComparator<VMMemoryInfo>.value("vm", \.vmName)]
+    @State private var vDiskSortOrder = [FieldComparator<VMDiskInfo>.value("vm", \.vmName)]
+    @State private var vSnapshotSortOrder = [FieldComparator<VMSnapshotInfo>.value("created", \.createdDate)]
+    @State private var vToolsSortOrder = [FieldComparator<VMToolsInfo>.value("vm", \.vmName)]
+    @State private var vNetworkSortOrder = [FieldComparator<VMNetworkInfo>.value("vm", \.vmName)]
+    @State private var vHostSortOrder = [FieldComparator<HostInfo>.value("name", \.name)]
+    @State private var vDatastoreSortOrder = [FieldComparator<DatastoreInfo>.value("name", \.name)]
+    @State private var vClusterSortOrder = [FieldComparator<ClusterInfo>.value("name", \.name)]
+    @State private var vLicenseSortOrder = [FieldComparator<LicenseInfo>.value("name", \.name)]
+    @State private var vSwitchSortOrder = [FieldComparator<VSwitchInfo>.value("host", \.hostName)]
+    @State private var vPortSortOrder = [FieldComparator<VPortInfo>.value("host", \.hostName)]
+    @State private var dvSwitchSortOrder = [FieldComparator<DVSwitchInfo>.value("name", \.name)]
+    @State private var dvPortSortOrder = [FieldComparator<DVPortInfo>.value("name", \.name)]
+    @State private var vRPSortOrder = [FieldComparator<ResourcePoolInfo>.value("name", \.name)]
+    @State private var vAppSortOrder = [FieldComparator<VAppInfo>.value("name", \.name)]
+    @State private var vHBASortOrder = [FieldComparator<HBAInfo>.value("host", \.hostName)]
+    @State private var vNicSortOrder = [FieldComparator<NicInfo>.value("host", \.hostName)]
+    @State private var vmkSortOrder = [FieldComparator<VMKernelInfo>.value("host", \.hostName)]
+    @State private var vMultipathSortOrder = [FieldComparator<MultipathInfo>.value("host", \.hostName)]
+    @State private var vCDSortOrder = [FieldComparator<CDInfo>.value("vm", \.vmName)]
+    @State private var vFloppySortOrder = [FieldComparator<FloppyInfo>.value("vm", \.vmName)]
+    @State private var vUSBSortOrder = [FieldComparator<USBInfo>.value("vm", \.vmName)]
+    @State private var vPartitionSortOrder = [FieldComparator<PartitionInfo>.value("vm", \.vmName)]
+    @State private var vPerformanceSortOrder = [FieldComparator<VMPerformanceInfo>.value("vm", \.vmName)]
+    @State private var vHealthSortOrder = [FieldComparator<HealthCheckResult>.value("severity", \.severity.rawValue)]
+
     private var currentRowCount: Int {
         switch selectedTab {
         case .vInfo: return filteredVMs.count
@@ -514,33 +547,33 @@ struct ContentView: View {
     @ViewBuilder
     private var tabContent: some View {
         switch selectedTab {
-        case .vInfo: VInfoTabView(vms: filteredVMs)
-        case .vCpu: VCpuTabView(rows: filteredCpus)
-        case .vMemory: VMemoryTabView(rows: filteredMemory)
-        case .vDisk: VDiskTabView(rows: filteredDisks)
-        case .vSnapshot: VSnapshotTabView(rows: filteredSnapshots)
-        case .vTools: VToolsTabView(rows: filteredTools)
-        case .vNetwork: VNetworkTabView(rows: filteredNetworks)
-        case .vHost: VHostTabView(rows: filteredHosts)
-        case .vDatastore: VDatastoreTabView(rows: filteredDatastores)
-        case .vCluster: VClusterTabView(rows: filteredClusters)
-        case .vLicense: VLicenseTabView(rows: filteredLicenses)
-        case .vSwitch: VSwitchTabView(rows: filteredVSwitches)
-        case .vPort: VPortTabView(rows: filteredPorts)
-        case .dvSwitch: DVSwitchTabView(rows: filteredDVSwitches)
-        case .dvPort: DVPortTabView(rows: filteredDVPorts)
-        case .vRP: VRPTabView(rows: filteredResourcePools)
-        case .vApp: VAppTabView(rows: filteredVApps)
-        case .vHBA: VHBATabView(rows: filteredHBAs)
-        case .vNic: VNicTabView(rows: filteredNics)
-        case .vmk: VMKTabView(rows: filteredVMKernels)
-        case .vMultipath: VMultipathTabView(rows: filteredMultipaths)
-        case .vCD: VCDTabView(rows: filteredCDs)
-        case .vFloppy: VFloppyTabView(rows: filteredFloppies)
-        case .vUSB: VUSBTabView(rows: filteredUSBs)
-        case .vPartition: VPartitionTabView(rows: filteredPartitions)
-        case .vPerformance: VPerformanceTabView(viewModel: viewModel, rows: filteredPerformance)
-        case .vHealth: VHealthTabView(rows: filteredHealthChecks)
+        case .vInfo: VInfoTabView(vms: filteredVMs, sortOrder: $vInfoSortOrder)
+        case .vCpu: VCpuTabView(rows: filteredCpus, sortOrder: $vCpuSortOrder)
+        case .vMemory: VMemoryTabView(rows: filteredMemory, sortOrder: $vMemorySortOrder)
+        case .vDisk: VDiskTabView(rows: filteredDisks, sortOrder: $vDiskSortOrder)
+        case .vSnapshot: VSnapshotTabView(rows: filteredSnapshots, sortOrder: $vSnapshotSortOrder)
+        case .vTools: VToolsTabView(rows: filteredTools, sortOrder: $vToolsSortOrder)
+        case .vNetwork: VNetworkTabView(rows: filteredNetworks, sortOrder: $vNetworkSortOrder)
+        case .vHost: VHostTabView(rows: filteredHosts, sortOrder: $vHostSortOrder)
+        case .vDatastore: VDatastoreTabView(rows: filteredDatastores, sortOrder: $vDatastoreSortOrder)
+        case .vCluster: VClusterTabView(rows: filteredClusters, sortOrder: $vClusterSortOrder)
+        case .vLicense: VLicenseTabView(rows: filteredLicenses, sortOrder: $vLicenseSortOrder)
+        case .vSwitch: VSwitchTabView(rows: filteredVSwitches, sortOrder: $vSwitchSortOrder)
+        case .vPort: VPortTabView(rows: filteredPorts, sortOrder: $vPortSortOrder)
+        case .dvSwitch: DVSwitchTabView(rows: filteredDVSwitches, sortOrder: $dvSwitchSortOrder)
+        case .dvPort: DVPortTabView(rows: filteredDVPorts, sortOrder: $dvPortSortOrder)
+        case .vRP: VRPTabView(rows: filteredResourcePools, sortOrder: $vRPSortOrder)
+        case .vApp: VAppTabView(rows: filteredVApps, sortOrder: $vAppSortOrder)
+        case .vHBA: VHBATabView(rows: filteredHBAs, sortOrder: $vHBASortOrder)
+        case .vNic: VNicTabView(rows: filteredNics, sortOrder: $vNicSortOrder)
+        case .vmk: VMKTabView(rows: filteredVMKernels, sortOrder: $vmkSortOrder)
+        case .vMultipath: VMultipathTabView(rows: filteredMultipaths, sortOrder: $vMultipathSortOrder)
+        case .vCD: VCDTabView(rows: filteredCDs, sortOrder: $vCDSortOrder)
+        case .vFloppy: VFloppyTabView(rows: filteredFloppies, sortOrder: $vFloppySortOrder)
+        case .vUSB: VUSBTabView(rows: filteredUSBs, sortOrder: $vUSBSortOrder)
+        case .vPartition: VPartitionTabView(rows: filteredPartitions, sortOrder: $vPartitionSortOrder)
+        case .vPerformance: VPerformanceTabView(viewModel: viewModel, rows: filteredPerformance, sortOrder: $vPerformanceSortOrder)
+        case .vHealth: VHealthTabView(rows: filteredHealthChecks, sortOrder: $vHealthSortOrder)
         case .snapshots: SnapshotsTabView(viewModel: viewModel, rows: filteredSnapshotHistory)
         }
     }
@@ -571,33 +604,33 @@ struct ContentView: View {
 
     private func exportCurrentTab(as format: ExportFormat) {
         switch selectedTab {
-        case .vInfo: export(filteredVMs, format: format)
-        case .vCpu: export(filteredCpus, format: format)
-        case .vMemory: export(filteredMemory, format: format)
-        case .vDisk: export(filteredDisks, format: format)
-        case .vSnapshot: export(filteredSnapshots, format: format)
-        case .vTools: export(filteredTools, format: format)
-        case .vNetwork: export(filteredNetworks, format: format)
-        case .vHost: export(filteredHosts, format: format)
-        case .vDatastore: export(filteredDatastores, format: format)
-        case .vCluster: export(filteredClusters, format: format)
-        case .vLicense: export(filteredLicenses, format: format)
-        case .vSwitch: export(filteredVSwitches, format: format)
-        case .vPort: export(filteredPorts, format: format)
-        case .dvSwitch: export(filteredDVSwitches, format: format)
-        case .dvPort: export(filteredDVPorts, format: format)
-        case .vRP: export(filteredResourcePools, format: format)
-        case .vApp: export(filteredVApps, format: format)
-        case .vHBA: export(filteredHBAs, format: format)
-        case .vNic: export(filteredNics, format: format)
-        case .vmk: export(filteredVMKernels, format: format)
-        case .vMultipath: export(filteredMultipaths, format: format)
-        case .vCD: export(filteredCDs, format: format)
-        case .vFloppy: export(filteredFloppies, format: format)
-        case .vUSB: export(filteredUSBs, format: format)
-        case .vPartition: export(filteredPartitions, format: format)
-        case .vPerformance: export(filteredPerformance, format: format)
-        case .vHealth: export(filteredHealthChecks, format: format)
+        case .vInfo: export(filteredVMs.sorted(using: vInfoSortOrder), format: format)
+        case .vCpu: export(filteredCpus.sorted(using: vCpuSortOrder), format: format)
+        case .vMemory: export(filteredMemory.sorted(using: vMemorySortOrder), format: format)
+        case .vDisk: export(filteredDisks.sorted(using: vDiskSortOrder), format: format)
+        case .vSnapshot: export(filteredSnapshots.sorted(using: vSnapshotSortOrder), format: format)
+        case .vTools: export(filteredTools.sorted(using: vToolsSortOrder), format: format)
+        case .vNetwork: export(filteredNetworks.sorted(using: vNetworkSortOrder), format: format)
+        case .vHost: export(filteredHosts.sorted(using: vHostSortOrder), format: format)
+        case .vDatastore: export(filteredDatastores.sorted(using: vDatastoreSortOrder), format: format)
+        case .vCluster: export(filteredClusters.sorted(using: vClusterSortOrder), format: format)
+        case .vLicense: export(filteredLicenses.sorted(using: vLicenseSortOrder), format: format)
+        case .vSwitch: export(filteredVSwitches.sorted(using: vSwitchSortOrder), format: format)
+        case .vPort: export(filteredPorts.sorted(using: vPortSortOrder), format: format)
+        case .dvSwitch: export(filteredDVSwitches.sorted(using: dvSwitchSortOrder), format: format)
+        case .dvPort: export(filteredDVPorts.sorted(using: dvPortSortOrder), format: format)
+        case .vRP: export(filteredResourcePools.sorted(using: vRPSortOrder), format: format)
+        case .vApp: export(filteredVApps.sorted(using: vAppSortOrder), format: format)
+        case .vHBA: export(filteredHBAs.sorted(using: vHBASortOrder), format: format)
+        case .vNic: export(filteredNics.sorted(using: vNicSortOrder), format: format)
+        case .vmk: export(filteredVMKernels.sorted(using: vmkSortOrder), format: format)
+        case .vMultipath: export(filteredMultipaths.sorted(using: vMultipathSortOrder), format: format)
+        case .vCD: export(filteredCDs.sorted(using: vCDSortOrder), format: format)
+        case .vFloppy: export(filteredFloppies.sorted(using: vFloppySortOrder), format: format)
+        case .vUSB: export(filteredUSBs.sorted(using: vUSBSortOrder), format: format)
+        case .vPartition: export(filteredPartitions.sorted(using: vPartitionSortOrder), format: format)
+        case .vPerformance: export(filteredPerformance.sorted(using: vPerformanceSortOrder), format: format)
+        case .vHealth: export(filteredHealthChecks.sorted(using: vHealthSortOrder), format: format)
         case .snapshots: export(filteredSnapshotHistory, format: format)
         }
     }

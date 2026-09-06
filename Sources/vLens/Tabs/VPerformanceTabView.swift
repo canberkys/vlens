@@ -10,7 +10,7 @@ struct VPerformanceTabView: View {
     let rows: [VMPerformanceInfo]
 
     @State private var selectedIntervalMinutes = 60
-    @State private var sortOrder = [FieldComparator<VMPerformanceInfo>.value("vm", \.vmName)]
+    @Binding var sortOrder: [FieldComparator<VMPerformanceInfo>]
 
     private let intervals: [(label: String, minutes: Int)] = [
         ("1 hour", 60), ("4 hours", 240), ("24 hours", 1440), ("7 days", 10080), ("30 days", 43200)

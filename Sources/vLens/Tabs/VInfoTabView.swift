@@ -3,7 +3,7 @@ import vLensCore
 
 struct VInfoTabView: View {
     let vms: [VirtualMachineInfo]
-    @State private var sortOrder = [FieldComparator<VirtualMachineInfo>.value("name", \.name)]
+    @Binding var sortOrder: [FieldComparator<VirtualMachineInfo>]
 
     var body: some View {
         Table(vms.sorted(using: sortOrder), sortOrder: $sortOrder) {
