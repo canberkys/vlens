@@ -3,7 +3,7 @@ import vLensCore
 
 struct DVSwitchTabView: View {
     let rows: [DVSwitchInfo]
-    @State private var sortOrder = [FieldComparator<DVSwitchInfo>.value("name", \.name)]
+    @Binding var sortOrder: [FieldComparator<DVSwitchInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

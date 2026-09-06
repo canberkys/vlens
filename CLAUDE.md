@@ -183,6 +183,26 @@ varsayılan davranış her zaman "merge ettiysen yayınla"dır.
 
 ## Durum (2026-09-03, son maddeler 2026-09-06)
 
+- [x] **(2026-09-06) Export artık UI sıralamasını taşıyor — henüz release'e
+      alınmadı, `feat/export-respects-sort-order` branch'inde** — daha önce
+      "beklenenden büyük" diye ertelenen madde: 27 tab'ın her biri kendi
+      local `@State sortOrder`'ını tutuyordu, Export her zaman ham koleksiyon
+      sırasıyla yazıyordu. Mekanik ama gerçek bir refactor: her
+      `Tabs/V*TabView.swift`'teki `@State private var sortOrder = [...]`
+      `@Binding var sortOrder: [FieldComparator<X>]`'a çevrildi (27 dosya,
+      hepsi tek satırlık değişiklik — `Table(rows.sorted(using: sortOrder),
+      sortOrder: $sortOrder)` çağrısı hiç değişmedi, sadece property'nin
+      kendisi artık binding). `ContentView.swift`'e 27 `@State` sort-order
+      değişkeni eklendi (her tab view'ın eski varsayılan değeriyle),
+      `tabContent`'in switch'i her tab'a kendi binding'ini geçiyor,
+      `exportCurrentTab`'ın switch'i export'tan önce `.sorted(using:)`
+      çağırıyor. `swift build`/`swift test` temiz (104/104, regresyon yok —
+      bu saf UI state refactoru, yeni test edilebilir mantık yok),
+      `swift run vLens` çökmedi. **Henüz PR/merge/release yapılmadı** —
+      kullanıcı "Türkçe özet geç, sonraki adımın ne" sorduktan sonra
+      "öneriler sende karar verme sende" dedi, bu maddeye geçildi;
+      lisanslama sorusu araya girdi, o çözülünce bu da diğerleriyle
+      birlikte release'e alınacak.
 - [x] **(2026-09-06) Preferences backlog + erişilebilirlik turu (v1.5.6)** —
       "5.1 en sona bırakalım... roadmapi belirle" direktifinin devamı,
       kullanıcı "önce test et, PR/build sonra beraber yapalım" dedi, iki

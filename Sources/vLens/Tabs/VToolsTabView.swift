@@ -3,7 +3,7 @@ import vLensCore
 
 struct VToolsTabView: View {
     let rows: [VMToolsInfo]
-    @State private var sortOrder = [FieldComparator<VMToolsInfo>.value("vm", \.vmName)]
+    @Binding var sortOrder: [FieldComparator<VMToolsInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

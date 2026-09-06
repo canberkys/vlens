@@ -3,7 +3,7 @@ import vLensCore
 
 struct VLicenseTabView: View {
     let rows: [LicenseInfo]
-    @State private var sortOrder = [FieldComparator<LicenseInfo>.value("name", \.name)]
+    @Binding var sortOrder: [FieldComparator<LicenseInfo>]
 
     var body: some View {
         if rows.isEmpty {

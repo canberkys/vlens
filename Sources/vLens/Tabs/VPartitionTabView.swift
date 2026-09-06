@@ -3,7 +3,7 @@ import vLensCore
 
 struct VPartitionTabView: View {
     let rows: [PartitionInfo]
-    @State private var sortOrder = [FieldComparator<PartitionInfo>.value("vm", \.vmName)]
+    @Binding var sortOrder: [FieldComparator<PartitionInfo>]
 
     var body: some View {
         if rows.isEmpty {

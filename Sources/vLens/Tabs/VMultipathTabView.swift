@@ -3,7 +3,7 @@ import vLensCore
 
 struct VMultipathTabView: View {
     let rows: [MultipathInfo]
-    @State private var sortOrder = [FieldComparator<MultipathInfo>.value("host", \.hostName)]
+    @Binding var sortOrder: [FieldComparator<MultipathInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

@@ -3,7 +3,7 @@ import vLensCore
 
 struct VDatastoreTabView: View {
     let rows: [DatastoreInfo]
-    @State private var sortOrder = [FieldComparator<DatastoreInfo>.value("name", \.name)]
+    @Binding var sortOrder: [FieldComparator<DatastoreInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

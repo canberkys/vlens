@@ -3,7 +3,7 @@ import vLensCore
 
 struct VSwitchTabView: View {
     let rows: [VSwitchInfo]
-    @State private var sortOrder = [FieldComparator<VSwitchInfo>.value("host", \.hostName)]
+    @Binding var sortOrder: [FieldComparator<VSwitchInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

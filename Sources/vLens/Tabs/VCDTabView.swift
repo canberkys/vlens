@@ -3,7 +3,7 @@ import vLensCore
 
 struct VCDTabView: View {
     let rows: [CDInfo]
-    @State private var sortOrder = [FieldComparator<CDInfo>.value("vm", \.vmName)]
+    @Binding var sortOrder: [FieldComparator<CDInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

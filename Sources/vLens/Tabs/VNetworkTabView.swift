@@ -3,7 +3,7 @@ import vLensCore
 
 struct VNetworkTabView: View {
     let rows: [VMNetworkInfo]
-    @State private var sortOrder = [FieldComparator<VMNetworkInfo>.value("vm", \.vmName)]
+    @Binding var sortOrder: [FieldComparator<VMNetworkInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

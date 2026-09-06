@@ -3,7 +3,7 @@ import vLensCore
 
 struct DVPortTabView: View {
     let rows: [DVPortInfo]
-    @State private var sortOrder = [FieldComparator<DVPortInfo>.value("name", \.name)]
+    @Binding var sortOrder: [FieldComparator<DVPortInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

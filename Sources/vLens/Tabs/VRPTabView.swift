@@ -3,7 +3,7 @@ import vLensCore
 
 struct VRPTabView: View {
     let rows: [ResourcePoolInfo]
-    @State private var sortOrder = [FieldComparator<ResourcePoolInfo>.value("name", \.name)]
+    @Binding var sortOrder: [FieldComparator<ResourcePoolInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

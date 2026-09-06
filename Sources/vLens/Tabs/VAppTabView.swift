@@ -3,7 +3,7 @@ import vLensCore
 
 struct VAppTabView: View {
     let rows: [VAppInfo]
-    @State private var sortOrder = [FieldComparator<VAppInfo>.value("name", \.name)]
+    @Binding var sortOrder: [FieldComparator<VAppInfo>]
 
     var body: some View {
         if rows.isEmpty {

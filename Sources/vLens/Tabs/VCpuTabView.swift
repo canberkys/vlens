@@ -3,7 +3,7 @@ import vLensCore
 
 struct VCpuTabView: View {
     let rows: [VMCpuInfo]
-    @State private var sortOrder = [FieldComparator<VMCpuInfo>.value("vm", \.vmName)]
+    @Binding var sortOrder: [FieldComparator<VMCpuInfo>]
 
     var body: some View {
         Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {

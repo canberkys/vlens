@@ -3,7 +3,7 @@ import vLensCore
 
 struct VUSBTabView: View {
     let rows: [USBInfo]
-    @State private var sortOrder = [FieldComparator<USBInfo>.value("vm", \.vmName)]
+    @Binding var sortOrder: [FieldComparator<USBInfo>]
 
     var body: some View {
         if rows.isEmpty {
