@@ -6,25 +6,22 @@
         <description>vLens release updates</description>
         <language>en</language>
         <item>
-            <title>Version 1.6.0</title>
-            <pubDate>Sun, 06 Sep 2026 18:36:04 +0000</pubDate>
-            <sparkle:version>27</sparkle:version>
-            <sparkle:shortVersionString>1.6.0</sparkle:shortVersionString>
+            <title>Version 1.6.1</title>
+            <pubDate>Sun, 06 Sep 2026 18:57:20 +0000</pubDate>
+            <sparkle:version>28</sparkle:version>
+            <sparkle:shortVersionString>1.6.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[
-<h4>Added</h4>
+<h4>Fixed</h4>
 <ul>
-<li><strong>Multi-vCenter merge (<code>vlens-cli merge</code>)</strong> — vLens&#x27; equivalent of RVTools&#x27; separate <code>RVToolsMergeExcelFiles</code> tool, for vCenters that aren&#x27;t linked via Enhanced Linked Mode (e.g. a DC/DRC pair). <code>vlens-cli merge --profiles &quot;A,B&quot; --tab &lt;key&gt; --format csv|xlsx --output &lt;path&gt;</code> connects to each saved connection in turn (not simultaneously) and writes one combined file, tagging every row with which vCenter it came from. Try it with zero setup via <code>--demo</code> instead of <code>--profiles</code> — two synthetic mock vCenters, no saved connection needed. CLI-only by design — a GUI version was built and tested against real connections, but ultimately dropped: it felt architecturally disconnected from the main window&#x27;s own connection state, and this is more naturally a scheduled/periodic task (which the existing Automation/launchd scheduler already covers) than a manual GUI action.</li>
-<li><strong>New &quot;Command Line (vlens-cli)&quot; Help topic</strong> documenting <code>snapshot</code>/ <code>export</code>/<code>merge</code> — closes a real gap, <code>vlens-cli</code> had never been mentioned anywhere in the app itself.</li>
-<li><strong>Connect screen redesign</strong> — native grouped <code>Form</code> (persistent field labels instead of placeholder-only text), a larger centered app icon with a subtle accent-color wash, and an inline warning-icon error banner instead of plain red text. Field set and connect flow are unchanged.</li>
-<li><strong>README screenshots</strong> — the connect screen and the vInfo tab in Demo Mode; previously the README had none.</li>
+<li><strong>Connect screen text fields no longer put the caret against the right edge.</strong> A grouped <code>Form</code> row shrink-wraps its trailing control against the row&#x27;s right edge — fine for a glanceable value, but for an empty field you&#x27;re about to type into, the caret ended up resting right against the placeholder text instead of where typing naturally starts. Replaced the three field rows with a caption label above a plain, full-width field each, still grouped in the same card look.</li>
 </ul>
             ]]></description>
             <enclosure
-                url="https://github.com/canberkys/vlens/releases/download/v1.6.0/vLens-1.6.0.dmg"
-                length="13426959"
+                url="https://github.com/canberkys/vlens/releases/download/v1.6.1/vLens-1.6.1.dmg"
+                length="13428404"
                 type="application/octet-stream"
-                sparkle:edSignature="o1AcUizCgrfIBZoZpJPtJ/9FhLIVPTfdJ/MDG5KRRrnLMOdC5EMhjTHURYxyYJcmYSld32Pm95B2sf+zUuNcAQ==" />
+                sparkle:edSignature="G0fI9w/OGtC24Rv3Q/zL8C5b6TMk3iOu/ppM7Q5HHXLpQhonnHlPp1jKdTN1CPBCE/b9guhj0QxqS8lPkI3tAg==" />
         </item>
     </channel>
 </rss>
