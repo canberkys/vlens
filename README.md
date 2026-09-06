@@ -8,6 +8,7 @@
     <img src="https://img.shields.io/badge/Swift-6-FA7343?style=flat-square&logo=swift&logoColor=white" alt="Swift 6">
     <img src="https://img.shields.io/badge/Go-govmomi-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go/govmomi">
     <img src="https://img.shields.io/github/v/release/canberkys/vlens?style=flat-square&label=release" alt="Latest release">
+    <img src="https://img.shields.io/badge/license-GPLv3-blue?style=flat-square" alt="License: GPLv3">
   </p>
 </div>
 
@@ -59,7 +60,8 @@ simulator).
 
 ## Building from source
 
-No public release yet — build it yourself:
+Prefer a ready-to-run build? See [Releases](https://github.com/canberkys/vlens/releases).
+To build from source instead:
 
 ```bash
 git clone https://github.com/canberkys/vlens.git
@@ -156,4 +158,9 @@ access allows it.
 
 ## License
 
-Public repository — license not yet decided.
+GPLv3 — see [LICENSE](LICENSE). Copyleft: you're free to use, study, modify,
+and redistribute this code, including commercially, as long as your version
+stays open source under the same license. The LICENSE file includes a small
+set of additional permissions (allowed under GPLv3 §7) that specifically
+prohibit passing off a modified version as the official vLens project, or
+using the vLens name/icon for a derivative without saying it's derived.
