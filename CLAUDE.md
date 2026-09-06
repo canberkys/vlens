@@ -187,6 +187,61 @@ varsayılan davranış her zaman "merge ettiysen yayınla"dır.
 
 ## Durum (2026-09-03, son maddeler 2026-09-06)
 
+- [x] **(2026-09-06) Multi-vCenter merge — `vlens-cli merge` (`feat/multi-vcenter-merge`
+      branch'inde, kullanıcı "önce local'de test edelim" dedi, henüz main'e
+      alınmadı)** — kullanıcının gerçek bir kullanım senaryosu var: DC/DRC,
+      ELM (Enhanced Linked Mode) ile bağlı olmayan 2 ayrı vCenter. RVTools'un
+      `RVToolsMergeExcelFiles.exe`'siyle aynı fikir — eşzamanlı bağlantı
+      değil, sırayla toplayıp tek dosyada birleştiren offline bir araç.
+      Beklenenden ucuz çıktı: her model zaten `CSVExportable` olduğu için
+      20+ modele alan eklemek yerine tek bir generic `MergedRow<T>` wrapper'ı
+      (`Sources/vLensCore/MergedExport.swift`) yeterli oldu — hiçbir mevcut
+      modele dokunulmadı. `vlens-cli merge --profiles "DC,DRC" --tab <key>
+      --format csv|xlsx --output <path>` her profile'a sırayla bağlanıp
+      `collectAll` çalıştırıyor, sonuçları "vCenter" kolonuyla etiketleyip
+      birleştiriyor. **`--demo` modu** (`vlens-cli merge --demo --tab <key>
+      ...`) — kullanıcının "try demo'ya ekleyelim" isteği — hiç kayıtlı
+      bağlantı/Keychain/vcsim gerektirmeden `DemoData.collectedInventory()`
+      ile iki sentetik "Demo DC"/"Demo DRC" seti üretip aynı merge mantığını
+      çalıştırıyor, sıfır kurulumla denenebilir. Gerçek uçtan uca doğrulama
+      YAPILDI: iki ayrı vcsim instance'ı (DC/DRC rolünde) ayağa kaldırılıp
+      gerçek profil/Keychain/trust store girdileri seed edildi, `merge
+      --profiles "DC,DRC" --tab vhost` gerçekten her iki host setini doğru
+      "vCenter" etiketiyle birleştirdi (test verisi sonrasında temizlendi).
+      `--demo` modu da hem CSV (vInfo, 40+40 satır) hem XLSX (vHealth,
+      healthChecks yolu) için ayrı ayrı test edildi. `swift build`/`swift
+      test` temiz (104/104, regresyon yok). **Kapsam dışı bırakılan (v1)**:
+      tüm tab'ları tek çok-sayfalı XLSX'te birleştirmek (XLSXWriter şu an
+      tek-sayfa üretiyor, gerçek bir ek iş — istenirse v2).
+      Bonus: mevcut Automation/launchd zamanlayıcısına ileride bir `.merge`
+      action'ı eklenip periyodik çalıştırılabilir (henüz yapılmadı).
+
+      **2026-09-06 ikinci tur — GUI'ye bir "Merge…" penceresi denendi, sonra
+      geri alındı**: kullanıcı "arayüzde nasıl deneyimleyeceğiz" diye sorunca
+      önce Demo Mode'da SENTETİK iki kaynakla çalışan bir önizleme eklendi —
+      ama bu kullanıcının gerçek DC/DRC ihtiyacını çözmüyordu, sadece "böyle
+      görünür" gösteriyordu. Kullanıcı "ben buna emin olamadım" dedi, ben de
+      dürüstçe aynı fikirde olduğumu söyledim; ikinci deneme GERÇEK
+      bağlantılarla çalışan bir `MergeView`/`MergeCoordinator` (2 kayıtlı
+      profili seçip gerçekten bağlanıp birleştiren bir sheet) oldu ve
+      gerçekten çalıştı (iki vcsim'e karşı canlı doğrulandı) — ama bu sefer
+      kullanıcıyla birlikte vardığımız sonuç: GUI penceresi işlevsel olsa
+      da mimari olarak "bolt-on" hissettiriyor (ana pencerenin bağlantı
+      durumundan tamamen kopuk, arka planda görünmeyen 2 ayrı bağlantı
+      açıyor) ve DC/DRC karşılaştırması muhtemelen periyodik bir ihtiyaç —
+      bu da zaten var olan Automation/launchd zamanlayıcısıyla doğal olarak
+      eşleşen CLI'yı GUI'den daha uygun kılıyor. **Karar: GUI penceresi
+      tamamen geri alındı** (`MergeView.swift`/`MergeCoordinator.swift`
+      silindi, `ContentView`'daki "Merge…" butonu, `vLensApp.swift`'teki
+      `Window("merge")` sahnesi, `ConnectionViewModel.initialMergeTab`,
+      `AppTab.exportTabKey` hepsi kaldırıldı) — **özellik kalıcı olarak
+      CLI-only**. Tek kalıcı yan etki: `ExportPanel.save*` fonksiyonları
+      artık kaydetmenin gerçekten olup olmadığını (`Bool`, iptal edilirse
+      `false`) döndürüyor — genel olarak yararlı, geriye dönük uyumlu bir
+      iyileştirme, o yüzden bırakıldı. `swift build`/`swift test` temiz
+      (104/104). **Kullanıcı kendi local testini yapacak, PR/build/release
+      bekliyor.**
+
 - [x] **(2026-09-06) Export artık UI sıralamasını taşıyor (v1.5.7) — ve
       vLens GPLv3 ile lisanslandı (LICENSE, ek §7 izinleriyle — kapalı
       kaynak/resmi-gibi-gösterme yasak, fork+farklı isim yasal olarak

@@ -39,7 +39,7 @@ struct ContentView: View {
         Group {
             if !viewModel.isConnected {
                 connectForm
-                    .frame(width: 420, height: 480)
+                    .frame(width: 460, height: 610)
                     .onAppear {
                         // Re-checked (not just computed once at init) so
                         // Preferences' "Reset Tutorials" takes effect without
@@ -97,81 +97,133 @@ struct ContentView: View {
     }
 
     // MARK: - Connect form
+    //
+    // Second design pass on this screen (first pass only fixed spacing/
+    // redundant headers). This pass changes the actual visual language:
+    // a real hero header (bigger icon, centered) sitting above a native
+    // macOS *grouped Form* for the fields — the same construction System
+    // Settings uses for its own sign-in/account panes (leading label,
+    // trailing control, in a soft inset card) — instead of a flat stack of
+    // bare `.roundedBorder` text fields. A faint radial accent-color wash
+    // behind the header adds depth without introducing any non-native
+    // chrome. Field set, flow, and underlying logic are unchanged.
 
     private var connectForm: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // One compact header instead of a hero title stacked above a
-            // second "Connect to vCenter" headline — the form itself makes
-            // the purpose obvious, a second headline was redundant weight.
-            HStack(spacing: 12) {
-                AppIconImage.image
-                    .resizable()
-                    .frame(width: 48, height: 48)
-                    .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("vLens").font(.title2.bold())
-                    Text("vCenter/ESXi inventory, built for Mac")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
+        ZStack {
+            connectFormBackground
+            VStack(spacing: 28) {
+                connectFormHeader
+                connectFormFields
+                connectFormActions
             }
+            .padding(32)
+        }
+    }
 
-            VStack(alignment: .leading, spacing: 10) {
+    /// A very faint accent-color glow behind the header — the same kind of
+    /// subtle depth macOS uses behind an avatar/icon in its own sign-in
+    /// panes (System Settings' Apple ID pane, for one) rather than leaving
+    /// the whole screen a flat, textureless plane.
+    private var connectFormBackground: some View {
+        RadialGradient(
+            colors: [Color.accentColor.opacity(0.16), Color.accentColor.opacity(0.03), .clear],
+            center: .top,
+            startRadius: 10,
+            endRadius: 300
+        )
+        .ignoresSafeArea()
+    }
+
+    private var connectFormHeader: some View {
+        VStack(spacing: 12) {
+            AppIconImage.image
+                .resizable()
+                .frame(width: 64, height: 64)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .shadow(color: .black.opacity(0.2), radius: 10, y: 5)
+
+            VStack(spacing: 4) {
+                Text("vLens")
+                    .font(.title.bold())
+                Text("vCenter/ESXi inventory, built for Mac")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// A native grouped `Form` rather than a flat stack of bare text
+    /// fields — this is the same leading-label/trailing-control, inset-card
+    /// construction System Settings uses for its own account/sign-in
+    /// panes, so it reads as system chrome rather than a custom form.
+    private var connectFormFields: some View {
+        Form {
+            Section {
+                TextField("Host", text: $viewModel.host, prompt: Text("vcenter.local"))
+                TextField("Username", text: $viewModel.username, prompt: Text("administrator@vsphere.local"))
+                SecureField("Password", text: $viewModel.password)
+            } header: {
+                // Tied visually to the fields it populates (trailing edge of
+                // this section's own header) rather than a standalone row
+                // above the card that used to read like a stray toolbar
+                // button. Only takes header space at all once there's
+                // something to show.
                 if !viewModel.savedProfiles.isEmpty {
                     HStack {
                         Spacer()
                         savedProfilesMenu
                     }
                 }
+            }
 
-                TextField("vCenter host (e.g. vcenter.local)", text: $viewModel.host)
-                    .textFieldStyle(.roundedBorder)
-                TextField("Username", text: $viewModel.username)
-                    .textFieldStyle(.roundedBorder)
-                SecureField("Password", text: $viewModel.password)
-                    .textFieldStyle(.roundedBorder)
+            Section {
                 Toggle("Save this connection to Keychain", isOn: $viewModel.saveCredentials)
-
-                if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
-                        .foregroundStyle(.red)
-                        .font(.callout)
-                }
-
-                Button {
-                    Task { await viewModel.connectAndListVMs() }
-                } label: {
-                    Group {
-                        if viewModel.isConnecting {
-                            ProgressView().controlSize(.small)
-                        } else {
-                            Text("Connect")
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .keyboardShortcut(.defaultAction)
-                .disabled(viewModel.isConnecting)
-
-                // Secondary escape hatch, not a co-equal action next to
-                // Connect — smaller, muted, below the primary button.
-                Button("Try demo mode") {
-                    viewModel.loadDemoData()
-                }
-                .buttonStyle(.link)
-                .font(.footnote)
-                .disabled(viewModel.isConnecting)
-                .frame(maxWidth: .infinity, alignment: .center)
             }
         }
-        .padding(28)
+        .formStyle(.grouped)
+        .scrollDisabled(true)
     }
 
-    /// Tied visually to the host field it populates (small, right-aligned,
-    /// directly above it) rather than a standalone row that used to read
-    /// like a stray toolbar button.
+    private var connectFormActions: some View {
+        VStack(spacing: 12) {
+            if let errorMessage = viewModel.errorMessage {
+                Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                    .font(.callout)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.red.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+
+            Button {
+                Task { await viewModel.connectAndListVMs() }
+            } label: {
+                Group {
+                    if viewModel.isConnecting {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Text("Connect")
+                    }
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .keyboardShortcut(.defaultAction)
+            .disabled(viewModel.isConnecting)
+
+            // Secondary escape hatch, not a co-equal action next to
+            // Connect — smaller, muted, below the primary button.
+            Button("Try demo mode") {
+                viewModel.loadDemoData()
+            }
+            .buttonStyle(.link)
+            .font(.footnote)
+            .disabled(viewModel.isConnecting)
+        }
+    }
+
     private var savedProfilesMenu: some View {
         Menu {
             ForEach(viewModel.savedProfiles) { profile in

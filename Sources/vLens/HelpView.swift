@@ -7,7 +7,7 @@ import SwiftUI
 /// own Tips app — a colored icon badge per topic, sidebar and detail pane
 /// both using it, rather than a plain text-only list.
 enum HelpTopic: String, CaseIterable, Identifiable {
-    case whatsNew, gettingStarted, tabs, snapshots, performance, securityAdvisories, exportReports, feedback, preferences, keyboardShortcuts
+    case whatsNew, gettingStarted, tabs, snapshots, performance, securityAdvisories, exportReports, feedback, preferences, keyboardShortcuts, commandLine
 
     var id: String { rawValue }
 
@@ -23,6 +23,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         case .feedback: return "Feedback & Bug Reports"
         case .preferences: return "Preferences"
         case .keyboardShortcuts: return "Keyboard Shortcuts"
+        case .commandLine: return "Command Line (vlens-cli)"
         }
     }
 
@@ -38,6 +39,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         case .feedback: return "bubble.left.and.text.bubble.right.fill"
         case .preferences: return "gearshape.fill"
         case .keyboardShortcuts: return "keyboard.fill"
+        case .commandLine: return "terminal.fill"
         }
     }
 
@@ -56,6 +58,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         case .feedback: return .pink
         case .preferences: return .gray
         case .keyboardShortcuts: return .indigo
+        case .commandLine: return .mint
         }
     }
 
@@ -126,6 +129,18 @@ enum HelpTopic: String, CaseIterable, Identifiable {
             Cmd+F — Focus the search box (filters whatever tab you're currently looking at)
 
             Cmd+Shift+? — vLens Help (this window)
+            """
+        case .commandLine:
+            return """
+            vlens-cli is a separate, headless command-line tool bundled inside vLens.app (Contents/MacOS/vlens-cli) — no window, run from Terminal. It reuses the same saved connections (Keychain password, trusted certificate) you've already set up in the app, so nothing needs configuring twice. Preferences' "Automation" section runs it in the background on a schedule via launchd — this is what powers that.
+
+            vlens-cli snapshot --profile <name> — records a Snapshots-tab entry, same as pressing "Take Snapshot" in the app.
+
+            vlens-cli export --profile <name> --tab <key> --format csv|xlsx --output <path> — headless export of one tab.
+
+            vlens-cli merge --profiles <name1,name2> --tab <key> --format csv|xlsx --output <path> — vLens' equivalent of RVTools' separate RVToolsMergeExcelFiles tool. Connects to each named connection in turn (not simultaneously) and writes one combined file, tagging every row with which vCenter it came from — useful for vCenters that aren't linked via Enhanced Linked Mode, like a DC/DRC pair. Try it risk-free with --demo instead of --profiles: two synthetic mock vCenters, no saved connection needed.
+
+            Run vlens-cli help (or vlens-cli list-tabs / list-profiles) in Terminal for the exact, current syntax.
             """
         }
     }
