@@ -39,6 +39,10 @@ simulator).
 
 ---
 
+<p align="center">
+  <img src=".github/screenshots/vinfo-demo.png" width="800" alt="vLens vInfo tab, Demo Mode">
+</p>
+
 ## Features
 
 | | |
@@ -57,6 +61,10 @@ simulator).
 | **In-app feedback** | Bug reports / feature requests via email or a prefilled GitHub issue — no telemetry, nothing sent without you reviewing and sending it yourself |
 
 ---
+
+<p align="center">
+  <img src=".github/screenshots/connect-screen.png" width="420" alt="vLens connect screen">
+</p>
 
 ## Building from source
 
