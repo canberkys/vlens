@@ -6,22 +6,22 @@
         <description>vLens release updates</description>
         <language>en</language>
         <item>
-            <title>Version 1.6.1</title>
-            <pubDate>Sun, 06 Sep 2026 18:57:20 +0000</pubDate>
-            <sparkle:version>28</sparkle:version>
-            <sparkle:shortVersionString>1.6.1</sparkle:shortVersionString>
+            <title>Version 1.6.2</title>
+            <pubDate>Mon, 07 Sep 2026 14:54:30 +0000</pubDate>
+            <sparkle:version>29</sparkle:version>
+            <sparkle:shortVersionString>1.6.2</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[
-<h4>Fixed</h4>
+<h4>Added</h4>
 <ul>
-<li><strong>Connect screen text fields no longer put the caret against the right edge.</strong> A grouped <code>Form</code> row shrink-wraps its trailing control against the row&#x27;s right edge — fine for a glanceable value, but for an empty field you&#x27;re about to type into, the caret ended up resting right against the placeholder text instead of where typing naturally starts. Replaced the three field rows with a caption label above a plain, full-width field each, still grouped in the same card look.</li>
+<li><strong>vHealth #15/16/18/19 — VM/Host/Cluster/Datastore config status.</strong> Turns out these aren&#x27;t <code>EventManager</code>/event-stream rules despite the &quot;config issue&quot; naming — they&#x27;re all the same <code>ManagedEntity.configStatus</code> field (red/yellow/green/gray) vLens already read for hosts. VM and Datastore now collect it too (Datastore gets a new &quot;Status&quot; column, same as Host/Cluster already had), and Cluster&#x27;s status — already collected and shown, just never wired into vHealth — now feeds the engine as well. 21 of RVTools&#x27; 24 documented rules are implemented now; the remaining 3 (#9/#10 zombie VMDK/VM, #14 search datastore errors) all need <code>vFileInfo</code>, which stays out of scope. None of the four can be verified against a live positive fixture (vcsim doesn&#x27;t simulate the alarm subsystem), so Demo Mode now seeds a few non-green entities to keep the rules visible without a real vCenter.</li>
 </ul>
             ]]></description>
             <enclosure
-                url="https://github.com/canberkys/vlens/releases/download/v1.6.1/vLens-1.6.1.dmg"
-                length="13428404"
+                url="https://github.com/canberkys/vlens/releases/download/v1.6.2/vLens-1.6.2.dmg"
+                length="13433079"
                 type="application/octet-stream"
-                sparkle:edSignature="G0fI9w/OGtC24Rv3Q/zL8C5b6TMk3iOu/ppM7Q5HHXLpQhonnHlPp1jKdTN1CPBCE/b9guhj0QxqS8lPkI3tAg==" />
+                sparkle:edSignature="ylQVJintQSilKpwjXM31O8jc7nd4W1/kVJzUMzr/ijhWNu34bK2vBdhr9bGr1lKosilM4V3NSnPdHU8/6HsxCA==" />
         </item>
     </channel>
 </rss>
