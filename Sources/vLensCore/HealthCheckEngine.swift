@@ -4,7 +4,7 @@ import Foundation
 /// tabs — matches RVTools' own model (vHealth doesn't do a separate
 /// collection pass, it evaluates rules over vInfo/vSnapshot/vTools/etc.).
 ///
-/// Implements 18 of RVTools' 24 documented rules (numbering matches
+/// Implements 21 of RVTools' 24 documented rules (numbering matches
 /// rvtools.txt's vHealth section):
 ///   #1  VM has a CDROM device connected!
 ///   #2  VM has a Floppy device connected!
@@ -19,22 +19,37 @@ import Foundation
 ///       excluded — see the rule's own comment for why)
 ///   #12 Multipath operational state (degraded/dead paths)
 ///   #13 Virtual machine consolidation needed
+///   #15 VM config issues (`ManagedEntity.configStatus` not green)
+///   #16 Host config issues (`ManagedEntity.configStatus` not green)
 ///   #17 NTP issues (no servers configured, or ntpd not running)
+///   #18 Cluster config issues (`ManagedEntity.configStatus` not green)
+///   #19 Datastore config issues (`ManagedEntity.configStatus` not green)
 ///   #20 Warning if ESXi Shell is enabled on host
 ///   #21 Warning if SSH is enabled on host
 ///   #22 Disk I/O performance tip (PVSCSI controller count vs. disk count/size)
 ///   #23 In-memory performance tip (NUMA exposure vs. hot-add/cores-per-socket)
 ///   #24 Certificate within xx days of expiring or has expired
-///   host config status not green (rolled into the vHealth concept generally)
-/// The remaining 6 rules (zombie VMDK/VM, config-issue events, etc.) need
-/// data this app doesn't collect yet — add them incrementally as their
-/// source tabs are built.
+/// The remaining 3 rules (#9/#10 zombie VMDK/VM, #14 search datastore
+/// errors) need `vFileInfo`, which this app doesn't collect (permanently
+/// deferred — see docs/vLens-Reference.md).
+///
+/// #15/16/18/19 are all the same underlying vim25 concept
+/// (`ManagedEntity.configStatus`, a `red`/`yellow`/`green`/`gray` status
+/// populated from triggered alarms) applied to four different entity
+/// types — not `EventManager`/an event stream, despite the "config issue"
+/// naming. `EntityStatus` is the same enum Host/Cluster/Datastore already
+/// expose as a real column; VM's copy is health-rule-only (see
+/// `VirtualMachineInfo.configStatus`'s own doc comment for why it isn't a
+/// vInfo column). Because vcsim never simulates the alarm subsystem, none
+/// of these four rules can be verified against a positive live fixture —
+/// only structurally, same as the Floppy/vUSB/vPartition precedent.
 public enum HealthCheckEngine {
     public static func evaluate(
         snapshots: [VMSnapshotInfo],
         tools: [VMToolsInfo],
         datastores: [DatastoreInfo],
         hosts: [HostInfo],
+        clusters: [ClusterInfo] = [],
         cpus: [VMCpuInfo],
         cds: [CDInfo] = [],
         floppies: [FloppyInfo] = [],
@@ -54,6 +69,28 @@ public enum HealthCheckEngine {
                 rule: "Consolidation needed",
                 message: "\(vm.name): virtual machine disk consolidation needed.",
                 relatedObject: vm.name
+            ))
+        }
+
+        // #15 — VM's own `configStatus`, not green.
+        for vm in vms where vm.configStatus != .green {
+            results.append(HealthCheckResult(
+                id: "vm.config.\(vm.vmUUID)",
+                severity: vm.configStatus,
+                rule: "VM config status",
+                message: "\(vm.name): config status \(vm.configStatus.rawValue).",
+                relatedObject: vm.name
+            ))
+        }
+
+        // #18 — Cluster's own `configStatus`, not green.
+        for cluster in clusters where cluster.configStatus != .green {
+            results.append(HealthCheckResult(
+                id: "cluster.config.\(cluster.id)",
+                severity: cluster.configStatus,
+                rule: "Cluster config status",
+                message: "\(cluster.name): config status \(cluster.configStatus.rawValue).",
+                relatedObject: cluster.name
             ))
         }
 
@@ -121,6 +158,17 @@ public enum HealthCheckEngine {
                     severity: .yellow,
                     rule: "VMs per datastore",
                     message: "\(datastore.name): \(datastore.numVMsTotal) VMs on this datastore (threshold: \(thresholds.maxVMsPerDatastore)).",
+                    relatedObject: datastore.name
+                ))
+            }
+
+            // #19 — Datastore's own `configStatus`, not green.
+            if datastore.configStatus != .green {
+                results.append(HealthCheckResult(
+                    id: "datastore.config.\(datastore.id)",
+                    severity: datastore.configStatus,
+                    rule: "Datastore config status",
+                    message: "\(datastore.name): config status \(datastore.configStatus.rawValue).",
                     relatedObject: datastore.name
                 ))
             }
@@ -252,6 +300,7 @@ public enum HealthCheckEngine {
                 ))
             }
 
+            // #16 — Host's own `configStatus`, not green.
             if host.configStatus != .green {
                 results.append(HealthCheckResult(
                     id: "host.config.\(host.id)",

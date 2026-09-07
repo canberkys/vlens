@@ -88,7 +88,7 @@ vLens/
 │       ├── Credentials/    # Keychain credential store
 │       ├── Helper/         # Go helper ile JSON protokolü + Process client
 │       ├── Demo/DemoData.swift   # 40 VM + tüm tab'lar için tutarlı mock veri üretici
-│       ├── HealthCheckEngine.swift  # RVTools'un 24 vHealth kuralından 10'u, gerçek hesaplama
+│       ├── HealthCheckEngine.swift  # RVTools'un 24 vHealth kuralından 21'i, gerçek hesaplama
 │       ├── HealthCheckPreferencesStore.swift  # eşikleri UserDefaults'a kaydeder
 │       ├── SnapshotStore.swift     # InventorySnapshot geçmişi, Application Support'ta JSON
 │       ├── SnapshotPreferencesStore.swift  # Compare panelinde hangi metriklerin gösterileceği
@@ -185,8 +185,38 @@ derse (örn. bir feature'ı demo modda deneme aşamasında), bu checklist o
 özellik production'a alınana kadar uygulanmaz — ama karar kullanıcıya ait,
 varsayılan davranış her zaman "merge ettiysen yayınla"dır.
 
-## Durum (2026-09-03, son maddeler 2026-09-06)
+## Durum (2026-09-03, son maddeler 2026-09-07)
 
+- [x] **(2026-09-07) vHealth #15/16/18/19 — VM/Host/Cluster/Datastore config
+      status (v1.6.2)** — kullanıcı "VPN dışında ne yapılabilir" diye sordu,
+      önceki bir turda "EventManager gerektiriyor, ayrı/büyük bir iş" diye
+      varsayılan 4 kural seçildi, `/plan` ile araştırılıp uygulandı. **Gerçek
+      bulgu, varsayımı değiştirdi**: RVTools'un "config issue" kuralları
+      `EventManager`/olay akışı değil, her `ManagedEntity`'nin düz bir
+      `configStatus` (red/yellow/green/gray) property'si — vLens'te bu zaten
+      `EntityStatus` enum'u olarak Host için kullanılıyordu (etiketsiz, RVTools
+      numarasıyla eşleştirilmemiş). `ClusterInfo.configStatus` de zaten
+      toplanıyor ve `VClusterTabView`'da gösteriliyordu — sadece
+      `HealthCheckEngine`'e hiç bağlanmamıştı. Yani iş EventManager değil,
+      sadece VM/Datastore'a eksik `configStatus`'u eklemek + Cluster'ı motora
+      bağlamak + Host'u #16 olarak resmi numaralandırmaktı. VM'in
+      `configStatus`'u `consolidationNeeded`/`pvscsiControllerCount` emsaliyle
+      aynı (vInfo kolonu değil, sadece vHealth okuyor — zaten 10 kolonla dolu
+      olan vInfo'ya kolon eklenmedi); Datastore'unki gerçek bir kolon oldu
+      (Host/Cluster'ın "Status" kolonuyla aynı desende), CSV/XLSX export'a da
+      eklendi. `docs/vLens-Reference.md`'nin kendi "needs configIssue events"
+      notu da yanlış çıktı — düzeltildi. **Gerçek sayı 21/24** (eski "18"
+      sayımı, Host için var olan gölge/etiketsiz satırdan dolayı zaten
+      şişikti — düzeltildi). vcsim canlı doğrulandı: `configStatus` alanı
+      VM/Datastore/Cluster JSON'ında yapısal olarak doğru geliyor (hepsi
+      "green" — vcsim alarm alt sistemini simüle etmiyor, Floppy/vUSB/
+      vPartition'ın aynı bilinen sınırı). Demo Mode'a 4 kuralın hepsini
+      gürültüye boğmadan gösterecek seyrek non-green fixture'lar eklendi
+      (`vlens-cli merge --demo --tab vhealth` ile uçtan uca doğrulandı — 4
+      kural da doğru mesajlarla tetiklendi). 4 yeni test + var olan ama hiç
+      testi olmayan "Host config status" kuralına da bir test eklendi.
+      `swift build`/`swift test` temiz (110/110, +4 test), `go build`/
+      `go vet`/`go test` temiz, `swift run vLens` çökmedi.
 - [x] **(2026-09-06) Connect ekranı caret hizalama düzeltmesi (v1.6.1)** —
       kullanıcı bir ekran görüntüsünde fark etti: boş Host alanında cursor
       placeholder'ın hemen arkasında, sağda duruyordu. Kök neden: gruplu

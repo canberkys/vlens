@@ -39,6 +39,10 @@ public enum DemoData {
             // demo mode with findings.
             let folder = (i % 15 == 0) ? "Legacy-Migration-Holding" : name
 
+            // Same "just enough to demonstrate the rule" sparsity as the
+            // folder-name pattern above, for RVTools #15 (VM config status).
+            let configStatus: EntityStatus = (i % 19 == 0) ? .yellow : .green
+
             return VirtualMachineInfo(
                 name: name,
                 powerState: power,
@@ -52,7 +56,8 @@ public enum DemoData {
                 primaryIPAddress: power == .poweredOn ? "10.0.\(i % 8).\(10 + i % 200)" : nil,
                 vmwareToolsStatus: power == .poweredOn ? toolsStates[i % toolsStates.count] : nil,
                 vmUUID: "demo-\(UUID().uuidString)",
-                folderName: folder
+                folderName: folder,
+                configStatus: configStatus
             )
         }
     }
@@ -235,6 +240,9 @@ public enum DemoData {
                 freeMiB: free,
                 numVMsTotal: 6 + i,
                 numHostsConnected: hostNames.count,
+                // One datastore demonstrates RVTools #19 (config status),
+                // separate from datastore-05's low-free-space demo above.
+                configStatus: i == 3 ? .yellow : .green,
                 url: "ds:///vmfs/volumes/datastore-0\(i)/"
             )
         }
@@ -245,7 +253,8 @@ public enum DemoData {
             ClusterInfo(
                 id: name,
                 name: name,
-                configStatus: .green,
+                // dev-cluster-01 demonstrates RVTools #18 (config status).
+                configStatus: i == 2 ? .yellow : .green,
                 numHosts: 4,
                 numEffectiveHosts: 4,
                 totalCpuMHz: 256_000,

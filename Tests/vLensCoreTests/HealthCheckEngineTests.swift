@@ -204,6 +204,98 @@ import Testing
     #expect(results.isEmpty)
 }
 
+@Test func flagsVMConfigStatusNotGreen() {
+    let vm = VirtualMachineInfo(
+        name: "web-01", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 2,
+        memoryMiB: 4096, hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "vm1", configStatus: .red
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [], vms: [vm]
+    )
+
+    #expect(results.count == 1)
+    #expect(results[0].severity == .red)
+    #expect(results[0].rule == "VM config status")
+}
+
+@Test func doesNotFlagVMWithGreenConfigStatus() {
+    let vm = VirtualMachineInfo(
+        name: "web-01", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 2,
+        memoryMiB: 4096, hostName: "esxi-01", clusterName: nil, resourcePoolName: nil,
+        primaryIPAddress: nil, vmwareToolsStatus: nil, vmUUID: "vm1"
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], cpus: [], vms: [vm]
+    )
+
+    #expect(results.isEmpty)
+}
+
+@Test func flagsHostConfigStatusNotGreen() {
+    let host = HostInfo(
+        id: "h1", name: "esxi-01", datacenterName: nil, clusterName: nil, configStatus: .yellow,
+        cpuModel: "Xeon", cpuMhz: 2000, numCpuCores: 4, numCpuThreads: 8, cpuUsagePercent: nil,
+        memoryTotalMiB: 65536, memoryUsagePercent: nil, numNics: 2, numHbas: 1, numVMsTotal: 0,
+        numVMsRunning: 0, esxVersion: "8.0", esxBuild: "24022515", vendor: nil, model: nil, maintenanceMode: false
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [host], cpus: []
+    )
+
+    #expect(results.count == 1)
+    #expect(results[0].severity == .yellow)
+    #expect(results[0].rule == "Host config status")
+}
+
+@Test func flagsClusterConfigStatusNotGreen() {
+    let cluster = ClusterInfo(
+        id: "c1", name: "prod-cluster", configStatus: .red, numHosts: 2, numEffectiveHosts: 2,
+        totalCpuMHz: 40000, totalMemoryMiB: 131072, haEnabled: true,
+        admissionControlEnabled: true, drsEnabled: true, drsDefaultVMBehavior: "fullyAutomated"
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], clusters: [cluster], cpus: []
+    )
+
+    #expect(results.count == 1)
+    #expect(results[0].severity == .red)
+    #expect(results[0].rule == "Cluster config status")
+}
+
+@Test func doesNotFlagClusterWithGreenConfigStatus() {
+    let cluster = ClusterInfo(
+        id: "c1", name: "prod-cluster", configStatus: .green, numHosts: 2, numEffectiveHosts: 2,
+        totalCpuMHz: 40000, totalMemoryMiB: 131072, haEnabled: true,
+        admissionControlEnabled: true, drsEnabled: true, drsDefaultVMBehavior: "fullyAutomated"
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [], hosts: [], clusters: [cluster], cpus: []
+    )
+
+    #expect(results.isEmpty)
+}
+
+@Test func flagsDatastoreConfigStatusNotGreen() {
+    let datastore = DatastoreInfo(
+        id: "ds1", name: "ds1", type: "VMFS", capacityMiB: 100_000, freeMiB: 50_000,
+        numVMsTotal: 1, numHostsConnected: 1, configStatus: .yellow, url: nil
+    )
+
+    let results = HealthCheckEngine.evaluate(
+        snapshots: [], tools: [], datastores: [datastore], hosts: [], cpus: []
+    )
+
+    #expect(results.count == 1)
+    #expect(results[0].severity == .yellow)
+    #expect(results[0].rule == "Datastore config status")
+}
+
 @Test func flagsInconsistentFolderName() {
     let vm = VirtualMachineInfo(
         name: "web-01", powerState: .poweredOn, template: false, guestOSFullName: nil, cpuCount: 2,

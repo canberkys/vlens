@@ -28,6 +28,10 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
     /// needed" rule (matches this doc comment's own "don't pre-model unread
     /// fields" rule: this one is read).
     public let consolidationNeeded: Bool
+    /// Same reasoning — only read by `HealthCheckEngine`'s "VM config status"
+    /// rule (RVTools #15). `ManagedEntity.configStatus`, not an event stream —
+    /// same field Host/Cluster already expose as a real column.
+    public let configStatus: EntityStatus
     /// Same reasoning — only read by `HealthCheckEngine`'s "Disk I/O
     /// performance tip" rule (RVTools #22). Number of distinct
     /// ParaVirtualSCSIController *devices* registered with the VM, not
@@ -49,7 +53,8 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
         vmUUID: String,
         folderName: String? = nil,
         consolidationNeeded: Bool = false,
-        pvscsiControllerCount: Int = 0
+        pvscsiControllerCount: Int = 0,
+        configStatus: EntityStatus = .green
     ) {
         self.name = name
         self.powerState = powerState
@@ -66,6 +71,7 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
         self.folderName = folderName
         self.consolidationNeeded = consolidationNeeded
         self.pvscsiControllerCount = pvscsiControllerCount
+        self.configStatus = configStatus
     }
 }
 

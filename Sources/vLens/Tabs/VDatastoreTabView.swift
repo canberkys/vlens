@@ -17,6 +17,10 @@ struct VDatastoreTabView: View {
             }
             TableColumn("VMs", sortUsing: FieldComparator.value("vms", \.numVMsTotal)) { Text("\($0.numVMsTotal)") }
             TableColumn("Hosts", sortUsing: FieldComparator.value("hosts", \.numHostsConnected)) { Text("\($0.numHostsConnected)") }
+            TableColumn("Status", sortUsing: FieldComparator.value("status", \.configStatus.rawValue)) { row in
+                Text(row.configStatus.rawValue)
+                    .foregroundStyle(row.configStatus == .green ? Color.primary : Color.orange)
+            }
         }
     }
 }

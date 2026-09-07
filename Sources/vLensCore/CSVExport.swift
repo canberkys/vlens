@@ -138,13 +138,13 @@ extension HostInfo: CSVExportable {
 
 extension DatastoreInfo: CSVExportable {
     public static var csvHeader: [String] {
-        ["Datastore", "Type", "Capacity MiB", "Free MiB", "Free %", "VMs", "Hosts"]
+        ["Datastore", "Type", "Capacity MiB", "Free MiB", "Free %", "VMs", "Hosts", "Status"]
     }
     public static var xlsxColumnTypes: [XLSXColumnType] {
-        [.text, .text, .number, .number, .number, .number, .number]
+        [.text, .text, .number, .number, .number, .number, .number, .text]
     }
     public var csvRow: [String] {
-        [name, type, "\(capacityMiB)", "\(freeMiB)", String(format: "%.1f", freePercent), "\(numVMsTotal)", "\(numHostsConnected)"]
+        [name, type, "\(capacityMiB)", "\(freeMiB)", String(format: "%.1f", freePercent), "\(numVMsTotal)", "\(numHostsConnected)", configStatus.rawValue]
     }
 }
 

@@ -9,11 +9,15 @@ public struct DatastoreInfo: Codable, Identifiable, Sendable {
     public let freeMiB: Int
     public let numVMsTotal: Int
     public let numHostsConnected: Int
+    /// `ManagedEntity.configStatus` — feeds `HealthCheckEngine`'s "Datastore
+    /// config status" rule (RVTools #19), and is also a real vDatastore
+    /// column (RVTools' own reference documents one).
+    public let configStatus: EntityStatus
     public let url: String?
 
     public init(
         id: String, name: String, type: String, capacityMiB: Int, freeMiB: Int,
-        numVMsTotal: Int, numHostsConnected: Int, url: String?
+        numVMsTotal: Int, numHostsConnected: Int, configStatus: EntityStatus = .green, url: String?
     ) {
         self.id = id
         self.name = name
@@ -22,6 +26,7 @@ public struct DatastoreInfo: Codable, Identifiable, Sendable {
         self.freeMiB = freeMiB
         self.numVMsTotal = numVMsTotal
         self.numHostsConnected = numHostsConnected
+        self.configStatus = configStatus
         self.url = url
     }
 

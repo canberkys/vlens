@@ -99,9 +99,12 @@ type certificateInfo struct {
 }
 
 type virtualMachineInfo struct {
-	Name              string  `json:"name"`
-	PowerState        string  `json:"powerState"`
-	Template          bool    `json:"template"`
+	Name       string `json:"name"`
+	PowerState string `json:"powerState"`
+	Template   bool   `json:"template"`
+	// Not a vInfo column — carried only for the vHealth "VM config status"
+	// rule (RVTools #15), matching ConsolidationNeeded's precedent below.
+	ConfigStatus      string  `json:"configStatus"`
 	GuestOSFullName   *string `json:"guestOSFullName"`
 	CPUCount          int     `json:"cpuCount"`
 	MemoryMiB         int     `json:"memoryMiB"`
@@ -243,6 +246,7 @@ type datastoreInfo struct {
 	FreeMiB           int     `json:"freeMiB"`
 	NumVMsTotal       int     `json:"numVMsTotal"`
 	NumHostsConnected int     `json:"numHostsConnected"`
+	ConfigStatus      string  `json:"configStatus"`
 	URL               *string `json:"url"`
 }
 
@@ -1089,6 +1093,7 @@ func collectVMs(ctx context.Context, client *govmomi.Client) ([]mo.VirtualMachin
 
 	props := []string{
 		"name",
+		"configStatus",
 		"runtime.powerState",
 		"runtime.consolidationNeeded",
 		"config.template",
@@ -1323,7 +1328,7 @@ func collectDatastores(ctx context.Context, client *govmomi.Client) ([]datastore
 	defer cv.Destroy(ctx)
 
 	var raw []mo.Datastore
-	if err := cv.Retrieve(ctx, []string{"Datastore"}, []string{"summary", "vm", "host"}, &raw); err != nil {
+	if err := cv.Retrieve(ctx, []string{"Datastore"}, []string{"summary", "vm", "host", "configStatus"}, &raw); err != nil {
 		return nil, err
 	}
 
@@ -1337,6 +1342,7 @@ func collectDatastores(ctx context.Context, client *govmomi.Client) ([]datastore
 			FreeMiB:           int(ds.Summary.FreeSpace / (1024 * 1024)),
 			NumVMsTotal:       len(ds.Vm),
 			NumHostsConnected: len(ds.Host),
+			ConfigStatus:      string(ds.ConfigStatus),
 		}
 		if ds.Summary.Url != "" {
 			u := ds.Summary.Url
@@ -1849,6 +1855,7 @@ func mapVMInfo(vm mo.VirtualMachine, hostName string, clusterName *string, poolN
 	info := virtualMachineInfo{
 		Name:                vm.Name,
 		PowerState:          string(vm.Runtime.PowerState),
+		ConfigStatus:        string(vm.ConfigStatus),
 		HostName:            hostName,
 		ClusterName:         clusterName,
 		FolderName:          folderName,
