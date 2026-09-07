@@ -3,6 +3,23 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.6.2] - 2026-09-07 (+03)
+
+### Added
+- **vHealth #15/16/18/19 — VM/Host/Cluster/Datastore config status.**
+  Turns out these aren't `EventManager`/event-stream rules despite the
+  "config issue" naming — they're all the same `ManagedEntity.configStatus`
+  field (red/yellow/green/gray) vLens already read for hosts. VM and
+  Datastore now collect it too (Datastore gets a new "Status" column, same
+  as Host/Cluster already had), and Cluster's status — already collected
+  and shown, just never wired into vHealth — now feeds the engine as well.
+  21 of RVTools' 24 documented rules are implemented now; the remaining 3
+  (#9/#10 zombie VMDK/VM, #14 search datastore errors) all need
+  `vFileInfo`, which stays out of scope. None of the four can be verified
+  against a live positive fixture (vcsim doesn't simulate the alarm
+  subsystem), so Demo Mode now seeds a few non-green entities to keep the
+  rules visible without a real vCenter.
+
 ## [1.6.1] - 2026-09-06 (+03)
 
 ### Fixed

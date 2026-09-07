@@ -374,6 +374,7 @@ final class ConnectionViewModel {
             tools: tools,
             datastores: datastores,
             hosts: hosts,
+            clusters: clusters,
             cpus: cpus,
             cds: cds,
             floppies: floppies,

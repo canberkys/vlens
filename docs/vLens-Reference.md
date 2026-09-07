@@ -764,7 +764,7 @@ small icon next to entries that carry full detail.
 ## 5. vHealth rule status
 
 RVTools documents 24 built-in health-check rules (rvtools.txt's vHealth section).
-vLens implements 18 of them. All numeric thresholds are user-adjustable —
+vLens implements 21 of them. All numeric thresholds are user-adjustable —
 RVTools' equivalent is its Health Properties panel; vLens' is the standard macOS
 Settings scene (Cmd+,, `Sources/vLens/PreferencesView.swift`), backed by
 `HealthCheckPreferencesStore` (UserDefaults). Changing a threshold there
@@ -790,14 +790,20 @@ the main window and the shared `ConnectionViewModel` — no reconnect needed.
 | 22 | Disk I/O performance tip (PVSCSI controller count vs. disk count) | ✅ Implemented — running VM, >3 connected disks, >750 GiB total, <2 PVSCSI controllers (`VirtualMachineInfo.pvscsiControllerCount`, counted directly from `config.hardware.device`) |
 | 23 | In-memory performance tip (NUMA/hot-add settings) | ✅ Implemented — running VM, 4+ cores, and (CPU hot-add OR memory hot-add OR 1 core/socket); the `vnumaOnCpuHotaddExposed` sub-condition is deliberately omitted — no real, documented vim25 field for it was found |
 | 24 | Certificate expiry warning | ✅ Implemented — reads `configManager.certificateManager`, default threshold 90 days, adjustable in Preferences |
-| — | Host config status not green | ✅ Implemented (not a numbered RVTools rule, rolled into the general vHealth concept) |
+| 15 | VM config issues | ✅ Implemented — reads `ManagedEntity.configStatus` (not an `EventManager`/event-stream concept despite the naming — a plain red/yellow/green/gray status field populated from triggered alarms). Health-rule-only, not a vInfo column (`VirtualMachineInfo.configStatus`) |
+| 16 | Host config issues | ✅ Implemented — same `configStatus` field, also shown as a real "Status" column on vHost |
+| 18 | Cluster config issues | ✅ Implemented — same `configStatus` field, also shown as a real "Status" column on vCluster |
+| 19 | Datastore config issues | ✅ Implemented — same `configStatus` field, also shown as a real "Status" column on vDatastore |
 | 9 | Possibly a zombie vmdk file! | ❌ needs `vFileInfo` (datastore file browser — deliberately deferred, see §10) |
 | 10 | Possibly a zombie vm! | ❌ same dependency |
 | 14 | Search datastore errors | ❌ N/A without a datastore browser |
-| 15 | VM config issues | ❌ needs `configIssue` events, not fetched |
-| 16 | Host config issues | ❌ same |
-| 18 | Cluster config issues | ❌ needs `configIssue` on clusters |
-| 19 | Datastore config issues | ❌ same |
+
+**Note on #15/16/18/19**: none of these four can be verified against a
+positive live fixture — vcsim never simulates the alarm subsystem, so
+`configStatus` always comes back `green` in vcsim, same limitation already
+documented for Floppy/vUSB/vPartition. Verified structurally (field appears
+correctly in `collectAll`'s JSON) and functionally (Demo Mode seeds a few
+non-green entities so all four rules are visible without a real vCenter).
 
 Add new rules to `HealthCheckEngine.evaluate` as their source tabs/properties get
 built — the function signature already takes every currently-collected array, so
@@ -989,7 +995,7 @@ Explicitly out of scope indefinitely since RVTools' own docs flag it as slow and
 rarely used interactively — this is the one tab that's a deliberate, permanent
 scope decision rather than a "not gotten to it yet."
 
-**vHealth**: 18 of 24 rules implemented, 6 remaining — see [§5](#5-vhealth-rule-status)
+**vHealth**: 21 of 24 rules implemented, 3 remaining (all `vFileInfo`-dependent) — see [§5](#5-vhealth-rule-status)
 for the full table.
 
 **Export**: CSV and XLSX are both done — see [§6](#6-export). A PDF **report**
