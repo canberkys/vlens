@@ -6,3 +6,6 @@ helper/vlens-helper
 helper/vcsim/vcsim
 helper/vcsim/mksnap/mksnap
 helper/vcsim/mkvapp/mkvapp
+# Local Claude Code dev-session context — internal development notes, not
+# meant for a public-facing repo. Stays on disk, just untracked.
+CLAUDE.md
