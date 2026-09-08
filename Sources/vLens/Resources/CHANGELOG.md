@@ -3,6 +3,20 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.8.0] - 2026-09-08 (+03)
+
+### Added
+- **vSphere Tags & Custom Attributes** — collected for VM/Host/Cluster/Datastore via the CIS REST Tagging API (6.5+) and the plain `customValue` property, shown as real columns on vCluster/vDatastore and exported for all four, now searchable everywhere they appear.
+- **vSource tab** — the connected SDK/vCenter server's own identity (name, vendor, version, build, OS type, API type/version, instance UUID). Free to collect — this data is already fetched at login. RVTools' own PDF index documents 26 real tabs, not 24 (24 is the vHealth rule count) — this was the second genuinely missing one, not just `vFileInfo`.
+- **Auto Refresh** — Preferences can now re-collect inventory on a timer (1 minute–1 hour) instead of only the manual Refresh button. Off by default.
+- **Cmd+R** (Refresh) and **Cmd+E** (Export as CSV) keyboard shortcuts.
+
+### Fixed
+- Typing a tag or custom attribute into the search box now actually finds matching rows — they were collected but never wired into search.
+- Connect, Refresh, and Feedback's Send button no longer lose their VoiceOver accessibility label while in a loading state.
+- Added a Privacy toggle for the end-of-life check (previously only the security-advisory check had one, despite both being the same kind of independent background request) and a Help topic for end-of-life awareness, which had none.
+- VSwitch, VPort, and VCluster now show a clear empty-state message instead of a bare table when legitimately empty (fully-Distributed-Switch environments, standalone-hosts-only environments).
+
 ## [1.7.0] - 2026-09-08 (+03)
 
 ### Added

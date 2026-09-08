@@ -6,27 +6,32 @@
         <description>vLens release updates</description>
         <language>en</language>
         <item>
-            <title>Version 1.7.0</title>
-            <pubDate>Tue, 08 Sep 2026 09:37:11 +0000</pubDate>
-            <sparkle:version>30</sparkle:version>
-            <sparkle:shortVersionString>1.7.0</sparkle:shortVersionString>
+            <title>Version 1.8.0</title>
+            <pubDate>Tue, 08 Sep 2026 13:15:37 +0000</pubDate>
+            <sparkle:version>31</sparkle:version>
+            <sparkle:shortVersionString>1.8.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[
 <h4>Added</h4>
 <ul>
-<li><strong>Feedback now submits silently.</strong> &quot;Send Feedback&quot; used to redirect you to a prefilled mail draft or a prefilled GitHub &quot;new issue&quot; page for you to review and send yourself. It now submits directly — a small Cloudflare Worker (<code>feedback-relay/</code>) holds a GitHub token scoped to only this repo&#x27;s Issues and files the issue server-side, so nothing leaves the app except what&#x27;s shown on screen before you click Send. No credential ships inside the app itself.</li>
+<li><strong>vSphere Tags &amp; Custom Attributes</strong> — collected for VM/Host/Cluster/Datastore via the CIS REST Tagging API (6.5+) and the plain <code>customValue</code> property, shown as real columns on vCluster/vDatastore and exported for all four, now searchable everywhere they appear.</li>
+<li><strong>vSource tab</strong> — the connected SDK/vCenter server&#x27;s own identity (name, vendor, version, build, OS type, API type/version, instance UUID). Free to collect — this data is already fetched at login. RVTools&#x27; own PDF index documents 26 real tabs, not 24 (24 is the vHealth rule count) — this was the second genuinely missing one, not just <code>vFileInfo</code>.</li>
+<li><strong>Auto Refresh</strong> — Preferences can now re-collect inventory on a timer (1 minute–1 hour) instead of only the manual Refresh button. Off by default.</li>
+<li><strong>Cmd+R</strong> (Refresh) and <strong>Cmd+E</strong> (Export as CSV) keyboard shortcuts.</li>
 </ul>
-<h4>Changed</h4>
+<h4>Fixed</h4>
 <ul>
-<li><strong>Clearer empty-state messages</strong> on 6 tabs (vHBA, dvSwitch, dvPort, vMultipath, vFloppy, vSnapshot) that could plausibly show zero rows in a perfectly healthy environment — each now explains why, instead of a bare empty table.</li>
-<li><strong>Clearer error messages</strong> when the bundled collection helper fails — previously a couple of failure modes (a helper binary that can&#x27;t be found, a malformed/empty response) fell through to a raw internal error dump instead of something a user could act on.</li>
+<li>Typing a tag or custom attribute into the search box now actually finds matching rows — they were collected but never wired into search.</li>
+<li>Connect, Refresh, and Feedback&#x27;s Send button no longer lose their VoiceOver accessibility label while in a loading state.</li>
+<li>Added a Privacy toggle for the end-of-life check (previously only the security-advisory check had one, despite both being the same kind of independent background request) and a Help topic for end-of-life awareness, which had none.</li>
+<li>VSwitch, VPort, and VCluster now show a clear empty-state message instead of a bare table when legitimately empty (fully-Distributed-Switch environments, standalone-hosts-only environments).</li>
 </ul>
             ]]></description>
             <enclosure
-                url="https://github.com/canberkys/vlens/releases/download/v1.7.0/vLens-1.7.0.dmg"
-                length="13455014"
+                url="https://github.com/canberkys/vlens/releases/download/v1.8.0/vLens-1.8.0.dmg"
+                length="13581865"
                 type="application/octet-stream"
-                sparkle:edSignature="kMsZuSy/H7240/TBBXIbrz9fOZIf3IChfe4BGSExGBg2EOD61EjmeaSdtl1IoUIEEThKoOzbY/p79ULRpS2sBA==" />
+                sparkle:edSignature="Cl5K6I+yCLuM2y5ahc01oZFwtp/U9/kqrkxtoFjNHbnClBeDRN4jdllUMD5PnbKXGX3Xm9NMViHuiiwUOjN+Bg==" />
         </item>
     </channel>
 </rss>
