@@ -435,12 +435,21 @@ type vmNetworkInfo struct {
 
 // vCenterInfo is free — client.Client.ServiceContent.About is populated
 // during login itself (govmomi.NewClient), no extra round trip. Backs the
-// vLens report's header (see ReportView.swift).
+// vLens report's header (see ReportView.swift) AND the vSource tab
+// (RVTools #7 gap found in the 2026-09-08 audit — RVTools' own PDF index
+// lists it as a real, separate tab, not folded into vHealth's rule count
+// like this doc used to assume).
 type vCenterInfo struct {
-	FullName   string `json:"fullName"`
-	Version    string `json:"version"`
-	Build      string `json:"build"`
-	APIVersion string `json:"apiVersion"`
+	Name         string `json:"name"`
+	FullName     string `json:"fullName"`
+	Vendor       string `json:"vendor"`
+	Version      string `json:"version"`
+	PatchLevel   string `json:"patchLevel"`
+	Build        string `json:"build"`
+	OsType       string `json:"osType"`
+	APIType      string `json:"apiType"`
+	APIVersion   string `json:"apiVersion"`
+	InstanceUUID string `json:"instanceUUID"`
 }
 
 type vmPerformanceInfo struct {
@@ -875,7 +884,9 @@ func collectAll(req helperRequest) (helperResponse, error) {
 		VSwitches: vSwitches, Ports: ports, DVSwitches: dvSwitches, DVPorts: dvPorts,
 		ResourcePools: resourcePools, VApps: vApps, HBAs: hbas, Nics: nics, VMKernels: vmKernels, Multipaths: multipaths,
 		VCenter: &vCenterInfo{
-			FullName: about.FullName, Version: about.Version, Build: about.Build, APIVersion: about.ApiVersion,
+			Name: about.Name, FullName: about.FullName, Vendor: about.Vendor, Version: about.Version,
+			PatchLevel: about.PatchLevel, Build: about.Build, OsType: about.OsType,
+			APIType: about.ApiType, APIVersion: about.ApiVersion, InstanceUUID: about.InstanceUuid,
 		},
 	}
 	for _, vm := range vms {

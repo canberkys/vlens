@@ -7,7 +7,7 @@ import SwiftUI
 /// own Tips app — a colored icon badge per topic, sidebar and detail pane
 /// both using it, rather than a plain text-only list.
 enum HelpTopic: String, CaseIterable, Identifiable {
-    case whatsNew, gettingStarted, tabs, snapshots, performance, securityAdvisories, exportReports, feedback, preferences, keyboardShortcuts, commandLine
+    case whatsNew, gettingStarted, tabs, snapshots, performance, securityAdvisories, endOfLife, exportReports, feedback, preferences, keyboardShortcuts, commandLine
 
     var id: String { rawValue }
 
@@ -19,6 +19,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         case .snapshots: return "Snapshots & Compare"
         case .performance: return "vPerformance"
         case .securityAdvisories: return "Security Advisories"
+        case .endOfLife: return "End-of-Life Awareness"
         case .exportReports: return "Export & Reports"
         case .feedback: return "Feedback & Bug Reports"
         case .preferences: return "Preferences"
@@ -35,6 +36,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         case .snapshots: return "clock.arrow.circlepath"
         case .performance: return "chart.line.uptrend.xyaxis"
         case .securityAdvisories: return "shield.lefthalf.filled"
+        case .endOfLife: return "calendar.badge.exclamationmark"
         case .exportReports: return "square.and.arrow.up.fill"
         case .feedback: return "bubble.left.and.text.bubble.right.fill"
         case .preferences: return "gearshape.fill"
@@ -54,6 +56,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         case .snapshots: return .purple
         case .performance: return .orange
         case .securityAdvisories: return .red
+        case .endOfLife: return .brown
         case .exportReports: return .teal
         case .feedback: return .pink
         case .preferences: return .gray
@@ -104,6 +107,12 @@ enum HelpTopic: String, CaseIterable, Identifiable {
 
             A shield badge appears in the toolbar only when there's a CRITICAL or HIGH severity advisory recently published — no badge, no interruption, when there's nothing notable. Click it to see the list, grouped by how recently each was published, tagged with which VMware products each one affects (ESXi, vCenter, Workstation, and so on) so you can tell at a glance whether it's worth a click.
             """
+        case .endOfLife:
+            return """
+            vLens also checks each connected host's ESXi version — and the vCenter itself — against VMware's published general-support end-of-life dates, via endoflife.date's public lifecycle data. Like Security Advisories, this is a plain internet request independent of your vCenter connection, not something RVTools has.
+
+            A calendar badge appears in the toolbar only when something is nearing or past its end-of-life date — red if support has already ended, otherwise a lighter warning as the date approaches. Click it for the list, shown alongside the host list in the same popover rather than as a separate tab, since it's really extra context on hosts you already have in front of you.
+            """
         case .exportReports:
             return """
             Every tab can be exported as CSV or XLSX from the toolbar's Export menu — whatever the current tab shows, already filtered by your search, in that format.
@@ -120,13 +129,17 @@ enum HelpTopic: String, CaseIterable, Identifiable {
             return """
             Cmd+, opens Preferences. vHealth thresholds (datastore free space, vCPU-per-core ratio, guest disk free space, max VMs per datastore, certificate expiry) control when a finding shows up on the vHealth tab — change one and every already-collected finding re-evaluates immediately, no reconnect needed. Each has its own "Reset to Defaults."
 
-            Preferences also controls which metrics the Snapshots tab's Compare panel shows, whether vLens checks for security advisories at all, where snapshot history is stored, saved connections, and scheduled automation.
+            Preferences also controls whether vLens automatically re-collects inventory on a timer (off by default — "Auto Refresh"), which metrics the Snapshots tab's Compare panel shows, whether vLens checks for security advisories or end-of-life dates at all, where snapshot history is stored, saved connections, scheduled automation, and — if you've dismissed the one-time welcome screen or a per-feature tip and want to see it again — "Reset Tutorials."
             """
         case .keyboardShortcuts:
             return """
             Cmd+, — Preferences
 
             Cmd+F — Focus the search box (filters whatever tab you're currently looking at)
+
+            Cmd+R — Refresh the current inventory
+
+            Cmd+E — Export the current tab as CSV
 
             Cmd+Shift+? — vLens Help (this window)
             """

@@ -23,6 +23,7 @@ public enum ExportTab: String, CaseIterable, Codable, Sendable {
     case vrp, vapp, vhba, vnic, vmk, vmultipath
     case vcd, vfloppy, vusb, vpartition
     case vhealth
+    case vsource
 
     /// User-facing label for the Preferences Automation picker — matches
     /// the tab names shown elsewhere in the app (sidebar, Help).
@@ -54,6 +55,7 @@ public enum ExportTab: String, CaseIterable, Codable, Sendable {
         case .vusb: return "vUSB"
         case .vpartition: return "vPartition"
         case .vhealth: return "vHealth"
+        case .vsource: return "vSource"
         }
     }
 }
@@ -103,5 +105,6 @@ public func exportData(
     case .vusb: return try make(inventory.usbs, sheet: "vUSB")
     case .vpartition: return try make(inventory.partitions, sheet: "vPartition")
     case .vhealth: return try make(healthChecks, sheet: "vHealth")
+    case .vsource: return try make([inventory.vCenter].compactMap { $0 }, sheet: "vSource")
     }
 }

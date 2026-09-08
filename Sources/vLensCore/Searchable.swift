@@ -17,8 +17,8 @@ public extension Searchable {
 
 extension VirtualMachineInfo: Searchable {
     public var searchableText: String {
-        [name, guestOSFullName, hostName, clusterName, folderName, primaryIPAddress]
-            .compactMap { $0 }.joined(separator: " ")
+        ([name, guestOSFullName, hostName, clusterName, folderName, primaryIPAddress].compactMap { $0 } + tags + customAttributes)
+            .joined(separator: " ")
     }
 }
 
@@ -46,16 +46,17 @@ extension VMToolsInfo: Searchable {
 
 extension HostInfo: Searchable {
     public var searchableText: String {
-        [name, datacenterName, clusterName, cpuModel, vendor, model].compactMap { $0 }.joined(separator: " ")
+        ([name, datacenterName, clusterName, cpuModel, vendor, model].compactMap { $0 } + tags + customAttributes)
+            .joined(separator: " ")
     }
 }
 
 extension DatastoreInfo: Searchable {
-    public var searchableText: String { [name, type].joined(separator: " ") }
+    public var searchableText: String { ([name, type] + tags + customAttributes).joined(separator: " ") }
 }
 
 extension ClusterInfo: Searchable {
-    public var searchableText: String { name }
+    public var searchableText: String { ([name] + tags + customAttributes).joined(separator: " ") }
 }
 
 extension LicenseInfo: Searchable {
@@ -136,4 +137,11 @@ extension VMNetworkInfo: Searchable {
 
 extension HealthCheckResult: Searchable {
     public var searchableText: String { [rule, relatedObject, message].joined(separator: " ") }
+}
+
+extension VCenterInfo: Searchable {
+    public var searchableText: String {
+        ([name, fullName, vendor, version, build, osType, apiType] + [patchLevel, instanceUUID].compactMap { $0 })
+            .joined(separator: " ")
+    }
 }

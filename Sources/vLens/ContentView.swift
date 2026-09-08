@@ -240,6 +240,7 @@ struct ContentView: View {
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
             .disabled(viewModel.isConnecting)
+            .accessibilityLabel(viewModel.isConnecting ? "Connecting" : "Connect")
 
             // Secondary escape hatch, not a co-equal action next to
             // Connect — smaller, muted, below the primary button.
@@ -435,7 +436,9 @@ struct ContentView: View {
                 }
             }
             .disabled(viewModel.isRefreshing)
+            .accessibilityLabel(viewModel.isRefreshing ? "Refreshing" : "Refresh")
             .help("Re-collect the current inventory from vCenter. If this fails, the data already on screen is kept and marked as possibly stale rather than cleared.")
+            .keyboardShortcut("r", modifiers: .command)
 
             if !viewModel.isDemoMode {
                 Button(role: .destructive) {
@@ -455,6 +458,7 @@ struct ContentView: View {
 
             Menu {
                 Button("Export as CSV") { exportCurrentTab(as: .csv) }
+                    .keyboardShortcut("e", modifiers: .command)
                 Button("Export as XLSX") { exportCurrentTab(as: .xlsx) }
             } label: {
                 Label("Export", systemImage: "square.and.arrow.up")
@@ -545,6 +549,7 @@ struct ContentView: View {
     private var filteredDVSwitches: [DVSwitchInfo] { viewModel.dvSwitches.filter { $0.matches(viewModel.searchText) } }
     private var filteredDVPorts: [DVPortInfo] { viewModel.dvPorts.filter { $0.matches(viewModel.searchText) } }
     private var filteredResourcePools: [ResourcePoolInfo] { viewModel.resourcePools.filter { $0.matches(viewModel.searchText) } }
+    private var filteredVSource: [VCenterInfo] { [viewModel.vCenterInfo].compactMap { $0 }.filter { $0.matches(viewModel.searchText) } }
     private var filteredVApps: [VAppInfo] { viewModel.vApps.filter { $0.matches(viewModel.searchText) } }
     private var filteredHBAs: [HBAInfo] { viewModel.hbas.filter { $0.matches(viewModel.searchText) } }
     private var filteredNics: [NicInfo] { viewModel.nics.filter { $0.matches(viewModel.searchText) } }
@@ -579,6 +584,7 @@ struct ContentView: View {
     @State private var dvSwitchSortOrder = [FieldComparator<DVSwitchInfo>.value("name", \.name)]
     @State private var dvPortSortOrder = [FieldComparator<DVPortInfo>.value("name", \.name)]
     @State private var vRPSortOrder = [FieldComparator<ResourcePoolInfo>.value("name", \.name)]
+    @State private var vSourceSortOrder = [FieldComparator<VCenterInfo>.value("name", \.name)]
     @State private var vAppSortOrder = [FieldComparator<VAppInfo>.value("name", \.name)]
     @State private var vHBASortOrder = [FieldComparator<HBAInfo>.value("host", \.hostName)]
     @State private var vNicSortOrder = [FieldComparator<NicInfo>.value("host", \.hostName)]
@@ -600,6 +606,7 @@ struct ContentView: View {
         case .vSnapshot: return filteredSnapshots.count
         case .vTools: return filteredTools.count
         case .vNetwork: return filteredNetworks.count
+        case .vSource: return filteredVSource.count
         case .vHost: return filteredHosts.count
         case .vDatastore: return filteredDatastores.count
         case .vCluster: return filteredClusters.count
@@ -634,6 +641,7 @@ struct ContentView: View {
         case .vSnapshot: VSnapshotTabView(rows: filteredSnapshots, sortOrder: $vSnapshotSortOrder)
         case .vTools: VToolsTabView(rows: filteredTools, sortOrder: $vToolsSortOrder)
         case .vNetwork: VNetworkTabView(rows: filteredNetworks, sortOrder: $vNetworkSortOrder)
+        case .vSource: VSourceTabView(rows: filteredVSource, sortOrder: $vSourceSortOrder)
         case .vHost: VHostTabView(rows: filteredHosts, sortOrder: $vHostSortOrder)
         case .vDatastore: VDatastoreTabView(rows: filteredDatastores, sortOrder: $vDatastoreSortOrder)
         case .vCluster: VClusterTabView(rows: filteredClusters, sortOrder: $vClusterSortOrder)
@@ -691,6 +699,7 @@ struct ContentView: View {
         case .vSnapshot: export(filteredSnapshots.sorted(using: vSnapshotSortOrder), format: format)
         case .vTools: export(filteredTools.sorted(using: vToolsSortOrder), format: format)
         case .vNetwork: export(filteredNetworks.sorted(using: vNetworkSortOrder), format: format)
+        case .vSource: export(filteredVSource.sorted(using: vSourceSortOrder), format: format)
         case .vHost: export(filteredHosts.sorted(using: vHostSortOrder), format: format)
         case .vDatastore: export(filteredDatastores.sorted(using: vDatastoreSortOrder), format: format)
         case .vCluster: export(filteredClusters.sorted(using: vClusterSortOrder), format: format)

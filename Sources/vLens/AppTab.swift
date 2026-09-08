@@ -2,7 +2,7 @@ import Foundation
 
 enum AppTab: String, CaseIterable, Identifiable {
     case vInfo, vCpu, vMemory, vDisk, vSnapshot, vTools, vNetwork, vCD, vFloppy, vUSB, vPartition, vPerformance, vApp
-    case vHost, vDatastore, vCluster, vRP
+    case vSource, vHost, vDatastore, vCluster, vRP
     case vSwitch, vPort, dvSwitch, dvPort, vNic, vmk
     case vHBA, vMultipath
     case vLicense, vHealth
@@ -25,6 +25,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .vPartition: return "vPartition"
         case .vPerformance: return "vPerformance"
         case .vApp: return "vApp"
+        case .vSource: return "vSource"
         case .vHost: return "vHost"
         case .vDatastore: return "vDatastore"
         case .vCluster: return "vCluster"
@@ -49,7 +50,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     var group: AppTabGroup {
         switch self {
         case .vInfo, .vCpu, .vMemory, .vDisk, .vSnapshot, .vTools, .vNetwork, .vCD, .vFloppy, .vUSB, .vPartition, .vPerformance, .vApp: return .vm
-        case .vHost, .vDatastore, .vCluster, .vRP: return .infrastructure
+        case .vSource, .vHost, .vDatastore, .vCluster, .vRP: return .infrastructure
         case .vSwitch, .vPort, .dvSwitch, .dvPort, .vNic, .vmk: return .networking
         case .vHBA, .vMultipath: return .storage
         case .vLicense: return .licensing
