@@ -722,12 +722,6 @@ final class ConnectionViewModel {
 
     private static func describe(_ error: Error) -> String {
         switch error {
-        case HelperClientError.helperBinaryNotFound:
-            return "vlens-helper binary not found. Did you run `cd helper && go build -o vlens-helper .`?"
-        case HelperClientError.processFailed(let code, let stderr):
-            return "Helper process exited with code \(code): \(stderr)"
-        case HelperClientError.helperReportedError(let message):
-            return message
         case let localized as LocalizedError where localized.errorDescription != nil:
             return localized.errorDescription!
         default:

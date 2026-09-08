@@ -6,16 +6,24 @@ struct VMultipathTabView: View {
     @Binding var sortOrder: [FieldComparator<MultipathInfo>]
 
     var body: some View {
-        Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {
-            TableColumn("Host", sortUsing: FieldComparator.value("host", \.hostName)) { Text($0.hostName) }
-            TableColumn("Display Name", sortUsing: FieldComparator.value("name", \.displayName)) { Text($0.displayName) }
-            TableColumn("Paths", sortUsing: FieldComparator.value("paths", \.numPaths)) { Text("\($0.numPaths)") }
-            TableColumn("State", sortUsing: FieldComparator.value("state", \.operationalStateJoined)) { row in
-                Text(row.operationalStateJoined)
-                    .foregroundStyle(row.operationalState.contains(where: { $0 != "ok" }) ? Color.orange : Color.primary)
+        if rows.isEmpty {
+            ContentUnavailableView(
+                "No Multipath Data",
+                systemImage: "arrow.triangle.branch",
+                description: Text("Single-path storage (e.g. NFS, or FC/iSCSI with only one path configured) reports no multipath LUNs.")
+            )
+        } else {
+            Table(rows.sorted(using: sortOrder), sortOrder: $sortOrder) {
+                TableColumn("Host", sortUsing: FieldComparator.value("host", \.hostName)) { Text($0.hostName) }
+                TableColumn("Display Name", sortUsing: FieldComparator.value("name", \.displayName)) { Text($0.displayName) }
+                TableColumn("Paths", sortUsing: FieldComparator.value("paths", \.numPaths)) { Text("\($0.numPaths)") }
+                TableColumn("State", sortUsing: FieldComparator.value("state", \.operationalStateJoined)) { row in
+                    Text(row.operationalStateJoined)
+                        .foregroundStyle(row.operationalState.contains(where: { $0 != "ok" }) ? Color.orange : Color.primary)
+                }
+                TableColumn("Vendor", sortUsing: FieldComparator.value("vendor", \.vendor)) { Text($0.vendor) }
+                TableColumn("Model", sortUsing: FieldComparator.value("model", \.model)) { Text($0.model) }
             }
-            TableColumn("Vendor", sortUsing: FieldComparator.value("vendor", \.vendor)) { Text($0.vendor) }
-            TableColumn("Model", sortUsing: FieldComparator.value("model", \.model)) { Text($0.model) }
         }
     }
 }

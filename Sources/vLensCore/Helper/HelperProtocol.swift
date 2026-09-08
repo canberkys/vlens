@@ -145,3 +145,23 @@ public enum HelperClientError: Error, Sendable {
     case decodingFailed(String)
     case helperReportedError(String)
 }
+
+extension HelperClientError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .helperBinaryNotFound:
+            // Should never happen in a packaged app (the helper ships inside
+            // the .app bundle) — if it does, the install itself is broken,
+            // not something the user can fix by retrying.
+            return "vLens couldn't find its bundled collection helper. Try reinstalling the app; if this keeps happening, please report it (Help ▸ Send Feedback)."
+        case .processFailed(let code, let stderr):
+            return "Helper process exited with code \(code): \(stderr)"
+        case .emptyResponse:
+            return "The collection helper exited without returning any data. This usually means the connection was interrupted mid-collection — try again."
+        case .decodingFailed(let detail):
+            return "Couldn't read the collection helper's response (\(detail)). This can happen if the bundled helper is out of date — try reinstalling the app."
+        case .helperReportedError(let message):
+            return message
+        }
+    }
+}
