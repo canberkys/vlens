@@ -58,7 +58,7 @@ simulator).
 | **Trust-on-first-use** | Certificate fingerprint shown and pinned on first connect, like SSH host keys — a changed certificate later is a hard block, never silent |
 | **Demo mode** | Every tab filled with realistic mock data — try the whole app without a vCenter |
 | **In-app Help & onboarding** | Native Help panel (no external site), one-time welcome + per-feature tips |
-| **In-app feedback** | Bug reports / feature requests via email or a prefilled GitHub issue — no telemetry, nothing sent without you reviewing and sending it yourself |
+| **In-app feedback** | Bug reports / feature requests, submitted directly as a GitHub issue — no telemetry, and you see exactly what diagnostic info would go along with it before you click Send |
 
 ---
 
@@ -151,8 +151,10 @@ vHealth rule status live in [`docs/vLens-Reference.md`](docs/vLens-Reference.md)
 
 Passwords, when you choose to save a connection, go to macOS Keychain — never
 to a file on disk. No analytics, no telemetry, no phone-home. The Feedback
-screen never sends anything automatically; it only ever opens a prefilled
-draft (email or GitHub issue) that you review and send yourself.
+screen is the one thing that talks to the outside world, and only when you
+explicitly click Send — it shows you exactly what diagnostic info (app/macOS
+version, connected vCenter version — never your host, username, or password)
+would be attached before it goes anywhere.
 
 ---
 
