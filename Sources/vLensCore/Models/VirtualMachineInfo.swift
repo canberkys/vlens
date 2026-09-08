@@ -32,6 +32,11 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
     /// rule (RVTools #15). `ManagedEntity.configStatus`, not an event stream —
     /// same field Host/Cluster already expose as a real column.
     public let configStatus: EntityStatus
+    /// vSphere Tags (CIS REST Tagging API) and Custom Attributes
+    /// (`ManagedEntity.customValue`, already formatted "Key: Value") —
+    /// export-only, vInfo is already at its 10-column ceiling.
+    public let tags: [String]
+    public let customAttributes: [String]
     /// Same reasoning — only read by `HealthCheckEngine`'s "Disk I/O
     /// performance tip" rule (RVTools #22). Number of distinct
     /// ParaVirtualSCSIController *devices* registered with the VM, not
@@ -54,7 +59,9 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
         folderName: String? = nil,
         consolidationNeeded: Bool = false,
         pvscsiControllerCount: Int = 0,
-        configStatus: EntityStatus = .green
+        configStatus: EntityStatus = .green,
+        tags: [String] = [],
+        customAttributes: [String] = []
     ) {
         self.name = name
         self.powerState = powerState
@@ -72,6 +79,8 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
         self.consolidationNeeded = consolidationNeeded
         self.pvscsiControllerCount = pvscsiControllerCount
         self.configStatus = configStatus
+        self.tags = tags
+        self.customAttributes = customAttributes
     }
 }
 

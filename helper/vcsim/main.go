@@ -13,6 +13,12 @@ import (
 	"log"
 
 	"github.com/vmware/govmomi/simulator"
+
+	// Registers CIS REST endpoints (Tags/Categories, etc.) on this same
+	// simulated server — vlens-helper's helper/tags.go opens a real REST
+	// session against vcsim to collect Tags, and this is what makes vcsim
+	// actually answer those requests instead of 404ing.
+	_ "github.com/vmware/govmomi/vapi/simulator"
 )
 
 func main() {
@@ -45,6 +51,12 @@ func main() {
 	defer model.Remove()
 
 	model.Service.TLS = new(tls.Config) // force HTTPS w/ self-signed cert (matches real vCenter/allowInsecureTLS flow)
+	// Opt-in flag simulator.Service itself defines — the vapi/simulator
+	// blank import above only REGISTERS its endpoint callback in a global
+	// list; nothing consults that list unless this is explicitly true
+	// (found by reading simulator/simulator.go's NewServer after the
+	// blank import alone produced 404s on /rest/... in practice).
+	model.Service.RegisterEndpoints = true
 	server := model.Service.NewServer()
 	defer server.Close()
 

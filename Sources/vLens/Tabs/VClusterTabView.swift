@@ -16,6 +16,7 @@ struct VClusterTabView: View {
             TableColumn("HA") { Text($0.haEnabled ? "Enabled" : "Disabled") }
             TableColumn("DRS") { Text($0.drsEnabled ? "Enabled" : "Disabled") }
             TableColumn("Admission Control") { Text($0.admissionControlEnabled ? "Enabled" : "Disabled") }
+            TableColumn("Tags") { Text($0.tags.joined(separator: ", ")) }
         }
     }
 }

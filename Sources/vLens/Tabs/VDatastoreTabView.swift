@@ -21,6 +21,8 @@ struct VDatastoreTabView: View {
                 Text(row.configStatus.rawValue)
                     .foregroundStyle(row.configStatus == .green ? Color.primary : Color.orange)
             }
+            TableColumn("Tags") { Text($0.tags.joined(separator: ", ")) }
+            TableColumn("Custom Attributes") { Text($0.customAttributes.joined(separator: ", ")) }
         }
     }
 }

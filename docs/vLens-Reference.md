@@ -462,6 +462,9 @@ Model: `DatastoreInfo` · View: `VDatastoreTabView` · Source: `collectDatastore
 | Free % | Double (computed) | `DatastoreInfo.freePercent`, colored red below 10% |
 | VMs | Int | `len(datastore.vm)` |
 | Hosts | Int | `len(datastore.host)` |
+| Status | enum | `configStatus` |
+| Tags | [String] (comma-joined) | CIS REST Tagging API — see §14 |
+| Custom Attributes | [String] (comma-joined) | `customValue` — see §14 |
 
 ### vCluster
 
@@ -481,8 +484,11 @@ type — see §9).
 | HA | "Enabled"/"Disabled" (not sortable) | `configuration.dasConfig.enabled` |
 | DRS | "Enabled"/"Disabled" (not sortable) | `configuration.drsConfig.enabled` |
 | Admission Control | "Enabled"/"Disabled" (not sortable) | `configuration.dasConfig.admissionControlEnabled` |
+| Tags | [String] (comma-joined) | CIS REST Tagging API — see §14 |
 
-Also carried: `drsDefaultVMBehavior` (String?, `configuration.drsConfig.defaultVmBehavior`).
+Also carried: `drsDefaultVMBehavior` (String?, `configuration.drsConfig.defaultVmBehavior`),
+`customAttributes` ([String], `customValue` — export-only, this tab has room
+for only one more UI column and Tags won that tradeoff, see §14).
 
 ### vRP
 
@@ -1213,3 +1219,57 @@ a mechanical transformation can respect; it needs a human/agent to actually
 understand the request and write the fix. What issues *do* enable: a future
 Claude Code session can be pointed at an open issue and triage/fix/PR it
 quickly — a workflow, not a feature embedded in the app.
+
+## 14. vSphere Tags & Custom Attributes
+
+Found via direct verification against RVTools' own PDF reference
+(`~/Downloads/Rvtools.pdf`) — it documents "Custom attributes"/"tags"
+columns on nearly every tab, sourced from two unrelated vSphere features
+vLens never touched before this: the CIS REST Tagging API (6.5+) for
+Tags, and the plain SOAP `ManagedEntity.customValue` property for Custom
+Attributes.
+
+**Custom Attributes** ride the existing SOAP `PropertyCollector` session
+for free — `"customValue"` added to `collectVMs`/`collectHosts`/
+`collectDatastores`/`collectClusters`'s existing prop lists, resolved to
+`"Key: Value"` display strings via one `CustomFieldsManager.Field(ctx)`
+call per `collectAll` (field-key → name; `CustomValue` itself only ever
+carries the numeric key). Tolerant of failure the same way `collectLicenses`
+is — an account without permission to see field definitions doesn't fail
+`collectAll`, that entity's `customAttributes` just stays empty.
+
+**Tags** need a genuinely separate CIS REST session
+(`govmomi/vapi/rest` + `vapi/tags`, `helper/tags.go`) built from the
+*same already-pinned* `*vim25.Client` used for the SOAP login — never a
+fresh one, which would silently bypass certificate pinning (see
+`newPinnedClient`'s own doc comment in §3 for why). Same credentials as
+the SOAP login (`url.Userinfo`), no new information from the user.
+`tags.Manager.GetAttachedTagsOnObjects(ctx, allRefs)` is **one batched
+REST call** covering every collected VM/Host/Cluster/Datastore together —
+not one request per object — with tag names resolved per unique tag ID
+(a handful in most real environments), not per object. Same tolerance
+pattern: REST login failing (older/unlicensed vCenter, no tagging
+permission) leaves every `tags` field empty rather than failing
+`collectAll`.
+
+**vcsim genuinely simulates this** (`govmomi/vapi/simulator`, blank-imported
+in `helper/vcsim/main.go` alongside `model.Service.RegisterEndpoints = true`
+— the blank import alone registers the endpoint in a global list, but
+nothing consults that list unless this flag is explicitly set, found by
+testing against the real simulator rather than assuming). This makes Tags
+positively verifiable against a live fixture, unlike most vHealth
+"config status" rules (§5) which vcsim never populates. `helper/vcsim/mktag/`
+(mirrors `mkvapp`'s pattern) creates a real category+tag and a real custom
+field, attaches/sets them on the first VM/host/cluster/datastore vcsim's
+model produces — used to verify `collectAll` actually returns them.
+
+**Model + UI**: `tags`/`customAttributes: [String]` on `VirtualMachineInfo`/
+`HostInfo`/`ClusterInfo`/`DatastoreInfo`, formatted for display exactly
+like `LicenseInfo`'s existing `labels`/`features` (comma-joined `[String]`,
+no dedicated key-value model type). **Column-budget decision**: vInfo and
+vHost are already at their observed ~10-column ceiling (§4's tab tables) —
+both fields are collected and exported (CSV/XLSX) for VM/Host but **not**
+added as UI `TableColumn`s there, the same treatment already given to VM's
+`consolidationNeeded`/`pvscsiControllerCount`/`configStatus`. vCluster (9
+columns) had room for exactly one more — Tags, not Custom Attributes.
+vDatastore (8 columns, the most headroom of the four) got both.

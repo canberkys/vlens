@@ -4,7 +4,7 @@ import Testing
 
 @Test func decodesVirtualMachineInfoFromHelperJSON() throws {
     let json = """
-    {"name":"web-01","powerState":"poweredOn","template":false,"guestOSFullName":"Ubuntu Linux (64-bit)","cpuCount":4,"memoryMiB":8192,"hostName":"esxi01.local","clusterName":"prod-cluster","resourcePoolName":null,"primaryIPAddress":"10.0.0.5","vmwareToolsStatus":"toolsOk","vmUUID":"abc-123","consolidationNeeded":false,"pvscsiControllerCount":1,"configStatus":"green"}
+    {"name":"web-01","powerState":"poweredOn","template":false,"guestOSFullName":"Ubuntu Linux (64-bit)","cpuCount":4,"memoryMiB":8192,"hostName":"esxi01.local","clusterName":"prod-cluster","resourcePoolName":null,"primaryIPAddress":"10.0.0.5","vmwareToolsStatus":"toolsOk","vmUUID":"abc-123","consolidationNeeded":false,"pvscsiControllerCount":1,"configStatus":"green","tags":["prod","team-a"],"customAttributes":["Owner: infra-team"]}
     """.data(using: .utf8)!
 
     let vm = try JSONDecoder().decode(VirtualMachineInfo.self, from: json)
@@ -13,4 +13,6 @@ import Testing
     #expect(vm.powerState == .poweredOn)
     #expect(vm.resourcePoolName == nil)
     #expect(vm.cpuCount == 4)
+    #expect(vm.tags == ["prod", "team-a"])
+    #expect(vm.customAttributes == ["Owner: infra-team"])
 }
