@@ -441,7 +441,12 @@ public enum DemoData {
             resourcePools: resourcePools(), vApps: vApps(), hbas: hbas(), nics: nics(),
             vmKernels: vmKernels(), multipaths: multipaths(), cds: cds(for: vms), usbs: usbs(for: vms),
             floppies: floppies(for: vms), partitions: partitions(for: vms), networks: networks(for: vms),
-            vCenter: nil
+            vCenter: VCenterInfo(
+                name: "VMware vCenter Server", fullName: "VMware vCenter Server 8.0.3 build-24022515",
+                vendor: "VMware, Inc.", version: "8.0.3", patchLevel: nil, build: "24022515",
+                osType: "linux-x64", apiType: "VirtualCenter", apiVersion: "8.0.3.0",
+                instanceUUID: "demo-\(UUID().uuidString)"
+            )
         )
     }
 }

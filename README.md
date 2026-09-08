@@ -20,8 +20,8 @@ to CSV or XLSX. If you've used RVTools on Windows, the data will look
 familiar; the app won't. No .NET, no VM/Wine, no Windows box just to run a
 reporting tool.
 
-It covers essentially everything RVTools does (28 tabs total, 23 of RVTools'
-24 documented tabs — only `vFileInfo` is missing) — but it isn't just a port.
+It covers essentially everything RVTools does (29 tabs total, 25 of RVTools'
+26 documented tabs — only `vFileInfo` is missing) — but it isn't just a port.
 vLens adds several things RVTools doesn't have: historical performance
 data sampled over a time window you choose, point-in-time inventory
 snapshots you can compare, a one-page PDF management report, and quiet
@@ -47,7 +47,7 @@ simulator).
 
 | | |
 |---|---|
-| **28 tabs** | vInfo, vCPU, vMemory, vDisk, vSnapshot, vTools, vNetwork, vCD, vFloppy, vUSB, vPartition, vApp, vHost, vDatastore, vCluster, vRP, vSwitch, vPort, dvSwitch, dvPort, vNic, vSC+VMK, vHBA, vMultipath, vLicense, vHealth, plus vLens' own vPerformance and Snapshots |
+| **29 tabs** | vInfo, vCPU, vMemory, vDisk, vSnapshot, vTools, vNetwork, vCD, vFloppy, vUSB, vPartition, vApp, vSource, vHost, vDatastore, vCluster, vRP, vSwitch, vPort, dvSwitch, dvPort, vNic, vSC+VMK, vHBA, vMultipath, vLicense, vHealth, plus vLens' own vPerformance and Snapshots |
 | **RVTools parity** | Only `vFileInfo` (datastore file browser) is deliberately out of scope — RVTools' own docs flag it as slow and rarely used |
 | **vHealth** | 21 of RVTools' 24 documented health-check rules, thresholds adjustable in Preferences, re-evaluates instantly on change |
 | **Tags & Custom Attributes** | vSphere Tags (CIS REST Tagging API) and Custom Attributes on VM/Host/Cluster/Datastore — shown on vCluster/vDatastore, exported for all four |
@@ -56,6 +56,7 @@ simulator).
 | **PDF report** *(not in RVTools)* | One-page management summary — vCenter identity, counts, charts, vHealth status — generated on demand |
 | **Security advisories** *(not in RVTools)* | Quiet toolbar badge when Broadcom publishes a CRITICAL/HIGH VMware security advisory |
 | **Export** | CSV and XLSX, whatever the current tab shows, already filtered by search |
+| **Auto Refresh** | Optionally re-collect inventory on a timer (1 minute–1 hour) while connected — off by default |
 | **Trust-on-first-use** | Certificate fingerprint shown and pinned on first connect, like SSH host keys — a changed certificate later is a hard block, never silent |
 | **Demo mode** | Every tab filled with realistic mock data — try the whole app without a vCenter |
 | **In-app Help & onboarding** | Native Help panel (no external site), one-time welcome + per-feature tips |

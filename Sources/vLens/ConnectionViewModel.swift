@@ -16,7 +16,12 @@ final class ConnectionViewModel {
     /// Whether a connection (real or demo) has been established — distinct
     /// from `vms.isEmpty`, which a real, healthy, zero-VM vCenter would also
     /// satisfy, incorrectly bouncing the user back to the connect screen.
-    var isConnected: Bool = false
+    var isConnected: Bool = false {
+        didSet {
+            guard isConnected != oldValue else { return }
+            restartAutoRefreshTask()
+        }
+    }
     var lastRefreshedAt: Date?
     var isRefreshing: Bool = false
     /// Set when a refresh (not the initial connect) fails — the previous
@@ -193,6 +198,27 @@ final class ConnectionViewModel {
         }
     }
 
+    /// Preferences' "Auto refresh" toggle + interval — RVTools' own idea,
+    /// missing here until the 2026-09-08 audit. Off by default (an
+    /// unattended background poll against a real vCenter isn't something
+    /// to opt a user into silently). Changing either restarts the loop in
+    /// `restartAutoRefreshTask()`.
+    var autoRefreshEnabled: Bool {
+        didSet {
+            guard autoRefreshEnabled != oldValue else { return }
+            autoRefreshPreferencesStore.setEnabled(autoRefreshEnabled)
+            restartAutoRefreshTask()
+        }
+    }
+    var autoRefreshIntervalMinutes: Int {
+        didSet {
+            guard autoRefreshIntervalMinutes != oldValue else { return }
+            autoRefreshPreferencesStore.setIntervalMinutes(autoRefreshIntervalMinutes)
+            restartAutoRefreshTask()
+        }
+    }
+    private var autoRefreshTask: Task<Void, Never>?
+
     private let helperClient = VSphereHelperClient(helperURL: HelperLocator.resolve())
     private let profileStore = ConnectionProfileStore()
     private let credentialStore: CredentialStoreProtocol = KeychainCredentialStore()
@@ -210,6 +236,7 @@ final class ConnectionViewModel {
     private let endOfLifeClient = EndOfLifeClient()
     private let securityAdvisoryPreferencesStore = SecurityAdvisoryPreferencesStore()
     private let endOfLifePreferencesStore = EndOfLifePreferencesStore()
+    private let autoRefreshPreferencesStore = AutoRefreshPreferencesStore()
 
     init() {
         savedProfiles = profileStore.loadAll()
@@ -218,6 +245,8 @@ final class ConnectionViewModel {
         automationSchedule = automationPreferencesStore.load()
         securityAdvisoriesEnabled = securityAdvisoryPreferencesStore.isEnabled()
         endOfLifeEnabled = endOfLifePreferencesStore.isEnabled()
+        autoRefreshEnabled = autoRefreshPreferencesStore.isEnabled()
+        autoRefreshIntervalMinutes = autoRefreshPreferencesStore.intervalMinutes()
     }
 
     /// Persists the schedule and (re)installs the launchd job — called from
@@ -304,7 +333,12 @@ final class ConnectionViewModel {
         partitions = DemoData.partitions(for: vms)
         performanceMetrics = DemoData.performanceMetrics(for: vms, intervalMinutes: 60)
         performanceCoverage = nil
-        vCenterInfo = VCenterInfo(fullName: "VMware vCenter Server 8.0.3 build-24022515", version: "8.0.3", build: "24022515", apiVersion: "8.0.3.0")
+        vCenterInfo = VCenterInfo(
+            name: "VMware vCenter Server", fullName: "VMware vCenter Server 8.0.3 build-24022515",
+            vendor: "VMware, Inc.", version: "8.0.3", patchLevel: nil, build: "24022515",
+            osType: "linux-x64", apiType: "VirtualCenter", apiVersion: "8.0.3.0",
+            instanceUUID: "demo-\(UUID().uuidString)"
+        )
         recomputeHealthChecks()
         lastRefreshedAt = Date()
         loadSnapshotHistory()
@@ -347,6 +381,25 @@ final class ConnectionViewModel {
         errorMessage = nil
         await performCollection(sdkURL: normalizedSDKURL())
         isRefreshing = false
+    }
+
+    /// Cancels any existing loop and starts a new one if auto-refresh is on
+    /// and there's something to refresh — called whenever `isConnected`,
+    /// `autoRefreshEnabled`, or `autoRefreshIntervalMinutes` changes, so the
+    /// loop always matches current settings without a stale interval or a
+    /// loop still running after disconnect.
+    private func restartAutoRefreshTask() {
+        autoRefreshTask?.cancel()
+        autoRefreshTask = nil
+        guard isConnected, autoRefreshEnabled else { return }
+        let seconds = Double(autoRefreshIntervalMinutes) * 60
+        autoRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(seconds))
+                guard !Task.isCancelled else { return }
+                await self?.refresh()
+            }
+        }
     }
 
     private func clearAllTabs() {

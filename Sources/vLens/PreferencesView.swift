@@ -115,6 +115,21 @@ struct PreferencesView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Auto Refresh") {
+                Toggle("Automatically refresh while connected", isOn: $viewModel.autoRefreshEnabled)
+                Picker("Every", selection: $viewModel.autoRefreshIntervalMinutes) {
+                    Text("1 minute").tag(1)
+                    Text("5 minutes").tag(5)
+                    Text("15 minutes").tag(15)
+                    Text("30 minutes").tag(30)
+                    Text("1 hour").tag(60)
+                }
+                .disabled(!viewModel.autoRefreshEnabled)
+                Text("Re-collects inventory on a timer, same as pressing Refresh yourself — off by default.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Snapshot comparison metrics") {
                 Text("Which rows the Snapshots tab's Compare panel shows. Every metric is always recorded — this only controls what's displayed.")
                     .font(.caption)

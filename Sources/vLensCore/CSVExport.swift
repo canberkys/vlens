@@ -319,3 +319,15 @@ extension PartitionInfo: CSVExportable {
     public static var xlsxColumnTypes: [XLSXColumnType] { [.text, .text, .number, .number, .number] }
     public var csvRow: [String] { [vmName, diskPath, "\(capacityMiB)", "\(freeMiB)", String(format: "%.1f", freePercent)] }
 }
+
+extension VCenterInfo: CSVExportable {
+    public static var csvHeader: [String] {
+        ["Name", "Full Name", "Vendor", "Version", "Patch Level", "Build", "OS Type", "API Type", "API Version", "Instance UUID"]
+    }
+    public static var xlsxColumnTypes: [XLSXColumnType] {
+        [.text, .text, .text, .text, .text, .text, .text, .text, .text, .text]
+    }
+    public var csvRow: [String] {
+        [name, fullName, vendor, version, patchLevel ?? "", build, osType, apiType, apiVersion, instanceUUID ?? ""]
+    }
+}

@@ -80,5 +80,6 @@ public func mergedExportData(tab: ExportTab, format: ExportFormat, sources: [Mer
     case .vusb: return try make({ $0.inventory.usbs }, sheet: "vUSB")
     case .vpartition: return try make({ $0.inventory.partitions }, sheet: "vPartition")
     case .vhealth: return try make({ $0.healthChecks }, sheet: "vHealth")
+    case .vsource: return try make({ [$0.inventory.vCenter].compactMap { $0 } }, sheet: "vSource")
     }
 }

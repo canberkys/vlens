@@ -421,6 +421,36 @@ mirrors `mksnap`'s pattern) — not assumed from the type definitions alone. vcs
 (reservation/limit/expandable/shares) or it rejects the creation with
 `InvalidArgument` — found by testing against the real simulator, not guessed.
 
+### vSource
+
+Model: `VCenterInfo` · View: `VSourceTabView` · Source: `about := client.Client.ServiceContent.About` in `collectAll`
+
+The connected SDK/vCenter server's own identity — RVTools' `vSource` tab
+(found missing from vLens in the 2026-09-08 audit; `VCenterInfo` already
+existed for the PDF report's header but wasn't its own tab). Entirely free —
+`AboutInfo` is populated during login itself, no extra round trip, same as
+`configStatus`/`customValue` elsewhere in this doc.
+
+| Column | Type | vim25 source |
+|---|---|---|
+| Name | String | `about.name` |
+| Full Name | String | `about.fullName` |
+| Vendor | String | `about.vendor` |
+| Version | String | `about.version` |
+| Build | String | `about.build` |
+| OS Type | String | `about.osType` (e.g. `linux-x64`) |
+| API Type | String | `about.apiType` (`VirtualCenter` vs. `HostAgent`) |
+| API Version | String | `about.apiVersion` |
+| Instance UUID | String? | `about.instanceUuid` — RVTools' "VI SDK UUID" |
+
+`patchLevel` is also carried (`about.patchLevel`) but not shown as its own
+column — RVTools documents it as part of the version string in practice,
+and it's frequently empty (vSphere 7.0.2+ only). Always exactly one row for
+a live connection; a `vlens-cli merge` across N vCenters naturally produces
+N rows, one per source — this is what makes vSource a real tab rather than
+the always-one-row case `VCenterEOLStatus` deliberately avoided being (see
+that type's own doc comment, §12).
+
 ### vHost
 
 Model: `HostInfo` · View: `VHostTabView` · Source: `collectHosts`
@@ -999,20 +1029,27 @@ still worth doing — but it's no longer the blocker it looked like.
 Organized by "buildable without a real vCenter" (everything, via vcsim + demo data)
 versus what's simply not started yet:
 
-**Missing tabs** (2 of RVTools' real 26 — see [§4](#4-tab-reference); RVTools'
+**Missing tabs** (1 of RVTools' real 26 — see [§4](#4-tab-reference); RVTools'
 own PDF index lists 26 tabs, not 24 — 24 is the *vHealth rule* count, easy to
-conflate and this doc did for a while):
-- `vFileInfo` (datastore file browser). Explicitly out of scope indefinitely
-  since RVTools' own docs flag it as slow and rarely used interactively — a
-  deliberate, permanent scope decision, not a "not gotten to it yet."
-- `vSource` (the vCenter/SDK server's own identity — API type/version, build,
-  VI SDK Server/UUID, etc.). Not a permanent exclusion like `vFileInfo` —
-  `VCenterInfo` already collects a subset of this data (it backs the PDF
-  report's header, see [§6](#6-export)), it just isn't its own tab yet.
-  Found via a 2026-09-08 audit that re-verified against the real RVTools PDF;
-  not yet built.
+conflate and this doc did for a while): `vFileInfo` (datastore file browser).
+Explicitly out of scope indefinitely since RVTools' own docs flag it as slow
+and rarely used interactively — a deliberate, permanent scope decision, not
+a "not gotten to it yet."
 
-**Also found in that same audit, not yet built**:
+`vSource` (the vCenter/SDK server's own identity) [DONE, 2026-09-08] — found
+missing in that day's audit (re-verified against the real RVTools PDF),
+built same day: `VCenterInfo` already collected a subset of this for the PDF
+report's header (see [§6](#6-export)), extended with the rest
+(`osType`/`apiType`/`instanceUUID` etc., all free — `AboutInfo` is already
+populated at login) and given its own tab (`VSourceTabView`). A merged
+multi-vCenter export naturally produces one row per source.
+
+**Auto-refresh** [DONE, 2026-09-08] — Preferences' "Auto Refresh" section
+(off by default, 1 minute–1 hour), a `Task`-based loop in
+`ConnectionViewModel` restarted whenever connection state or the setting
+changes (`AutoRefreshPreferencesStore`).
+
+**Still open, found in the same 2026-09-08 audit**:
 - **Object ID / VI SDK Server / VI SDK UUID per-row traceability**: RVTools
   appends these to nearly every tab so a row can be traced back to a specific
   source vCenter/object. vLens has no per-row moref or VI SDK identity
@@ -1022,8 +1059,6 @@ conflate and this doc did for a while):
   you turn individual checks on/off, not just adjust thresholds.
   `HealthCheckPreferencesStore` only persists the 5 numeric thresholds —
   none of the 21 implemented rules can be individually disabled.
-- **Auto-refresh**: RVTools has a "refresh data on an interval" preference;
-  vLens only has the manual Refresh button.
 
 **vHealth**: 21 of 24 rules implemented, 3 remaining (all `vFileInfo`-dependent) — see [§5](#5-vhealth-rule-status)
 for the full table.

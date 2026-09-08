@@ -138,3 +138,10 @@ extension VMNetworkInfo: Searchable {
 extension HealthCheckResult: Searchable {
     public var searchableText: String { [rule, relatedObject, message].joined(separator: " ") }
 }
+
+extension VCenterInfo: Searchable {
+    public var searchableText: String {
+        ([name, fullName, vendor, version, build, osType, apiType] + [patchLevel, instanceUUID].compactMap { $0 })
+            .joined(separator: " ")
+    }
+}

@@ -129,7 +129,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
             return """
             Cmd+, opens Preferences. vHealth thresholds (datastore free space, vCPU-per-core ratio, guest disk free space, max VMs per datastore, certificate expiry) control when a finding shows up on the vHealth tab — change one and every already-collected finding re-evaluates immediately, no reconnect needed. Each has its own "Reset to Defaults."
 
-            Preferences also controls which metrics the Snapshots tab's Compare panel shows, whether vLens checks for security advisories at all, where snapshot history is stored, saved connections, scheduled automation, and — if you've dismissed the one-time welcome screen or a per-feature tip and want to see it again — "Reset Tutorials."
+            Preferences also controls whether vLens automatically re-collects inventory on a timer (off by default — "Auto Refresh"), which metrics the Snapshots tab's Compare panel shows, whether vLens checks for security advisories or end-of-life dates at all, where snapshot history is stored, saved connections, scheduled automation, and — if you've dismissed the one-time welcome screen or a per-feature tip and want to see it again — "Reset Tutorials."
             """
         case .keyboardShortcuts:
             return """
