@@ -6,22 +6,27 @@
         <description>vLens release updates</description>
         <language>en</language>
         <item>
-            <title>Version 1.6.2</title>
-            <pubDate>Mon, 07 Sep 2026 14:54:30 +0000</pubDate>
-            <sparkle:version>29</sparkle:version>
-            <sparkle:shortVersionString>1.6.2</sparkle:shortVersionString>
+            <title>Version 1.7.0</title>
+            <pubDate>Tue, 08 Sep 2026 09:37:11 +0000</pubDate>
+            <sparkle:version>30</sparkle:version>
+            <sparkle:shortVersionString>1.7.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[
 <h4>Added</h4>
 <ul>
-<li><strong>vHealth #15/16/18/19 — VM/Host/Cluster/Datastore config status.</strong> Turns out these aren&#x27;t <code>EventManager</code>/event-stream rules despite the &quot;config issue&quot; naming — they&#x27;re all the same <code>ManagedEntity.configStatus</code> field (red/yellow/green/gray) vLens already read for hosts. VM and Datastore now collect it too (Datastore gets a new &quot;Status&quot; column, same as Host/Cluster already had), and Cluster&#x27;s status — already collected and shown, just never wired into vHealth — now feeds the engine as well. 21 of RVTools&#x27; 24 documented rules are implemented now; the remaining 3 (#9/#10 zombie VMDK/VM, #14 search datastore errors) all need <code>vFileInfo</code>, which stays out of scope. None of the four can be verified against a live positive fixture (vcsim doesn&#x27;t simulate the alarm subsystem), so Demo Mode now seeds a few non-green entities to keep the rules visible without a real vCenter.</li>
+<li><strong>Feedback now submits silently.</strong> &quot;Send Feedback&quot; used to redirect you to a prefilled mail draft or a prefilled GitHub &quot;new issue&quot; page for you to review and send yourself. It now submits directly — a small Cloudflare Worker (<code>feedback-relay/</code>) holds a GitHub token scoped to only this repo&#x27;s Issues and files the issue server-side, so nothing leaves the app except what&#x27;s shown on screen before you click Send. No credential ships inside the app itself.</li>
+</ul>
+<h4>Changed</h4>
+<ul>
+<li><strong>Clearer empty-state messages</strong> on 6 tabs (vHBA, dvSwitch, dvPort, vMultipath, vFloppy, vSnapshot) that could plausibly show zero rows in a perfectly healthy environment — each now explains why, instead of a bare empty table.</li>
+<li><strong>Clearer error messages</strong> when the bundled collection helper fails — previously a couple of failure modes (a helper binary that can&#x27;t be found, a malformed/empty response) fell through to a raw internal error dump instead of something a user could act on.</li>
 </ul>
             ]]></description>
             <enclosure
-                url="https://github.com/canberkys/vlens/releases/download/v1.6.2/vLens-1.6.2.dmg"
-                length="13433079"
+                url="https://github.com/canberkys/vlens/releases/download/v1.7.0/vLens-1.7.0.dmg"
+                length="13455014"
                 type="application/octet-stream"
-                sparkle:edSignature="ylQVJintQSilKpwjXM31O8jc7nd4W1/kVJzUMzr/ijhWNu34bK2vBdhr9bGr1lKosilM4V3NSnPdHU8/6HsxCA==" />
+                sparkle:edSignature="kMsZuSy/H7240/TBBXIbrz9fOZIf3IChfe4BGSExGBg2EOD61EjmeaSdtl1IoUIEEThKoOzbY/p79ULRpS2sBA==" />
         </item>
     </channel>
 </rss>
