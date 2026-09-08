@@ -13,11 +13,16 @@ public struct ClusterInfo: Codable, Identifiable, Sendable {
     public let admissionControlEnabled: Bool
     public let drsEnabled: Bool
     public let drsDefaultVMBehavior: String?
+    /// A real vCluster column (CIS REST Tagging API) — this tab has room.
+    public let tags: [String]
+    /// Export-only — Custom Attributes would be the 11th column here.
+    public let customAttributes: [String]
 
     public init(
         id: String, name: String, configStatus: EntityStatus, numHosts: Int,
         numEffectiveHosts: Int, totalCpuMHz: Int, totalMemoryMiB: Int, haEnabled: Bool,
-        admissionControlEnabled: Bool, drsEnabled: Bool, drsDefaultVMBehavior: String?
+        admissionControlEnabled: Bool, drsEnabled: Bool, drsDefaultVMBehavior: String?,
+        tags: [String] = [], customAttributes: [String] = []
     ) {
         self.id = id
         self.name = name
@@ -30,5 +35,7 @@ public struct ClusterInfo: Codable, Identifiable, Sendable {
         self.admissionControlEnabled = admissionControlEnabled
         self.drsEnabled = drsEnabled
         self.drsDefaultVMBehavior = drsDefaultVMBehavior
+        self.tags = tags
+        self.customAttributes = customAttributes
     }
 }

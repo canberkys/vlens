@@ -43,6 +43,13 @@ public enum DemoData {
             // folder-name pattern above, for RVTools #15 (VM config status).
             let configStatus: EntityStatus = (i % 19 == 0) ? .yellow : .green
 
+            // Tags/Custom Attributes aren't anomaly fields like the two
+            // above — real environments tag most/all objects, so these are
+            // applied broadly rather than sparsely (export-only for VM,
+            // see VirtualMachineInfo's own doc comment).
+            let tags = ["env-\(env.lowercased())"]
+            let customAttributes = ["Owner: \(role.lowercased())-team"]
+
             return VirtualMachineInfo(
                 name: name,
                 powerState: power,
@@ -57,7 +64,9 @@ public enum DemoData {
                 vmwareToolsStatus: power == .poweredOn ? toolsStates[i % toolsStates.count] : nil,
                 vmUUID: "demo-\(UUID().uuidString)",
                 folderName: folder,
-                configStatus: configStatus
+                configStatus: configStatus,
+                tags: tags,
+                customAttributes: customAttributes
             )
         }
     }
@@ -243,6 +252,8 @@ public enum DemoData {
                 // One datastore demonstrates RVTools #19 (config status),
                 // separate from datastore-05's low-free-space demo above.
                 configStatus: i == 3 ? .yellow : .green,
+                tags: i % 2 == 0 ? ["tier-1"] : ["tier-2"],
+                customAttributes: i == 5 ? ["Backup Policy: nightly"] : [],
                 url: "ds:///vmfs/volumes/datastore-0\(i)/"
             )
         }
@@ -262,7 +273,9 @@ public enum DemoData {
                 haEnabled: true,
                 admissionControlEnabled: i != 2,
                 drsEnabled: true,
-                drsDefaultVMBehavior: "fullyAutomated"
+                drsDefaultVMBehavior: "fullyAutomated",
+                tags: [name.hasPrefix("prod") ? "production" : "non-production"],
+                customAttributes: ["Cost Center: CC-10\(i)0"]
             )
         }
     }

@@ -128,6 +128,13 @@ type virtualMachineInfo struct {
 	// *devices* registered with the VM, not disks attached to one — two
 	// disks on the same PVSCSI controller must not count as two.
 	PVSCSIControllerCount int `json:"pvscsiControllerCount"`
+	// vSphere Tags (CIS REST Tagging API, 6.5+) and Custom Attributes
+	// (ManagedEntity.customValue), each already formatted as display
+	// strings ("Key: Value" for custom attributes) — see helper/tags.go.
+	// Not a vInfo column (vInfo is already at its 10-column ceiling);
+	// export-only for VM, matching ConsolidationNeeded/ConfigStatus above.
+	Tags             []string `json:"tags"`
+	CustomAttributes []string `json:"customAttributes"`
 }
 
 type vmCPUInfo struct {
@@ -236,18 +243,25 @@ type hostInfo struct {
 	// if the host's certificate couldn't be read (see collectHosts' own
 	// tolerance for that failure).
 	CertNotAfter *string `json:"certNotAfter"`
+	// Export-only, same reasoning as VirtualMachineInfo's — vHost is also
+	// at its 10-column ceiling. See helper/tags.go.
+	Tags             []string `json:"tags"`
+	CustomAttributes []string `json:"customAttributes"`
 }
 
 type datastoreInfo struct {
-	ID                string  `json:"id"`
-	Name              string  `json:"name"`
-	Type              string  `json:"type"`
-	CapacityMiB       int     `json:"capacityMiB"`
-	FreeMiB           int     `json:"freeMiB"`
-	NumVMsTotal       int     `json:"numVMsTotal"`
-	NumHostsConnected int     `json:"numHostsConnected"`
-	ConfigStatus      string  `json:"configStatus"`
-	URL               *string `json:"url"`
+	ID                string `json:"id"`
+	Name              string `json:"name"`
+	Type              string `json:"type"`
+	CapacityMiB       int    `json:"capacityMiB"`
+	FreeMiB           int    `json:"freeMiB"`
+	NumVMsTotal       int    `json:"numVMsTotal"`
+	NumHostsConnected int    `json:"numHostsConnected"`
+	ConfigStatus      string `json:"configStatus"`
+	// Real vDatastore columns — this tab has room (see helper/tags.go).
+	Tags             []string `json:"tags"`
+	CustomAttributes []string `json:"customAttributes"`
+	URL              *string  `json:"url"`
 }
 
 type clusterInfo struct {
@@ -262,6 +276,10 @@ type clusterInfo struct {
 	AdmissionControlEnabled bool    `json:"admissionControlEnabled"`
 	DRSEnabled              bool    `json:"drsEnabled"`
 	DRSDefaultVMBehavior    *string `json:"drsDefaultVMBehavior"`
+	// A real vCluster column (see helper/tags.go) — Custom Attributes stays
+	// export-only here, this tab only has room for one more UI column.
+	Tags             []string `json:"tags"`
+	CustomAttributes []string `json:"customAttributes"`
 }
 
 type licenseInfo struct {
@@ -716,6 +734,11 @@ func collectAll(req helperRequest) (helperResponse, error) {
 	}
 	defer client.Logout(ctx)
 
+	// Custom Attributes: resolves field-key -> display name once, tolerant
+	// of failure (some accounts can't see field definitions) — see
+	// helper/tags.go's own doc comment.
+	fieldNames := customFieldNames(ctx, client.Client)
+
 	// Cluster-only name map — deliberately NOT the broader "ComputeResource"
 	// type (which also matches the invisible per-standalone-host wrapper
 	// every HostSystem has). Using it there was a real bug: standalone
@@ -747,19 +770,53 @@ func collectAll(req helperRequest) (helperResponse, error) {
 		return helperResponse{}, fmt.Errorf("VM collection failed: %w", err)
 	}
 
-	hosts, err := collectHosts(ctx, client, clusterNames, hostParents)
+	hosts, err := collectHosts(ctx, client, clusterNames, hostParents, fieldNames)
 	if err != nil {
 		return helperResponse{}, fmt.Errorf("host collection failed: %w", err)
 	}
 
-	datastores, err := collectDatastores(ctx, client)
+	datastores, err := collectDatastores(ctx, client, fieldNames)
 	if err != nil {
 		return helperResponse{}, fmt.Errorf("datastore collection failed: %w", err)
 	}
 
-	clusters, err := collectClusters(ctx, client)
+	clusters, err := collectClusters(ctx, client, fieldNames)
 	if err != nil {
 		return helperResponse{}, fmt.Errorf("cluster collection failed: %w", err)
+	}
+
+	// vSphere Tags (CIS REST Tagging API, 6.5+) — a SEPARATE REST session
+	// on top of the same pinned SOAP client (see helper/tags.go). Tolerant
+	// of failure (older/unlicensed vCenters, or an account without
+	// tagging permission) — collectAll should still succeed with every
+	// Tags field left empty, same as collectLicenses' precedent.
+	tagNames := map[string][]string{}
+	if tm, tagErr := newTagsManager(ctx, client.Client, u.User); tagErr == nil {
+		var refs []mo.Reference
+		for _, vm := range vms {
+			refs = append(refs, vm.Reference())
+		}
+		for _, h := range hosts {
+			refs = append(refs, types.ManagedObjectReference{Type: "HostSystem", Value: h.ID})
+		}
+		for _, c := range clusters {
+			refs = append(refs, types.ManagedObjectReference{Type: "ClusterComputeResource", Value: c.ID})
+		}
+		for _, ds := range datastores {
+			refs = append(refs, types.ManagedObjectReference{Type: "Datastore", Value: ds.ID})
+		}
+		if names, err := collectTagNames(ctx, tm, refs); err == nil {
+			tagNames = names
+		}
+	}
+	for i := range hosts {
+		hosts[i].Tags = tagNames[hosts[i].ID]
+	}
+	for i := range datastores {
+		datastores[i].Tags = tagNames[datastores[i].ID]
+	}
+	for i := range clusters {
+		clusters[i].Tags = tagNames[clusters[i].ID]
 	}
 
 	// License info requires elevated vCenter permissions (read-only accounts
@@ -840,7 +897,9 @@ func collectAll(req helperRequest) (helperResponse, error) {
 			}
 		}
 
-		resp.VMs = append(resp.VMs, mapVMInfo(vm, hostName, clusterName, poolName, folderName))
+		vmInfo := mapVMInfo(vm, hostName, clusterName, poolName, folderName, fieldNames)
+		vmInfo.Tags = tagNames[vm.Reference().Value]
+		resp.VMs = append(resp.VMs, vmInfo)
 		resp.CPUs = append(resp.CPUs, mapVMCPU(vm, hostName, clusterName))
 		resp.Memory = append(resp.Memory, mapVMMemory(vm, hostName, clusterName))
 		resp.Disks = append(resp.Disks, mapVMDisks(vm, hostName)...)
@@ -1094,6 +1153,7 @@ func collectVMs(ctx context.Context, client *govmomi.Client) ([]mo.VirtualMachin
 	props := []string{
 		"name",
 		"configStatus",
+		"customValue",
 		"runtime.powerState",
 		"runtime.consolidationNeeded",
 		"config.template",
@@ -1130,7 +1190,7 @@ func collectVMs(ctx context.Context, client *govmomi.Client) ([]mo.VirtualMachin
 	return raw, nil
 }
 
-func collectHosts(ctx context.Context, client *govmomi.Client, clusterNames map[types.ManagedObjectReference]string, hostParents map[types.ManagedObjectReference]types.ManagedObjectReference) ([]hostInfo, error) {
+func collectHosts(ctx context.Context, client *govmomi.Client, clusterNames map[types.ManagedObjectReference]string, hostParents map[types.ManagedObjectReference]types.ManagedObjectReference, fieldNames map[int32]string) ([]hostInfo, error) {
 	m := view.NewManager(client.Client)
 	cv, err := m.CreateContainerView(ctx, client.Client.ServiceContent.RootFolder, []string{"HostSystem"}, true)
 	if err != nil {
@@ -1149,6 +1209,7 @@ func collectHosts(ctx context.Context, client *govmomi.Client, clusterNames map[
 		"config.service",
 		"config.dateTimeInfo",
 		"configManager",
+		"customValue",
 	}
 
 	var raw []mo.HostSystem
@@ -1212,11 +1273,12 @@ func collectHosts(ctx context.Context, client *govmomi.Client, clusterNames map[
 	result := make([]hostInfo, 0, len(raw))
 	for _, h := range raw {
 		info := hostInfo{
-			ID:              h.Reference().Value,
-			Name:            h.Name,
-			ConfigStatus:    string(h.ConfigStatus),
-			MaintenanceMode: h.Runtime.InMaintenanceMode,
-			NumVMsTotal:     len(h.Vm),
+			ID:               h.Reference().Value,
+			Name:             h.Name,
+			ConfigStatus:     string(h.ConfigStatus),
+			MaintenanceMode:  h.Runtime.InMaintenanceMode,
+			NumVMsTotal:      len(h.Vm),
+			CustomAttributes: resolveCustomAttributes(h.CustomValue, fieldNames),
 		}
 
 		if cname, ok := clusterNames[hostParents[h.Reference()]]; ok {
@@ -1319,7 +1381,7 @@ func runningVMCountsByHost(ctx context.Context, client *govmomi.Client) (map[str
 	return counts, nil
 }
 
-func collectDatastores(ctx context.Context, client *govmomi.Client) ([]datastoreInfo, error) {
+func collectDatastores(ctx context.Context, client *govmomi.Client, fieldNames map[int32]string) ([]datastoreInfo, error) {
 	m := view.NewManager(client.Client)
 	cv, err := m.CreateContainerView(ctx, client.Client.ServiceContent.RootFolder, []string{"Datastore"}, true)
 	if err != nil {
@@ -1328,7 +1390,7 @@ func collectDatastores(ctx context.Context, client *govmomi.Client) ([]datastore
 	defer cv.Destroy(ctx)
 
 	var raw []mo.Datastore
-	if err := cv.Retrieve(ctx, []string{"Datastore"}, []string{"summary", "vm", "host", "configStatus"}, &raw); err != nil {
+	if err := cv.Retrieve(ctx, []string{"Datastore"}, []string{"summary", "vm", "host", "configStatus", "customValue"}, &raw); err != nil {
 		return nil, err
 	}
 
@@ -1343,6 +1405,7 @@ func collectDatastores(ctx context.Context, client *govmomi.Client) ([]datastore
 			NumVMsTotal:       len(ds.Vm),
 			NumHostsConnected: len(ds.Host),
 			ConfigStatus:      string(ds.ConfigStatus),
+			CustomAttributes:  resolveCustomAttributes(ds.CustomValue, fieldNames),
 		}
 		if ds.Summary.Url != "" {
 			u := ds.Summary.Url
@@ -1353,7 +1416,7 @@ func collectDatastores(ctx context.Context, client *govmomi.Client) ([]datastore
 	return result, nil
 }
 
-func collectClusters(ctx context.Context, client *govmomi.Client) ([]clusterInfo, error) {
+func collectClusters(ctx context.Context, client *govmomi.Client, fieldNames map[int32]string) ([]clusterInfo, error) {
 	m := view.NewManager(client.Client)
 	cv, err := m.CreateContainerView(ctx, client.Client.ServiceContent.RootFolder, []string{"ClusterComputeResource"}, true)
 	if err != nil {
@@ -1362,17 +1425,18 @@ func collectClusters(ctx context.Context, client *govmomi.Client) ([]clusterInfo
 	defer cv.Destroy(ctx)
 
 	var raw []mo.ClusterComputeResource
-	if err := cv.Retrieve(ctx, []string{"ClusterComputeResource"}, []string{"name", "configStatus", "summary", "configuration", "host"}, &raw); err != nil {
+	if err := cv.Retrieve(ctx, []string{"ClusterComputeResource"}, []string{"name", "configStatus", "summary", "configuration", "host", "customValue"}, &raw); err != nil {
 		return nil, err
 	}
 
 	result := make([]clusterInfo, 0, len(raw))
 	for _, c := range raw {
 		info := clusterInfo{
-			ID:           c.Reference().Value,
-			Name:         c.Name,
-			ConfigStatus: string(c.ConfigStatus),
-			NumHosts:     len(c.Host),
+			ID:               c.Reference().Value,
+			Name:             c.Name,
+			ConfigStatus:     string(c.ConfigStatus),
+			NumHosts:         len(c.Host),
+			CustomAttributes: resolveCustomAttributes(c.CustomValue, fieldNames),
 		}
 
 		if summary := c.Summary.GetComputeResourceSummary(); summary != nil {
@@ -1851,7 +1915,7 @@ func collectMultipaths(ctx context.Context, client *govmomi.Client) ([]multipath
 
 // ---------- per-VM mapping ----------
 
-func mapVMInfo(vm mo.VirtualMachine, hostName string, clusterName *string, poolName *string, folderName *string) virtualMachineInfo {
+func mapVMInfo(vm mo.VirtualMachine, hostName string, clusterName *string, poolName *string, folderName *string, fieldNames map[int32]string) virtualMachineInfo {
 	info := virtualMachineInfo{
 		Name:                vm.Name,
 		PowerState:          string(vm.Runtime.PowerState),
@@ -1860,6 +1924,7 @@ func mapVMInfo(vm mo.VirtualMachine, hostName string, clusterName *string, poolN
 		ClusterName:         clusterName,
 		FolderName:          folderName,
 		ConsolidationNeeded: vm.Runtime.ConsolidationNeeded,
+		CustomAttributes:    resolveCustomAttributes(vm.CustomValue, fieldNames),
 		// vmID falls back to the VM's moref when Config is nil or Config.Uuid
 		// is empty — matching every other per-VM mapper (mapVMCPU, etc.).
 		// Using vm.Config.Uuid directly here left every such VM with an

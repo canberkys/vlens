@@ -54,13 +54,13 @@ public enum CSVWriter {
 
 extension VirtualMachineInfo: CSVExportable {
     public static var csvHeader: [String] {
-        ["VM", "Powerstate", "Template", "Guest OS", "CPUs", "Memory MiB", "Host", "Cluster", "Folder", "Resource Pool", "Primary IP", "VMware Tools", "VM UUID"]
+        ["VM", "Powerstate", "Template", "Guest OS", "CPUs", "Memory MiB", "Host", "Cluster", "Folder", "Resource Pool", "Primary IP", "VMware Tools", "VM UUID", "Tags", "Custom Attributes"]
     }
     public static var xlsxColumnTypes: [XLSXColumnType] {
-        [.text, .text, .text, .text, .number, .number, .text, .text, .text, .text, .text, .text, .text]
+        [.text, .text, .text, .text, .number, .number, .text, .text, .text, .text, .text, .text, .text, .text, .text]
     }
     public var csvRow: [String] {
-        [name, powerState.rawValue, template ? "True" : "False", guestOSFullName ?? "", "\(cpuCount)", "\(memoryMiB)", hostName, clusterName ?? "", folderName ?? "", resourcePoolName ?? "", primaryIPAddress ?? "", vmwareToolsStatus ?? "", vmUUID]
+        [name, powerState.rawValue, template ? "True" : "False", guestOSFullName ?? "", "\(cpuCount)", "\(memoryMiB)", hostName, clusterName ?? "", folderName ?? "", resourcePoolName ?? "", primaryIPAddress ?? "", vmwareToolsStatus ?? "", vmUUID, tags.joined(separator: ", "), customAttributes.joined(separator: ", ")]
     }
 }
 
@@ -126,37 +126,37 @@ extension VMToolsInfo: CSVExportable {
 
 extension HostInfo: CSVExportable {
     public static var csvHeader: [String] {
-        ["Host", "Cluster", "Status", "CPU Model", "Cores", "CPU %", "Memory MiB", "Mem %", "VMs Running", "VMs Total", "ESXi Version", "ESXi Build"]
+        ["Host", "Cluster", "Status", "CPU Model", "Cores", "CPU %", "Memory MiB", "Mem %", "VMs Running", "VMs Total", "ESXi Version", "ESXi Build", "Tags", "Custom Attributes"]
     }
     public static var xlsxColumnTypes: [XLSXColumnType] {
-        [.text, .text, .text, .text, .number, .number, .number, .number, .number, .number, .text, .text]
+        [.text, .text, .text, .text, .number, .number, .number, .number, .number, .number, .text, .text, .text, .text]
     }
     public var csvRow: [String] {
-        [name, clusterName ?? "", configStatus.rawValue, cpuModel, "\(numCpuCores)", cpuUsagePercent.map { String(format: "%.0f", $0) } ?? "", "\(memoryTotalMiB)", memoryUsagePercent.map { String(format: "%.0f", $0) } ?? "", "\(numVMsRunning)", "\(numVMsTotal)", esxVersion, esxBuild]
+        [name, clusterName ?? "", configStatus.rawValue, cpuModel, "\(numCpuCores)", cpuUsagePercent.map { String(format: "%.0f", $0) } ?? "", "\(memoryTotalMiB)", memoryUsagePercent.map { String(format: "%.0f", $0) } ?? "", "\(numVMsRunning)", "\(numVMsTotal)", esxVersion, esxBuild, tags.joined(separator: ", "), customAttributes.joined(separator: ", ")]
     }
 }
 
 extension DatastoreInfo: CSVExportable {
     public static var csvHeader: [String] {
-        ["Datastore", "Type", "Capacity MiB", "Free MiB", "Free %", "VMs", "Hosts", "Status"]
+        ["Datastore", "Type", "Capacity MiB", "Free MiB", "Free %", "VMs", "Hosts", "Status", "Tags", "Custom Attributes"]
     }
     public static var xlsxColumnTypes: [XLSXColumnType] {
-        [.text, .text, .number, .number, .number, .number, .number, .text]
+        [.text, .text, .number, .number, .number, .number, .number, .text, .text, .text]
     }
     public var csvRow: [String] {
-        [name, type, "\(capacityMiB)", "\(freeMiB)", String(format: "%.1f", freePercent), "\(numVMsTotal)", "\(numHostsConnected)", configStatus.rawValue]
+        [name, type, "\(capacityMiB)", "\(freeMiB)", String(format: "%.1f", freePercent), "\(numVMsTotal)", "\(numHostsConnected)", configStatus.rawValue, tags.joined(separator: ", "), customAttributes.joined(separator: ", ")]
     }
 }
 
 extension ClusterInfo: CSVExportable {
     public static var csvHeader: [String] {
-        ["Cluster", "Status", "Hosts", "Effective Hosts", "Total CPU MHz", "Total Memory MiB", "HA", "DRS", "Admission Control"]
+        ["Cluster", "Status", "Hosts", "Effective Hosts", "Total CPU MHz", "Total Memory MiB", "HA", "DRS", "Admission Control", "Tags", "Custom Attributes"]
     }
     public static var xlsxColumnTypes: [XLSXColumnType] {
-        [.text, .text, .number, .number, .number, .number, .text, .text, .text]
+        [.text, .text, .number, .number, .number, .number, .text, .text, .text, .text, .text]
     }
     public var csvRow: [String] {
-        [name, configStatus.rawValue, "\(numHosts)", "\(numEffectiveHosts)", "\(totalCpuMHz)", "\(totalMemoryMiB)", haEnabled ? "Enabled" : "Disabled", drsEnabled ? "Enabled" : "Disabled", admissionControlEnabled ? "Enabled" : "Disabled"]
+        [name, configStatus.rawValue, "\(numHosts)", "\(numEffectiveHosts)", "\(totalCpuMHz)", "\(totalMemoryMiB)", haEnabled ? "Enabled" : "Disabled", drsEnabled ? "Enabled" : "Disabled", admissionControlEnabled ? "Enabled" : "Disabled", tags.joined(separator: ", "), customAttributes.joined(separator: ", ")]
     }
 }
 

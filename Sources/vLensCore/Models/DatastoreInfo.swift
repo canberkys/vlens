@@ -13,11 +13,16 @@ public struct DatastoreInfo: Codable, Identifiable, Sendable {
     /// config status" rule (RVTools #19), and is also a real vDatastore
     /// column (RVTools' own reference documents one).
     public let configStatus: EntityStatus
+    /// Real vDatastore columns (CIS REST Tagging API / `customValue`) —
+    /// this tab has the most column headroom of the four.
+    public let tags: [String]
+    public let customAttributes: [String]
     public let url: String?
 
     public init(
         id: String, name: String, type: String, capacityMiB: Int, freeMiB: Int,
-        numVMsTotal: Int, numHostsConnected: Int, configStatus: EntityStatus = .green, url: String?
+        numVMsTotal: Int, numHostsConnected: Int, configStatus: EntityStatus = .green,
+        tags: [String] = [], customAttributes: [String] = [], url: String?
     ) {
         self.id = id
         self.name = name
@@ -27,6 +32,8 @@ public struct DatastoreInfo: Codable, Identifiable, Sendable {
         self.numVMsTotal = numVMsTotal
         self.numHostsConnected = numHostsConnected
         self.configStatus = configStatus
+        self.tags = tags
+        self.customAttributes = customAttributes
         self.url = url
     }
 
