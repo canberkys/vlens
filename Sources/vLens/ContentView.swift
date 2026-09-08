@@ -438,6 +438,7 @@ struct ContentView: View {
             .disabled(viewModel.isRefreshing)
             .accessibilityLabel(viewModel.isRefreshing ? "Refreshing" : "Refresh")
             .help("Re-collect the current inventory from vCenter. If this fails, the data already on screen is kept and marked as possibly stale rather than cleared.")
+            .keyboardShortcut("r", modifiers: .command)
 
             if !viewModel.isDemoMode {
                 Button(role: .destructive) {
@@ -457,6 +458,7 @@ struct ContentView: View {
 
             Menu {
                 Button("Export as CSV") { exportCurrentTab(as: .csv) }
+                    .keyboardShortcut("e", modifiers: .command)
                 Button("Export as XLSX") { exportCurrentTab(as: .xlsx) }
             } label: {
                 Label("Export", systemImage: "square.and.arrow.up")

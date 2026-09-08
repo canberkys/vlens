@@ -137,6 +137,10 @@ enum HelpTopic: String, CaseIterable, Identifiable {
 
             Cmd+F — Focus the search box (filters whatever tab you're currently looking at)
 
+            Cmd+R — Refresh the current inventory
+
+            Cmd+E — Export the current tab as CSV
+
             Cmd+Shift+? — vLens Help (this window)
             """
         case .commandLine:
