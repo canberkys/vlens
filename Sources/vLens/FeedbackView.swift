@@ -31,8 +31,7 @@ struct FeedbackView: View {
         case failure(message: String)
     }
 
-    // Filled in once `feedback-relay/` is deployed — see its README.
-    private static let relayURL = URL(string: "https://vlens-feedback-relay.canberkki.workers.dev")!
+    private static let relayURL = URL(string: "https://vlens-feedback-relay.ck-7fa.workers.dev")!
     private static let clientToken = "b294ea990fa2fae23b8430e7aaa4036b981bdb2a5db8ca706cf42361b817f172"
 
     var body: some View {
