@@ -6,9 +6,13 @@ comes from, what's implemented versus still a gap, and how the app is built. Upd
 this file whenever a tab, field, or architectural decision changes; treat drift
 between this document and the code as a bug.
 
-Status snapshot: **2026-09-03**. vLens is pre-release, in active development, not yet
-validated against a real production vCenter (see [Testing without a real
-vCenter](#testing-without-a-real-vcenter-vcsim)).
+Status snapshot: **2026-09-08**. vLens is signed, notarized, and publicly
+distributed (see [Releases](https://github.com/canberkys/vlens/releases)) —
+still not yet validated against a real production vCenter (see [Testing
+without a real vCenter](#testing-without-a-real-vcenter-vcsim)), the one
+real gate left before calling it "production ready." This section (§10) is
+the one most prone to drifting stale — if a claim here looks off, trust
+`CHANGELOG.md`/`git log` over this document and fix it.
 
 ---
 
@@ -995,11 +999,31 @@ still worth doing — but it's no longer the blocker it looked like.
 Organized by "buildable without a real vCenter" (everything, via vcsim + demo data)
 versus what's simply not started yet:
 
-**Missing tabs** (1 of RVTools' 24 — every tab now has a vLens counterpart except
-this one, see [§4](#4-tab-reference)): `vFileInfo` (datastore file browser).
-Explicitly out of scope indefinitely since RVTools' own docs flag it as slow and
-rarely used interactively — this is the one tab that's a deliberate, permanent
-scope decision rather than a "not gotten to it yet."
+**Missing tabs** (2 of RVTools' real 26 — see [§4](#4-tab-reference); RVTools'
+own PDF index lists 26 tabs, not 24 — 24 is the *vHealth rule* count, easy to
+conflate and this doc did for a while):
+- `vFileInfo` (datastore file browser). Explicitly out of scope indefinitely
+  since RVTools' own docs flag it as slow and rarely used interactively — a
+  deliberate, permanent scope decision, not a "not gotten to it yet."
+- `vSource` (the vCenter/SDK server's own identity — API type/version, build,
+  VI SDK Server/UUID, etc.). Not a permanent exclusion like `vFileInfo` —
+  `VCenterInfo` already collects a subset of this data (it backs the PDF
+  report's header, see [§6](#6-export)), it just isn't its own tab yet.
+  Found via a 2026-09-08 audit that re-verified against the real RVTools PDF;
+  not yet built.
+
+**Also found in that same audit, not yet built**:
+- **Object ID / VI SDK Server / VI SDK UUID per-row traceability**: RVTools
+  appends these to nearly every tab so a row can be traced back to a specific
+  source vCenter/object. vLens has no per-row moref or VI SDK identity
+  anywhere — most relevant for `vlens-cli merge`'s multi-vCenter output,
+  which currently tags rows only with a human-readable profile name.
+- **Per-rule vHealth enable/disable**: RVTools' Health Properties panel lets
+  you turn individual checks on/off, not just adjust thresholds.
+  `HealthCheckPreferencesStore` only persists the 5 numeric thresholds —
+  none of the 21 implemented rules can be individually disabled.
+- **Auto-refresh**: RVTools has a "refresh data on an interval" preference;
+  vLens only has the manual Refresh button.
 
 **vHealth**: 21 of 24 rules implemented, 3 remaining (all `vFileInfo`-dependent) — see [§5](#5-vhealth-rule-status)
 for the full table.
@@ -1012,17 +1036,22 @@ report" note — RVTools itself doesn't have anything like it.
 non-UI piece of `vLensCore` unchanged (Keychain, saved connections, certificate
 trust store, snapshot store, vHealth engine, CSV/XLSX writers). Commands:
 `list-profiles`, `list-tabs`, `snapshot --profile <name> [--label] [--full-detail]`,
-`export --profile <name> --tab <key> --format csv|xlsx --output <path>`. Requires
-a connection already saved (Keychain) and trusted (certificate) via the GUI app
-first — the CLI can't show an approval sheet, so an unknown/mismatched
-certificate is a hard failure with a clear message, never a silent trust.
-Reads/writes the same preferences the GUI does via an explicit
-`UserDefaults(suiteName: "com.canberkki.vlens")` when the process's own bundle
-ID doesn't already match (in the packaged app, `vlens-cli` inherits the GUI's
-bundle ID by directory proximity to its `Info.plist`, so `.standard` already
-resolves correctly there — the explicit suite is only needed in `swift run`
-dev mode, where there's no bundle ID at all). PDF report export is out of
-scope (headless `ImageRenderer` reliability untested).
+`export --profile <name> --tab <key> --format csv|xlsx --output <path>`,
+`merge --profiles <name1,name2>|--demo --tab <key> --format csv|xlsx --output <path>`.
+Requires a connection already saved (Keychain) and trusted (certificate) via
+the GUI app first — the CLI can't show an approval sheet, so an
+unknown/mismatched certificate is a hard failure with a clear message, never
+a silent trust. Reads/writes the same preferences the GUI does via an
+explicit `UserDefaults(suiteName: "com.canberkki.vlens")` when the process's
+own bundle ID doesn't already match (in the packaged app, `vlens-cli`
+inherits the GUI's bundle ID by directory proximity to its `Info.plist`, so
+`.standard` already resolves correctly there — the explicit suite is only
+needed in `swift run` dev mode, where there's no bundle ID at all). PDF
+report and vPerformance export are both out of scope for `export`/scheduled
+Automation — PDF because headless `ImageRenderer` reliability is untested,
+vPerformance because it needs its own time-window collection pass with no
+obvious default for an unattended run (a real, not-yet-made design decision,
+not just a missing case in a switch).
 
 **Scheduling** (2026-09-04, Faz 10B) — Preferences' "Automation" section
 configures one recurring schedule (connection, action — Snapshot or Export
@@ -1035,26 +1064,29 @@ build has no such stable path, so scheduling only works from a real signed
 build, same constraint the CLI itself doesn't have. v1 supports exactly one
 active schedule, not a list.
 
-**Multi-vCenter merge**: RVTools ships a separate `RVToolsMergeExcelFiles` utility.
-vLens's MVP supports one active connection at a time, switchable. Not started.
+**Multi-vCenter merge** [DONE, 2026-09-06]: RVTools ships a separate
+`RVToolsMergeExcelFiles` utility. vLens's equivalent is `vlens-cli merge`
+(CLI-only — a GUI version was built, then deliberately reverted as
+architecturally bolt-on; see `~/.claude/plans/swirling-painting-snail.md`).
+Connects to each named saved profile in turn (not simultaneously, matching
+RVTools' own sequential-collection model) and writes one combined file,
+tagging every row with a human-readable "vCenter" profile name column — see
+this section's own "Object ID / VI SDK" gap note above for what it doesn't
+yet do. `--demo` runs the same logic against two synthetic mock vCenters,
+no saved connection needed.
 
-**Distribution**: `scripts/release.sh` builds a real, signed `.app` bundle now —
-`swift build -c release`, hand-constructed `Contents/{MacOS,Resources}` (no Xcode
-project — mirrors the same developer's already-proven PkgLens release pattern),
-signs the embedded `vlens-helper` binary before the outer app (nested code must
-be signed first), verified with `codesign --verify --deep --strict`. Only
-notarization/DMG remain gated on a one-time manual step (`xcrun notarytool
-store-credentials`, needs an Apple ID app-specific password — can't be automated,
-needs the developer's own Apple ID login) — the script detects whether that's
-done and skips straight to a clear instruction if not, rather than failing.
-`Resources/Info.plist` carries real versioning (`CFBundleShortVersionString`
-1.0.0 — the first real release; Package.swift's old "v0.1.0" comment was never
-distributed) and `Resources/AppIcon.icns` (placeholder, SF Symbol-based, per
-§10's icon note below). Auto-update (target: Sparkle) still needs the
-notarized/hosted release this unblocks. The project itself is on GitHub
-(`github.com/canberkys/vlens`, private) as of 2026-09-04 — this unblocked the
-Feedback screen's GitHub-Issue channel, see [§13](#13-feedback--bug-reports).
-See `~/.claude/plans/swirling-painting-snail.md` for the phased plan.
+**Distribution** [DONE]: signed, notarized, DMG-distributed, auto-updating.
+`scripts/release.sh` builds the real, signed `.app` bundle — `swift build -c
+release`, hand-constructed `Contents/{MacOS,Resources}` (no Xcode project),
+nested-code nested signing (helper → `vlens-cli` → Sparkle.framework → outer
+app), `xcrun notarytool submit --wait`, staple, DMG packaging, Sparkle
+`appcast.xml` generation. The project has been public on GitHub
+(`github.com/canberkys/vlens`) since 2026-09-04 — releases are published via
+`gh release create` and `appcast.xml` is served unauthenticated from
+`raw.githubusercontent.com` (Sparkle's background update check needs that).
+Current version: see `CHANGELOG.md`'s top entry, which is the actual source
+of truth — this doc doesn't track the version number to avoid it going stale
+here too.
 
 **VMSA security advisory awareness**: Phase A done — see [§12](#12-security-advisory-awareness).
 Phase B (build-level matching against `HostInfo.esxVersion`/`VCenterInfo.build`)

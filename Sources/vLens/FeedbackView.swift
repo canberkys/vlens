@@ -88,6 +88,7 @@ struct FeedbackView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(title.isEmpty || description.isEmpty || isSending)
+                    .accessibilityLabel(isSending ? "Sending" : "Send Feedback")
                 }
             }
         }

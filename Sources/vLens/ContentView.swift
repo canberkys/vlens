@@ -240,6 +240,7 @@ struct ContentView: View {
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
             .disabled(viewModel.isConnecting)
+            .accessibilityLabel(viewModel.isConnecting ? "Connecting" : "Connect")
 
             // Secondary escape hatch, not a co-equal action next to
             // Connect — smaller, muted, below the primary button.
@@ -435,6 +436,7 @@ struct ContentView: View {
                 }
             }
             .disabled(viewModel.isRefreshing)
+            .accessibilityLabel(viewModel.isRefreshing ? "Refreshing" : "Refresh")
             .help("Re-collect the current inventory from vCenter. If this fails, the data already on screen is kept and marked as possibly stale rather than cleared.")
 
             if !viewModel.isDemoMode {

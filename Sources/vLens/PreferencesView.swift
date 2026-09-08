@@ -109,6 +109,10 @@ struct PreferencesView: View {
                 Text("Fetches Broadcom's public security advisory list once per launch — a plain internet request, independent of any vCenter connection. Off skips this entirely.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Toggle("Check for ESXi/vCenter end-of-life dates", isOn: $viewModel.endOfLifeEnabled)
+                Text("Fetches VMware's public support lifecycle data — same kind of request as the advisory check above, independent of it. Off skips this entirely.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Snapshot comparison metrics") {

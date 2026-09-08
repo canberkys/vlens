@@ -180,6 +180,19 @@ final class ConnectionViewModel {
         }
     }
 
+    /// Same idea, for `checkVMwareEndOfLife()` — see that toggle's own doc
+    /// comment above for why this needs to exist independently of it.
+    var endOfLifeEnabled: Bool {
+        didSet {
+            guard endOfLifeEnabled != oldValue else { return }
+            endOfLifePreferencesStore.setEnabled(endOfLifeEnabled)
+            if !endOfLifeEnabled {
+                esxiReleaseCycles = []
+                vCenterReleaseCycles = []
+            }
+        }
+    }
+
     private let helperClient = VSphereHelperClient(helperURL: HelperLocator.resolve())
     private let profileStore = ConnectionProfileStore()
     private let credentialStore: CredentialStoreProtocol = KeychainCredentialStore()
@@ -196,6 +209,7 @@ final class ConnectionViewModel {
     private let vmsaClient = VMSAClient()
     private let endOfLifeClient = EndOfLifeClient()
     private let securityAdvisoryPreferencesStore = SecurityAdvisoryPreferencesStore()
+    private let endOfLifePreferencesStore = EndOfLifePreferencesStore()
 
     init() {
         savedProfiles = profileStore.loadAll()
@@ -203,6 +217,7 @@ final class ConnectionViewModel {
         enabledSnapshotMetricKeys = snapshotPreferencesStore.loadEnabledMetricKeys()
         automationSchedule = automationPreferencesStore.load()
         securityAdvisoriesEnabled = securityAdvisoryPreferencesStore.isEnabled()
+        endOfLifeEnabled = endOfLifePreferencesStore.isEnabled()
     }
 
     /// Persists the schedule and (re)installs the launchd job — called from
@@ -579,6 +594,7 @@ final class ConnectionViewModel {
     /// are populated (connect or demo). The two products are fetched
     /// concurrently — independent requests, no reason to serialize them.
     func checkVMwareEndOfLife() async {
+        guard endOfLifeEnabled else { return }
         async let esxi = (try? endOfLifeClient.fetchESXiReleaseCycles()) ?? []
         async let vcenter = (try? endOfLifeClient.fetchVCenterReleaseCycles()) ?? []
         esxiReleaseCycles = await esxi
