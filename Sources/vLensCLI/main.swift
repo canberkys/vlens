@@ -190,7 +190,7 @@ func ensureCertificateTrusted(helperClient: VSphereHelperClient, host: String, s
     do {
         cert = try await helperClient.fetchCertificate(url: sdkURL)
     } catch {
-        fail("Couldn't fetch certificate for \(host): \(error)")
+        fail("Couldn't fetch certificate for \(host): \(error.localizedDescription)")
     }
     let fingerprint = CertificateFingerprint(sha256Hex: cert.sha256Fingerprint)
 
@@ -212,7 +212,7 @@ func collect(profile: ConnectionProfile, password: String) async -> CollectedInv
     do {
         return try await helperClient.collectAll(url: sdkURL, username: profile.username, password: password, expectedFingerprint: expectedFingerprint)
     } catch {
-        fail("Collection failed: \(error)")
+        fail("Collection failed: \(error.localizedDescription)")
     }
 }
 
@@ -274,7 +274,7 @@ case "snapshot":
     do {
         try store.add(snapshot)
     } catch {
-        fail("Couldn't save snapshot: \(error)")
+        fail("Couldn't save snapshot: \(error.localizedDescription)")
     }
     print("Snapshot saved for \(profile.host)\(fullDetail ? " (full VM inventory included)" : "").")
     recordAutomationSuccessIfNeeded()
@@ -296,7 +296,7 @@ case "export":
         let data = try exportData(tab: tab, format: format, inventory: inventory, healthChecks: healthChecks)
         try data.write(to: URL(fileURLWithPath: outputPath), options: .atomic)
     } catch {
-        fail("Export failed: \(error)")
+        fail("Export failed: \(error.localizedDescription)")
     }
     print("Exported \(tab.rawValue) as \(format.rawValue) to \(outputPath)")
     recordAutomationSuccessIfNeeded()
@@ -336,7 +336,7 @@ case "merge":
         let data = try mergedExportData(tab: tab, format: format, sources: sources)
         try data.write(to: URL(fileURLWithPath: outputPath), options: .atomic)
     } catch {
-        fail("Merge export failed: \(error)")
+        fail("Merge export failed: \(error.localizedDescription)")
     }
     print("Merged \(sources.map(\.name).joined(separator: " + ")) — \(tab.rawValue) as \(format.rawValue) to \(outputPath)")
 
