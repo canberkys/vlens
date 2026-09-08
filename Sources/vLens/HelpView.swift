@@ -114,7 +114,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
             return """
             Found a bug, or want a feature? Help menu → "Send Feedback…" opens a form right in the app — pick Bug Report or Feature Request, write what's on your mind, and vLens shows you exactly what diagnostic info (app version, macOS version, connected vCenter version — never your host, username, or password) would go along with it before you send anything.
 
-            Nothing is ever sent automatically or silently: "Send via Email" opens a prefilled draft in your own mail client, and "Open as GitHub Issue" opens a prefilled issue in your browser — you review and send either one yourself.
+            "Send Feedback" submits directly — it becomes a GitHub issue on `canberkys/vlens` without redirecting you to a mail client or browser. Nothing leaves the app except what's shown on screen when you click send.
             """
         case .preferences:
             return """
