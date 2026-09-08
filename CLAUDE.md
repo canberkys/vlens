@@ -185,8 +185,44 @@ derse (örn. bir feature'ı demo modda deneme aşamasında), bu checklist o
 özellik production'a alınana kadar uygulanmaz — ama karar kullanıcıya ait,
 varsayılan davranış her zaman "merge ettiysen yayınla"dır.
 
-## Durum (2026-09-03, son maddeler 2026-09-07)
+## Durum (2026-09-03, son maddeler 2026-09-08)
 
+- [x] **(2026-09-08) Faz 5.1 — sessiz feedback relay + boş durum/hata mesajı
+      geçişi (v1.7.0)** — iki bağımsız branch'te hazırlanıp bu turda birlikte
+      tek release'e alındı. **Faz 5.1**: `FeedbackView`'ın iki-kanal
+      ("Send via Email"/"Open as GitHub Issue", ikisi de kullanıcıyı dışarı
+      çıkarıyordu) tasarımı, sessiz tek-buton gönderime döndü. Yeni
+      `feedback-relay/` (Cloudflare Worker, `src/index.js`) — sadece
+      `canberkys/vlens`'in Issues'ına yazabilen fine-grained bir GitHub PAT'i
+      Worker secret'ı olarak tutuyor, uygulama bu token'ı hiç görmüyor.
+      `X-vLens-Client` header'ı (app'e gömülü sabit) gerçek bir güvenlik
+      değil — sadece rastgele/kazara isteklerini filtreliyor. Kullanıcı
+      gerçekten bir Cloudflare hesabı açtı, `wrangler login` ile giriş yaptı
+      (OAuth ilk denemede timeout oldu, ikincide başarılı), workers.dev
+      subdomain'i (`ck-7fa`) dashboard'dan seçti, GitHub'da fine-grained
+      PAT'i (sadece Issues: Read and write, 90 gün geçerlilik) oluşturdu.
+      **Not**: kullanıcı PAT'i yanlışlıkla sohbete yapıştırdı (terminale değil)
+      — kapsamı dar olduğu için acil risk değil, kendisi 90 günlük
+      expiration'la sınırlamıştı, rotasyon kendisine bırakıldı. Uçtan uca
+      gerçek doğrulama: hem "bug" (→ `bug` etiketi) hem "feature"
+      (→ `enhancement` etiketi) yolu gerçek GitHub issue'ları açtı (#31, #32),
+      içerik/etiket doğrulanıp ikisi de silindi. `docs/vLens-Reference.md`
+      §13, `HelpView.swift`, `README.md`'nin ilgili satırları yeni mimariye
+      göre güncellendi (eski "nothing sent automatically" ifadesi artık
+      yanlıştı, düzeltildi). **Boş durum/hata mesajı geçişi** (Faz 7 kalanı):
+      6 tab'a (vHBA, dvSwitch, dvPort, vMultipath, vFloppy, vSnapshot) —
+      sağlıklı bir ortamda da 0 satır gösterebilecek ama bunun neden
+      olduğu belirsiz kalan tab'lar — `ContentUnavailableView` eklendi
+      (VPartition/VLicense/VUSB/VApp/VHealth'in zaten kullandığı desenle
+      aynı). `HelperClientError` artık `LocalizedError` — 5 case'in hepsi
+      için uygun mesaj (`.helperBinaryNotFound` eskiden geliştiriciye "go
+      build çalıştırdın mı?" diyordu, paketlenmiş app'i çalıştıran gerçek
+      kullanıcı için anlamsızdı; `.emptyResponse`/`.decodingFailed` hiç
+      mesajı olmadığı için ham enum dökümü düşüyordu, hem GUI'de hem
+      `vlens-cli`'da — CLI'daki 5 ham `\(error)` interpolasyonu
+      `error.localizedDescription`'a çevrildi). 5 yeni test. `swift
+      build`/`swift test` temiz (115/115), `go build`/`go vet`/`go test`
+      temiz.
 - [x] **(2026-09-07) vHealth #15/16/18/19 — VM/Host/Cluster/Datastore config
       status (v1.6.2)** — kullanıcı "VPN dışında ne yapılabilir" diye sordu,
       önceki bir turda "EventManager gerektiriyor, ayrı/büyük bir iş" diye

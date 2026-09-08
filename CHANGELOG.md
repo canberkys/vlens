@@ -3,6 +3,27 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.7.0] - 2026-09-08 (+03)
+
+### Added
+- **Feedback now submits silently.** "Send Feedback" used to redirect you
+  to a prefilled mail draft or a prefilled GitHub "new issue" page for you
+  to review and send yourself. It now submits directly — a small
+  Cloudflare Worker (`feedback-relay/`) holds a GitHub token scoped to
+  only this repo's Issues and files the issue server-side, so nothing
+  leaves the app except what's shown on screen before you click Send.
+  No credential ships inside the app itself.
+
+### Changed
+- **Clearer empty-state messages** on 6 tabs (vHBA, dvSwitch, dvPort,
+  vMultipath, vFloppy, vSnapshot) that could plausibly show zero rows in a
+  perfectly healthy environment — each now explains why, instead of a bare
+  empty table.
+- **Clearer error messages** when the bundled collection helper fails —
+  previously a couple of failure modes (a helper binary that can't be
+  found, a malformed/empty response) fell through to a raw internal error
+  dump instead of something a user could act on.
+
 ## [1.6.2] - 2026-09-07 (+03)
 
 ### Added
