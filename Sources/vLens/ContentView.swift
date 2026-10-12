@@ -76,6 +76,7 @@ struct ContentView: View {
                 // overlay toggle, which is the exact "sidebar just vanished"
                 // failure mode this fixes.
                 .navigationSplitViewStyle(.balanced)
+                .hidingWindowToolbarBackground()
                 .frame(minWidth: 1000, minHeight: 640)
             }
         }
@@ -339,6 +340,11 @@ struct ContentView: View {
 
     // MARK: - Connected state chrome
 
+    /// Shared leading/trailing inset for the demo banner, toolbar, and
+    /// status bar, chosen so their first glyph lines up with the table's
+    /// own row text (~16pt in from the detail column's edge).
+    private static let chromeHorizontalPadding: CGFloat = 16
+
     private var demoBanner: some View {
         HStack {
             Image(systemName: "wand.and.stars")
@@ -348,10 +354,19 @@ struct ContentView: View {
                 .buttonStyle(.link)
         }
         .font(.callout)
-        .padding(.horizontal, 12)
+        // An inset, rounded card rather than an edge-to-edge strip: on
+        // macOS 26 table rows are drawn inset with rounded corners, and a
+        // full-bleed band butting against the column edge read as a
+        // misaligned step. Outer + inner insets still put the icon on the
+        // same 16pt line as the toolbar and table text.
+        .padding(.horizontal, Self.chromeHorizontalPadding - Self.bannerOuterInset)
         .padding(.vertical, 6)
-        .background(Color.orange.opacity(0.15))
+        .background(Color.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding(.horizontal, Self.bannerOuterInset)
+        .padding(.top, 6)
     }
+
+    private static let bannerOuterInset: CGFloat = 8
 
     private var toolbar: some View {
         HStack {
@@ -366,6 +381,10 @@ struct ContentView: View {
             } label: {
                 Image(systemName: "sidebar.leading")
             }
+            // Borderless, like the search glyph beside it: the default
+            // bordered bezel pushed this icon ~10pt right of everything
+            // else on the leading edge (banner icon, table text).
+            .buttonStyle(.borderless)
             .help("Toggle Sidebar")
             .accessibilityLabel("Toggle Sidebar")
 
@@ -467,7 +486,7 @@ struct ContentView: View {
             .fixedSize()
             .disabled(currentRowCount == 0)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, Self.chromeHorizontalPadding)
         .padding(.vertical, 6)
     }
 
@@ -527,7 +546,7 @@ struct ContentView: View {
         }
         .font(.caption)
         .foregroundStyle(.secondary)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, Self.chromeHorizontalPadding)
         .padding(.vertical, 4)
     }
 
@@ -745,4 +764,20 @@ struct ContentView: View {
 
 #Preview {
     ContentView(viewModel: ConnectionViewModel())
+}
+
+private extension View {
+    /// macOS 26 paints its own lighter band behind the (empty) window
+    /// toolbar over the detail column, which ran to a different left edge
+    /// than the content below it. Hiding it lets the titlebar blend into the
+    /// content. `toolbarBackgroundVisibility` is macOS 15+; on 14 there's no
+    /// such band, so nothing to hide.
+    @ViewBuilder
+    func hidingWindowToolbarBackground() -> some View {
+        if #available(macOS 15.0, *) {
+            toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+        } else {
+            self
+        }
+    }
 }
