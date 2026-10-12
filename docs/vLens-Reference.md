@@ -6,11 +6,11 @@ comes from, what's implemented versus still a gap, and how the app is built. Upd
 this file whenever a tab, field, or architectural decision changes; treat drift
 between this document and the code as a bug.
 
-Status snapshot: **2026-09-08**. vLens is signed, notarized, and publicly
-distributed (see [Releases](https://github.com/canberkys/vlens/releases)) —
-still not yet validated against a real production vCenter (see [Testing
-without a real vCenter](#testing-without-a-real-vcenter-vcsim)), the one
-real gate left before calling it "production ready." This section (§10) is
+Status snapshot: **2026-10-12** (v1.8.1). vLens is signed, notarized, and
+publicly distributed (see [Releases](https://github.com/canberkys/vlens/releases))
+and has been validated against real vCenter 7 and 8 environments; vCenter 9
+is still untested. Day-to-day verification runs against vcsim (see [Testing
+without a real vCenter](#9-testing-without-a-real-vcenter-vcsim)). This status line (and §10) is
 the one most prone to drifting stale — if a claim here looks off, trust
 `CHANGELOG.md`/`git log` over this document and fix it.
 
@@ -18,7 +18,7 @@ the one most prone to drifting stale — if a claim here looks off, trust
 
 ## 1. What vLens is
 
-vLens is a native macOS alternative to [RVTools](https://www.robware.net/rvtools) —
+vLens is a native macOS vCenter inventory tool inspired by [RVTools](https://www.robware.net/rvtools) —
 the Windows-only .NET tool nearly every VMware administrator uses to pull a full
 vCenter inventory into a fast, sortable table and export it to CSV/XLSX. There is no
 real macOS-native equivalent; Mac-based admins run RVTools in Parallels/BootCamp or
@@ -26,10 +26,10 @@ use partial CLI workarounds (see the demand evidence in the project's planning
 history: AWS built and ships `awslabs/export-for-vcenter` specifically because
 customers on Mac/Linux couldn't use RVTools).
 
-vLens is not a port of anything. A prior attempt at this idea,
-`~/Documents/Projects/vInventory`, chose Tauri + a pure-REST-API approach and is
-shelved (Windows-only scope, no real backend). vLens is a clean, macOS-first,
-native SwiftUI rewrite that also fixes vInventory's core architectural mistake:
+vLens is not a port of anything. An earlier, unreleased prototype of this idea
+chose Tauri + a pure-REST-API approach and was shelved. vLens is a clean,
+macOS-first, native SwiftUI rewrite that also fixes that prototype's core
+architectural mistake:
 RVTools gets ~95% of its data from the SOAP-based vSphere Web Services SDK (vim25)
 via `PropertyCollector`, not the newer REST API — so vLens does too, via an embedded
 Go/govmomi helper (see [§3](#3-architecture)).
@@ -965,8 +965,7 @@ see each model's `Searchable` extension for the exact field list).
 
 ## 9. Testing without a real vCenter: vcsim
 
-**Context**: as of 2026-09-03 the user's VPN access to their real vCenter has been
-revoked by their Nw-Sec team, with no ETA for restoration outside the office. This
+**Context**: vLens was largely built without access to a real vCenter. That
 does **not** block real integration testing.
 
 govmomi ships a `simulator` package — the same engine behind the upstream `vcsim`
@@ -1019,8 +1018,10 @@ the scale RVTools' own userbase typically runs.
 **What vcsim can't validate**: anything specific to the user's actual environment —
 their real naming conventions, real-world edge cases (weird guest OS strings,
 unusual controller types, actual certificate chains), and genuine end-to-end UI
-interaction against a live target. Once VPN access returns, a real-vCenter pass is
-still worth doing — but it's no longer the blocker it looked like.
+interaction against a live target. Real vCenter 7 and 8 passes have since been
+done; the first real-world report after release (v1.8.0, untagged VMs encoded as
+`"tags": null`) is exactly the kind of gap vcsim's default model missed — see
+[§14](#14-vsphere-tags--custom-attributes).
 
 ---
 
@@ -1102,7 +1103,7 @@ active schedule, not a list.
 **Multi-vCenter merge** [DONE, 2026-09-06]: RVTools ships a separate
 `RVToolsMergeExcelFiles` utility. vLens's equivalent is `vlens-cli merge`
 (CLI-only — a GUI version was built, then deliberately reverted as
-architecturally bolt-on; see `~/.claude/plans/swirling-painting-snail.md`).
+architecturally bolt-on).
 Connects to each named saved profile in turn (not simultaneously, matching
 RVTools' own sequential-collection model) and writes one combined file,
 tagging every row with a human-readable "vCenter" profile name column — see
@@ -1245,8 +1246,7 @@ mutable response state means these specific tests must run serialized
 ## 13. Feedback / bug reports
 
 `Sources/vLens/FeedbackView.swift`, reached from the Help menu ("Send
-Feedback…", `vLensApp.swift`'s Feedback `Window` scene). Faz 5.1 of
-`~/.claude/plans/swirling-painting-snail.md` — **silent, single-button
+Feedback…", `vLensApp.swift`'s Feedback `Window` scene) — **silent, single-button
 submit**, no mail client/browser redirect. Fields: type (Bug Report /
 Feature Request), title, description, and automatically-attached diagnostic
 info shown transparently before sending — macOS version, app version, and
@@ -1289,8 +1289,7 @@ quickly — a workflow, not a feature embedded in the app.
 
 ## 14. vSphere Tags & Custom Attributes
 
-Found via direct verification against RVTools' own PDF reference
-(`~/Downloads/Rvtools.pdf`) — it documents "Custom attributes"/"tags"
+Found via direct verification against RVTools' own PDF reference — it documents "Custom attributes"/"tags"
 columns on nearly every tab, sourced from two unrelated vSphere features
 vLens never touched before this: the CIS REST Tagging API (6.5+) for
 Tags, and the plain SOAP `ManagedEntity.customValue` property for Custom
@@ -1318,6 +1317,14 @@ not one request per object — with tag names resolved per unique tag ID
 pattern: REST login failing (older/unlicensed vCenter, no tagging
 permission) leaves every `tags` field empty rather than failing
 `collectAll`.
+
+**Empty means `[]`, never `null`** (fixed in v1.8.1): a plain Go map lookup
+for an untagged object returns a nil slice, which `encoding/json` writes as
+`null` — and the Swift side decodes `tags` as a non-optional `[String]`, so a
+single untagged VM failed the whole collection on real vCenters. Every
+assignment now goes through `tagsFor()`, and
+`helper/collect_integration_test.go` runs `collectAll` end to end against
+vcsim with exactly one tagged VM to keep it that way.
 
 **vcsim genuinely simulates this** (`govmomi/vapi/simulator`, blank-imported
 in `helper/vcsim/main.go` alongside `model.Service.RegisterEndpoints = true`
