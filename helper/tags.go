@@ -57,6 +57,18 @@ func collectTagNames(ctx context.Context, tm *tags.Manager, refs []mo.Reference)
 	return result, nil
 }
 
+// tagsFor returns an object's tag names, never nil. A plain map lookup
+// yields a nil slice for untagged objects (or every object, when the
+// tagging session failed), which encoding/json writes as `null` — and the
+// Swift side decodes `tags` as a non-optional [String], so one untagged VM
+// failed the whole collection.
+func tagsFor(tagNames map[string][]string, id string) []string {
+	if names, ok := tagNames[id]; ok && names != nil {
+		return names
+	}
+	return []string{}
+}
+
 // customFieldNames resolves every custom attribute's numeric field key to
 // its display name, once per collectAll call — CustomValue itself only
 // ever carries the key, never a human-readable name. Tolerant of failure

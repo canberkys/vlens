@@ -70,6 +70,21 @@ struct VMSAClientTests {
     #expect(advisories[0].cves.isEmpty)
 }
 
+/// The live API returns `"supportProducts": null` on some rows (seen on
+/// VCDSA24598 and others) — one such row must not fail the whole list.
+@Test func nullFieldsDoNotFailTheList() async throws {
+    let json = """
+    {"success":true,"data":{"list":[{"affectedCve":null,"documentId":"VCDSA24598","notificationId":24598,"notificationUrl":null,"published":"01 January 2026","severity":"HIGH","status":"OPEN","supportProducts":null,"title":"A"},{"affectedCve":"CVE-1","documentId":"D2","notificationId":2,"notificationUrl":"https://example.com","published":"01 January 2026","severity":"LOW","status":"OPEN","supportProducts":"VMware ESXi","title":"B"}]}}
+    """
+    let client = makeStubbedClient(json: json)
+
+    let advisories = try await client.fetchRecentAdvisories()
+
+    #expect(advisories.count == 2)
+    #expect(advisories[0].affectedProducts == "")
+    #expect(advisories[0].cves.isEmpty)
+}
+
 @Test func apiReportedFailureThrows() async {
     let json = """
     {"success":false,"data":{"list":[]}}

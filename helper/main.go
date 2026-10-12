@@ -482,6 +482,15 @@ type performanceCoverage struct {
 // ---------- main ----------
 
 func main() {
+	// A panic anywhere in collection otherwise leaves only a Go stack
+	// trace on stderr; report it the same way as any other failure.
+	defer func() {
+		if r := recover(); r != nil {
+			msg := fmt.Sprintf("helper crashed: %v", r)
+			writeResponse(helperResponse{OK: false, Error: &msg})
+			os.Exit(1)
+		}
+	}()
 	if err := run(); err != nil {
 		msg := err.Error()
 		writeResponse(helperResponse{OK: false, Error: &msg})
@@ -597,8 +606,15 @@ func writeResponse(resp helperResponse) {
 	if resp.Partitions == nil {
 		resp.Partitions = []partitionInfo{}
 	}
-	enc := json.NewEncoder(os.Stdout)
-	_ = enc.Encode(resp)
+	// Marshal first so a failure (e.g. a NaN/Inf float) is reported as a
+	// real ok:false error instead of an empty stdout the app can only
+	// call "exited without returning any data".
+	data, err := json.Marshal(resp)
+	if err != nil {
+		msg := fmt.Sprintf("helper response encode failed: %v", err)
+		data, _ = json.Marshal(helperResponse{OK: false, Error: &msg})
+	}
+	_, _ = os.Stdout.Write(append(data, '\n'))
 }
 
 // ---------- certificate trust ----------
@@ -728,7 +744,9 @@ func newPinnedClient(ctx context.Context, u *url.URL, expectedFingerprint string
 }
 
 func collectAll(req helperRequest) (helperResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	// 90s was too tight for large estates (thousands of VMs, each with
+	// layoutEx.file) — one slow Retrieve failed the whole collection.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
 	u, err := soap.ParseURL(req.URL)
@@ -819,13 +837,13 @@ func collectAll(req helperRequest) (helperResponse, error) {
 		}
 	}
 	for i := range hosts {
-		hosts[i].Tags = tagNames[hosts[i].ID]
+		hosts[i].Tags = tagsFor(tagNames, hosts[i].ID)
 	}
 	for i := range datastores {
-		datastores[i].Tags = tagNames[datastores[i].ID]
+		datastores[i].Tags = tagsFor(tagNames, datastores[i].ID)
 	}
 	for i := range clusters {
-		clusters[i].Tags = tagNames[clusters[i].ID]
+		clusters[i].Tags = tagsFor(tagNames, clusters[i].ID)
 	}
 
 	// License info requires elevated vCenter permissions (read-only accounts
@@ -909,7 +927,7 @@ func collectAll(req helperRequest) (helperResponse, error) {
 		}
 
 		vmInfo := mapVMInfo(vm, hostName, clusterName, poolName, folderName, fieldNames)
-		vmInfo.Tags = tagNames[vm.Reference().Value]
+		vmInfo.Tags = tagsFor(tagNames, vm.Reference().Value)
 		resp.VMs = append(resp.VMs, vmInfo)
 		resp.CPUs = append(resp.CPUs, mapVMCPU(vm, hostName, clusterName))
 		resp.Memory = append(resp.Memory, mapVMMemory(vm, hostName, clusterName))
@@ -1014,7 +1032,7 @@ func collectPerformance(ctx context.Context, client *govmomi.Client, intervalMin
 	defer cv.Destroy(ctx)
 
 	var vms []mo.VirtualMachine
-	if err := cv.Retrieve(ctx, []string{"VirtualMachine"}, []string{"name", "runtime.powerState", "config.uuid"}, &vms); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"VirtualMachine"}, []string{"name", "runtime.powerState", "config.uuid"}, &vms); err != nil {
 		return nil, performanceCoverage{}, err
 	}
 
@@ -1195,7 +1213,7 @@ func collectVMs(ctx context.Context, client *govmomi.Client) ([]mo.VirtualMachin
 	}
 
 	var raw []mo.VirtualMachine
-	if err := cv.Retrieve(ctx, []string{"VirtualMachine"}, props, &raw); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"VirtualMachine"}, props, &raw); err != nil {
 		return nil, err
 	}
 	return raw, nil
@@ -1224,7 +1242,7 @@ func collectHosts(ctx context.Context, client *govmomi.Client, clusterNames map[
 	}
 
 	var raw []mo.HostSystem
-	if err := cv.Retrieve(ctx, []string{"HostSystem"}, props, &raw); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"HostSystem"}, props, &raw); err != nil {
 		return nil, err
 	}
 
@@ -1318,7 +1336,7 @@ func collectHosts(ctx context.Context, client *govmomi.Client, clusterNames map[
 		}
 
 		qs := h.Summary.QuickStats
-		if info.NumCPUCores > 0 {
+		if info.NumCPUCores > 0 && info.CPUMhz > 0 {
 			pct := float64(qs.OverallCpuUsage) / (float64(info.NumCPUCores) * float64(info.CPUMhz)) * 100
 			info.CPUUsagePercent = &pct
 		}
@@ -1379,7 +1397,7 @@ func runningVMCountsByHost(ctx context.Context, client *govmomi.Client) (map[str
 	defer cv.Destroy(ctx)
 
 	var raw []mo.VirtualMachine
-	if err := cv.Retrieve(ctx, []string{"VirtualMachine"}, []string{"runtime.host", "runtime.powerState"}, &raw); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"VirtualMachine"}, []string{"runtime.host", "runtime.powerState"}, &raw); err != nil {
 		return nil, err
 	}
 
@@ -1401,7 +1419,7 @@ func collectDatastores(ctx context.Context, client *govmomi.Client, fieldNames m
 	defer cv.Destroy(ctx)
 
 	var raw []mo.Datastore
-	if err := cv.Retrieve(ctx, []string{"Datastore"}, []string{"summary", "vm", "host", "configStatus", "customValue"}, &raw); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"Datastore"}, []string{"summary", "vm", "host", "configStatus", "customValue"}, &raw); err != nil {
 		return nil, err
 	}
 
@@ -1436,7 +1454,7 @@ func collectClusters(ctx context.Context, client *govmomi.Client, fieldNames map
 	defer cv.Destroy(ctx)
 
 	var raw []mo.ClusterComputeResource
-	if err := cv.Retrieve(ctx, []string{"ClusterComputeResource"}, []string{"name", "configStatus", "summary", "configuration", "host", "customValue"}, &raw); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"ClusterComputeResource"}, []string{"name", "configStatus", "summary", "configuration", "host", "customValue"}, &raw); err != nil {
 		return nil, err
 	}
 
@@ -1450,10 +1468,13 @@ func collectClusters(ctx context.Context, client *govmomi.Client, fieldNames map
 			CustomAttributes: resolveCustomAttributes(c.CustomValue, fieldNames),
 		}
 
-		if summary := c.Summary.GetComputeResourceSummary(); summary != nil {
-			info.NumEffectiveHosts = int(summary.NumEffectiveHosts)
-			info.TotalCPUMHz = int(summary.TotalCpu)
-			info.TotalMemoryMiB = int(summary.TotalMemory / (1024 * 1024))
+		// Summary is an interface — calling through a nil one panics.
+		if c.Summary != nil {
+			if summary := c.Summary.GetComputeResourceSummary(); summary != nil {
+				info.NumEffectiveHosts = int(summary.NumEffectiveHosts)
+				info.TotalCPUMHz = int(summary.TotalCpu)
+				info.TotalMemoryMiB = int(summary.TotalMemory / (1024 * 1024))
+			}
 		}
 
 		if das := c.Configuration.DasConfig; das.Enabled != nil {
@@ -1550,7 +1571,7 @@ func collectVSwitchesAndPorts(ctx context.Context, client *govmomi.Client) ([]vS
 
 	var hosts []mo.HostSystem
 	props := []string{"name", "config.network.vswitch", "config.network.portgroup"}
-	if err := cv.Retrieve(ctx, []string{"HostSystem"}, props, &hosts); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"HostSystem"}, props, &hosts); err != nil {
 		return nil, nil, err
 	}
 
@@ -1602,7 +1623,7 @@ func collectDVSwitches(ctx context.Context, client *govmomi.Client) ([]dvSwitchI
 	defer cv.Destroy(ctx)
 
 	var raw []mo.DistributedVirtualSwitch
-	if err := cv.Retrieve(ctx, []string{"DistributedVirtualSwitch"}, []string{"name", "uuid", "summary", "portgroup"}, &raw); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"DistributedVirtualSwitch"}, []string{"name", "uuid", "summary", "portgroup"}, &raw); err != nil {
 		return nil, err
 	}
 
@@ -1629,7 +1650,7 @@ func collectDVPortgroups(ctx context.Context, client *govmomi.Client) ([]dvPortI
 	defer cv.Destroy(ctx)
 
 	var raw []mo.DistributedVirtualPortgroup
-	if err := cv.Retrieve(ctx, []string{"DistributedVirtualPortgroup"}, []string{"name", "config"}, &raw); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"DistributedVirtualPortgroup"}, []string{"name", "config"}, &raw); err != nil {
 		return nil, err
 	}
 
@@ -1673,7 +1694,7 @@ func collectResourcePools(ctx context.Context, client *govmomi.Client) ([]resour
 	defer cv.Destroy(ctx)
 
 	var raw []mo.ResourcePool
-	if err := cv.Retrieve(ctx, []string{"ResourcePool"}, []string{"name", "owner", "config", "vm"}, &raw); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"ResourcePool"}, []string{"name", "owner", "config", "vm"}, &raw); err != nil {
 		return nil, err
 	}
 
@@ -1730,7 +1751,7 @@ func collectVApps(ctx context.Context, client *govmomi.Client) ([]vAppInfo, erro
 	defer cv.Destroy(ctx)
 
 	var raw []mo.VirtualApp
-	if err := cv.Retrieve(ctx, []string{"VirtualApp"}, []string{"name", "owner", "vm", "vAppConfig"}, &raw); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"VirtualApp"}, []string{"name", "owner", "vm", "vAppConfig"}, &raw); err != nil {
 		return nil, err
 	}
 
@@ -1774,7 +1795,7 @@ func collectHBAs(ctx context.Context, client *govmomi.Client) ([]hbaInfo, error)
 	defer cv.Destroy(ctx)
 
 	var hosts []mo.HostSystem
-	if err := cv.Retrieve(ctx, []string{"HostSystem"}, []string{"name", "config.storageDevice.hostBusAdapter"}, &hosts); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"HostSystem"}, []string{"name", "config.storageDevice.hostBusAdapter"}, &hosts); err != nil {
 		return nil, err
 	}
 
@@ -1807,7 +1828,7 @@ func collectNics(ctx context.Context, client *govmomi.Client) ([]nicInfo, error)
 	defer cv.Destroy(ctx)
 
 	var hosts []mo.HostSystem
-	if err := cv.Retrieve(ctx, []string{"HostSystem"}, []string{"name", "config.network.pnic"}, &hosts); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"HostSystem"}, []string{"name", "config.network.pnic"}, &hosts); err != nil {
 		return nil, err
 	}
 
@@ -1846,7 +1867,7 @@ func collectVMKernelPorts(ctx context.Context, client *govmomi.Client) ([]vmkInf
 	defer cv.Destroy(ctx)
 
 	var hosts []mo.HostSystem
-	if err := cv.Retrieve(ctx, []string{"HostSystem"}, []string{"name", "config.network.vnic"}, &hosts); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"HostSystem"}, []string{"name", "config.network.vnic"}, &hosts); err != nil {
 		return nil, err
 	}
 
@@ -1883,7 +1904,7 @@ func collectMultipaths(ctx context.Context, client *govmomi.Client) ([]multipath
 
 	var hosts []mo.HostSystem
 	props := []string{"name", "config.storageDevice.multipathInfo", "config.storageDevice.scsiLun"}
-	if err := cv.Retrieve(ctx, []string{"HostSystem"}, props, &hosts); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"HostSystem"}, props, &hosts); err != nil {
 		return nil, err
 	}
 
@@ -2481,7 +2502,7 @@ func dvPortgroupKeyNameMap(ctx context.Context, client *govmomi.Client) (map[str
 	defer cv.Destroy(ctx)
 
 	var pgs []mo.DistributedVirtualPortgroup
-	if err := cv.Retrieve(ctx, []string{"DistributedVirtualPortgroup"}, []string{"name", "key"}, &pgs); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{"DistributedVirtualPortgroup"}, []string{"name", "key"}, &pgs); err != nil {
 		return nil, err
 	}
 
@@ -2504,7 +2525,7 @@ func nameMap(ctx context.Context, client *govmomi.Client, kind string) (map[type
 	defer cv.Destroy(ctx)
 
 	var objs []mo.ManagedEntity
-	if err := cv.Retrieve(ctx, []string{kind}, []string{"name"}, &objs); err != nil {
+	if err := retrieveTolerant(ctx, cv, []string{kind}, []string{"name"}, &objs); err != nil {
 		return nil, err
 	}
 
@@ -2513,6 +2534,23 @@ func nameMap(ctx context.Context, client *govmomi.Client, kind string) (map[type
 		result[o.Reference()] = o.Name
 	}
 	return result, nil
+}
+
+// retrieveTolerant is ContainerView.Retrieve minus its all-or-nothing
+// failure mode: govmomi turns the FIRST per-object MissingSet fault (a VM
+// deleted mid-collection, an inaccessible VM's layoutEx, a NoPermission on
+// one object) into an error for the whole call, which failed the entire
+// collectAll. Dropping the MissingSet just leaves those properties unset —
+// every caller already nil-checks optional fields.
+func retrieveTolerant(ctx context.Context, cv *view.ContainerView, kind []string, ps []string, dst any) error {
+	var content []types.ObjectContent
+	if err := cv.Retrieve(ctx, kind, ps, &content); err != nil {
+		return err
+	}
+	for i := range content {
+		content[i].MissingSet = nil
+	}
+	return mo.LoadObjectContent(content, dst)
 }
 
 // parentMap returns moref -> parent moref for every object of the given type
@@ -2529,6 +2567,12 @@ func parentMap(ctx context.Context, client *govmomi.Client, kind string) (map[ty
 	objRefs, err := cv.Find(ctx, []string{kind}, nil)
 	if err != nil {
 		return nil, err
+	}
+	// property.Collector.Retrieve rejects an empty ref list outright
+	// ("object references is empty") — a vCenter with no hosts yet, or an
+	// account that can't see any, must not fail the whole collection.
+	if len(objRefs) == 0 {
+		return map[types.ManagedObjectReference]types.ManagedObjectReference{}, nil
 	}
 	var refs []mo.ManagedEntity
 	if err := pc.Retrieve(ctx, objRefs, []string{"parent"}, &refs); err != nil {

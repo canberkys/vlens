@@ -84,6 +84,43 @@ public struct VirtualMachineInfo: Codable, Identifiable, Sendable {
     }
 }
 
+extension VirtualMachineInfo {
+    private enum CodingKeys: String, CodingKey {
+        case name, powerState, template, guestOSFullName, cpuCount, memoryMiB, hostName,
+             clusterName, resourcePoolName, primaryIPAddress, vmwareToolsStatus, vmUUID,
+             folderName, consolidationNeeded, configStatus, tags, customAttributes,
+             pvscsiControllerCount
+    }
+
+    /// Hand-written only so fields added after v1.0.0 decode with a default
+    /// when absent. `InventorySnapshot.fullVMList` persists this type to
+    /// disk, and a snapshot saved by an older version lacks those keys —
+    /// with synthesized decoding one such entry failed the whole
+    /// snapshots.json (empty Snapshots tab, add/delete throwing). Any field
+    /// added here later must use `decodeIfPresent` too.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        name = try c.decode(String.self, forKey: .name)
+        powerState = try c.decode(PowerState.self, forKey: .powerState)
+        template = try c.decode(Bool.self, forKey: .template)
+        guestOSFullName = try c.decodeIfPresent(String.self, forKey: .guestOSFullName)
+        cpuCount = try c.decode(Int.self, forKey: .cpuCount)
+        memoryMiB = try c.decode(Int.self, forKey: .memoryMiB)
+        hostName = try c.decode(String.self, forKey: .hostName)
+        clusterName = try c.decodeIfPresent(String.self, forKey: .clusterName)
+        resourcePoolName = try c.decodeIfPresent(String.self, forKey: .resourcePoolName)
+        primaryIPAddress = try c.decodeIfPresent(String.self, forKey: .primaryIPAddress)
+        vmwareToolsStatus = try c.decodeIfPresent(String.self, forKey: .vmwareToolsStatus)
+        vmUUID = try c.decode(String.self, forKey: .vmUUID)
+        folderName = try c.decodeIfPresent(String.self, forKey: .folderName)
+        consolidationNeeded = try c.decodeIfPresent(Bool.self, forKey: .consolidationNeeded) ?? false
+        configStatus = try c.decodeIfPresent(EntityStatus.self, forKey: .configStatus) ?? .gray
+        tags = try c.decodeIfPresent([String].self, forKey: .tags) ?? []
+        customAttributes = try c.decodeIfPresent([String].self, forKey: .customAttributes) ?? []
+        pvscsiControllerCount = try c.decodeIfPresent(Int.self, forKey: .pvscsiControllerCount) ?? 0
+    }
+}
+
 public enum PowerState: String, Codable, Sendable {
     case poweredOn
     case poweredOff
