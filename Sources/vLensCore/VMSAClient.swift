@@ -48,13 +48,13 @@ public struct VMSAClient: Sendable {
         SecurityAdvisory(
             id: raw.notificationId,
             documentId: raw.documentId,
-            title: raw.title,
-            severity: raw.severity,
-            status: raw.status,
-            publishedDate: publishedDateFormatter.date(from: raw.published),
-            cves: raw.affectedCve.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty },
-            affectedProducts: raw.supportProducts,
-            url: raw.notificationUrl
+            title: raw.title ?? raw.documentId,
+            severity: raw.severity ?? "",
+            status: raw.status ?? "",
+            publishedDate: raw.published.flatMap { publishedDateFormatter.date(from: $0) },
+            cves: (raw.affectedCve ?? "").split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty },
+            affectedProducts: raw.supportProducts ?? "",
+            url: raw.notificationUrl ?? ""
         )
     }
 
@@ -88,16 +88,20 @@ public struct VMSAClient: Sendable {
         let list: [RawAdvisory]
     }
 
+    /// Everything except the IDs is optional: the live API really does
+    /// return `"supportProducts": null` on some advisories, and with
+    /// non-optional fields one such row failed the whole list decode
+    /// (vSecurity silently empty).
     private struct RawAdvisory: Decodable {
         let documentId: String
         let notificationId: Int
-        let notificationUrl: String
-        let published: String
-        let severity: String
-        let status: String
-        let supportProducts: String
-        let title: String
-        let affectedCve: String
+        let notificationUrl: String?
+        let published: String?
+        let severity: String?
+        let status: String?
+        let supportProducts: String?
+        let title: String?
+        let affectedCve: String?
     }
 }
 

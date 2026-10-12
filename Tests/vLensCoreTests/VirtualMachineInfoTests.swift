@@ -16,3 +16,35 @@ import Testing
     #expect(vm.tags == ["prod", "team-a"])
     #expect(vm.customAttributes == ["Owner: infra-team"])
 }
+
+/// A VM persisted by v1.5.0 (snapshot "Include full VM inventory") has none
+/// of the later fields — it must still decode, or the whole snapshots.json
+/// fails to load.
+@Test func decodesVirtualMachineInfoSavedByOlderVersion() throws {
+    let json = """
+    {"name":"web-01","powerState":"poweredOff","template":false,"cpuCount":2,"memoryMiB":4096,"hostName":"esxi01.local","vmUUID":"abc-123","consolidationNeeded":true}
+    """.data(using: .utf8)!
+
+    let vm = try JSONDecoder().decode(VirtualMachineInfo.self, from: json)
+
+    #expect(vm.consolidationNeeded)
+    #expect(vm.configStatus == .gray)
+    #expect(vm.tags.isEmpty)
+    #expect(vm.customAttributes.isEmpty)
+    #expect(vm.pvscsiControllerCount == 0)
+}
+
+/// Encode → decode must still round-trip every field now that decoding is
+/// hand-written.
+@Test func virtualMachineInfoRoundTrips() throws {
+    let json = """
+    {"name":"db","powerState":"suspended","template":true,"cpuCount":8,"memoryMiB":1024,"hostName":"h","vmUUID":"u","folderName":"f","consolidationNeeded":false,"pvscsiControllerCount":2,"configStatus":"red","tags":["a"],"customAttributes":["K: V"]}
+    """.data(using: .utf8)!
+    let vm = try JSONDecoder().decode(VirtualMachineInfo.self, from: json)
+    let again = try JSONDecoder().decode(VirtualMachineInfo.self, from: JSONEncoder().encode(vm))
+    #expect(again.folderName == "f")
+    #expect(again.configStatus == .red)
+    #expect(again.pvscsiControllerCount == 2)
+    #expect(again.tags == ["a"])
+    #expect(again.customAttributes == ["K: V"])
+}

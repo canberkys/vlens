@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -193,5 +195,24 @@ func TestBuildPerformanceInfoIgnoresNoDataSeries(t *testing.T) {
 
 	if info.AvgCPUUsagePercent != nil || info.MaxCPUUsagePercent != nil {
 		t.Fatalf("expected nil CPU fields for an all-(-1) series, got avg=%v max=%v", info.AvgCPUUsagePercent, info.MaxCPUUsagePercent)
+	}
+}
+
+// Regression: an untagged object (or every object, when the tagging session
+// failed) must encode as "tags":[] — never null, which the Swift side's
+// non-optional [String] can't decode (Reddit report against v1.8.0).
+func TestTagsForNeverEncodesNull(t *testing.T) {
+	tagNames := map[string][]string{"vm-1": {"prod"}}
+	for _, id := range []string{"vm-1", "vm-2"} {
+		data, err := json.Marshal(virtualMachineInfo{Tags: tagsFor(tagNames, id), CustomAttributes: []string{}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(data), `"tags":null`) {
+			t.Fatalf("%s: tags encoded as null: %s", id, data)
+		}
+	}
+	if got := tagsFor(nil, "vm-1"); got == nil {
+		t.Fatal("tagsFor(nil map) returned nil")
 	}
 }
