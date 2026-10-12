@@ -3,6 +3,20 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.8.2] - 2026-10-12 (+03)
+
+### Added
+- **Double-click a column divider to fit the column** (GitHub issue #36,
+  thanks [u/squuiidy](https://www.reddit.com/r/vmware/comments/1x3uiqq/comment/pfgxio8/)).
+  Double-clicking the divider to the right of any column header sizes that
+  column to fit its widest visible value (or its header, if wider), on every
+  tab, the same gesture as Finder and Excel.
+
+### Fixed
+- On macOS 26, the window's title band and the demo-mode banner no longer
+  start at a different left edge than the table below them, and the
+  toolbar's first icon now lines up with the table text.
+
 ## [1.8.1] - 2026-10-12 (+03)
 
 ### Fixed

@@ -6,28 +6,26 @@
         <description>vLens release updates</description>
         <language>en</language>
         <item>
-            <title>Version 1.8.1</title>
-            <pubDate>Mon, 12 Oct 2026 07:20:18 +0000</pubDate>
-            <sparkle:version>32</sparkle:version>
-            <sparkle:shortVersionString>1.8.1</sparkle:shortVersionString>
+            <title>Version 1.8.2</title>
+            <pubDate>Mon, 12 Oct 2026 19:17:03 +0000</pubDate>
+            <sparkle:version>33</sparkle:version>
+            <sparkle:shortVersionString>1.8.2</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[
+<h4>Added</h4>
+<ul>
+<li><strong>Double-click a column divider to fit the column</strong> (GitHub issue #36, thanks <a href="https://www.reddit.com/r/vmware/comments/1x3uiqq/comment/pfgxio8/">u/squuiidy</a>). Double-clicking the divider to the right of any column header sizes that column to fit its widest visible value (or its header, if wider), on every tab, the same gesture as Finder and Excel.</li>
+</ul>
 <h4>Fixed</h4>
 <ul>
-<li><strong>Collection failed with &quot;Couldn&#x27;t read the collection helper&#x27;s response … Path: vms[N].tags&quot;</strong> whenever a VM, host, datastore or cluster had no vSphere tag (or the tagging session wasn&#x27;t available). Untagged objects now come back with an empty tag list.</li>
-<li><strong>Snapshot history could disappear after upgrading.</strong> Snapshots taken with &quot;Include full VM inventory&quot; by an older version failed to load once newer per-VM fields were added, which emptied the Snapshots tab and blocked taking or deleting snapshots. Older snapshots now load with sensible defaults for the fields they predate.</li>
-<li>A single object that couldn&#x27;t be read (for example a VM deleted mid-collection, or one the account lacks permission on) no longer fails the entire collection.</li>
-<li>Connecting to a vCenter with no visible hosts no longer fails with &quot;host parent lookup failed&quot;.</li>
-<li>A helper crash or an unencodable value is now reported as a readable error instead of &quot;exited without returning any data&quot;.</li>
-<li>Large environments get more time: the collection timeout is now 5 minutes instead of 90 seconds.</li>
-<li>The security-advisory list no longer goes empty when Broadcom&#x27;s API returns an advisory with missing fields.</li>
+<li>On macOS 26, the window&#x27;s title band and the demo-mode banner no longer start at a different left edge than the table below them, and the toolbar&#x27;s first icon now lines up with the table text.</li>
 </ul>
             ]]></description>
             <enclosure
-                url="https://github.com/canberkys/vlens/releases/download/v1.8.1/vLens-1.8.1.dmg"
-                length="13563096"
+                url="https://github.com/canberkys/vlens/releases/download/v1.8.2/vLens-1.8.2.dmg"
+                length="13589209"
                 type="application/octet-stream"
-                sparkle:edSignature="Al0WxfEmo0vpHdhh/iC0S8x/TYB3GC+bQDpsKhHE9xi4yuZkSYL6t98Q6tf86Lyt2gIsN790JNNG4WX3LxAVAQ==" />
+                sparkle:edSignature="wjszRNZKTsa5Ccv+UX690nIOKliRThUbLcmsFdqD7UlDrWCfHnVbVHEPXFONgh3ZeJUGKwvbFCNiZG8ACFxJBQ==" />
         </item>
     </channel>
 </rss>
