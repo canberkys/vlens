@@ -31,11 +31,10 @@ end-of-life dates.
 **Status**: signed, notarized, and distributed — see
 [Releases](https://github.com/canberkys/vlens/releases) for a ready-to-run
 DMG, or [Building from source](#building-from-source) below. Sparkle checks
-that feed automatically and offers in-app updates. Still in active
-development, and not yet validated against a real vCenter 7/8/9 environment
-(everything so far is verified against
+that feed automatically and offers in-app updates. Validated against real
+vCenter 7 and 8 environments, and continuously tested against
 [vcsim](#testing-without-a-real-vcenter), govmomi's protocol-accurate
-simulator).
+simulator. vCenter 9 hasn't been tested yet — reports welcome.
 
 ---
 
@@ -56,6 +55,7 @@ simulator).
 | **PDF report** *(not in RVTools)* | One-page management summary — vCenter identity, counts, charts, vHealth status — generated on demand |
 | **Security advisories** *(not in RVTools)* | Quiet toolbar badge when Broadcom publishes a CRITICAL/HIGH VMware security advisory |
 | **Export** | CSV and XLSX, whatever the current tab shows, already filtered by search |
+| **Scheduled automation & CLI** | Bundled `vlens-cli` for headless snapshots, exports, and multi-vCenter merged exports; Preferences can schedule snapshots via a launchd agent |
 | **Auto Refresh** | Optionally re-collect inventory on a timer (1 minute–1 hour) while connected — off by default |
 | **Trust-on-first-use** | Certificate fingerprint shown and pinned on first connect, like SSH host keys — a changed certificate later is a hard block, never silent |
 | **Demo mode** | Every tab filled with realistic mock data — try the whole app without a vCenter |
@@ -148,23 +148,34 @@ vHealth rule status live in [`docs/vLens-Reference.md`](docs/vLens-Reference.md)
 ~/Library/Application Support/vLens/
   connection-profiles.json    # saved host/username (never the password)
   inventory-snapshots.json    # Snapshots tab history
-  certificate-trust.json      # pinned certificate fingerprints (trust-on-first-use)
+  trusted-certificates.json   # pinned certificate fingerprints (trust-on-first-use)
 ```
 
+The snapshot file's location can be changed in Preferences (e.g. to a shared
+folder). Enabling scheduled automation also writes a launchd agent to
+`~/Library/LaunchAgents/com.canberkki.vlens.scheduler.plist`.
+
 Passwords, when you choose to save a connection, go to macOS Keychain — never
-to a file on disk. No analytics, no telemetry, no phone-home. The Feedback
-screen is the one thing that talks to the outside world, and only when you
-explicitly click Send — it shows you exactly what diagnostic info (app/macOS
-version, connected vCenter version — never your host, username, or password)
-would be attached before it goes anywhere.
+to a file on disk. No analytics, no telemetry. Apart from your vCenter, vLens
+only makes these outbound requests, none of which carry inventory data:
+
+- **Update check** — Sparkle fetches `appcast.xml` from this GitHub repo.
+- **Security advisories** — Broadcom's public VMware advisory list.
+- **End-of-life dates** — ESXi/vCenter release data from endoflife.date.
+- **Feedback** — only when you explicitly click Send. The screen shows exactly
+  what diagnostic info (app/macOS version, connected vCenter version — never
+  your host, username, or password) would be attached before it goes anywhere.
+
+The advisory and end-of-life checks can each be turned off in Preferences.
 
 ---
 
 ## Roadmap
 
-See `CLAUDE.md` (project context/status log) for the detailed, actively
-maintained roadmap. Near-term: real vCenter 7/8/9 validation once VPN
-access allows it.
+Near-term: vCenter 9 validation and hardening from real-world reports (see
+[Issues](https://github.com/canberkys/vlens/issues)). Known gaps and the
+longer-term plan live in [`docs/vLens-Reference.md` §10](docs/vLens-Reference.md#10-known-gaps--roadmap);
+release history is in [`CHANGELOG.md`](CHANGELOG.md).
 
 ---
 
