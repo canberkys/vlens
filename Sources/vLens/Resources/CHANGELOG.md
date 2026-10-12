@@ -3,6 +3,17 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
+## [1.8.1] - 2026-10-12 (+03)
+
+### Fixed
+- **Collection failed with "Couldn't read the collection helper's response … Path: vms[N].tags"** whenever a VM, host, datastore or cluster had no vSphere tag (or the tagging session wasn't available). Untagged objects now come back with an empty tag list.
+- **Snapshot history could disappear after upgrading.** Snapshots taken with "Include full VM inventory" by an older version failed to load once newer per-VM fields were added, which emptied the Snapshots tab and blocked taking or deleting snapshots. Older snapshots now load with sensible defaults for the fields they predate.
+- A single object that couldn't be read (for example a VM deleted mid-collection, or one the account lacks permission on) no longer fails the entire collection.
+- Connecting to a vCenter with no visible hosts no longer fails with "host parent lookup failed".
+- A helper crash or an unencodable value is now reported as a readable error instead of "exited without returning any data".
+- Large environments get more time: the collection timeout is now 5 minutes instead of 90 seconds.
+- The security-advisory list no longer goes empty when Broadcom's API returns an advisory with missing fields.
+
 ## [1.8.0] - 2026-09-08 (+03)
 
 ### Added

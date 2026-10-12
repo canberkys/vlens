@@ -11,7 +11,10 @@ set -euo pipefail
 
 APP_NAME="vLens"
 VERSION="1.8.1"
-SIGN_IDENTITY="Developer ID Application: Canberk KILIÇARSLAN (9QB26WKA4K)"
+# Overridable with the certificate's SHA-1 hash: some shells fail to match
+# the "Ç" in the name ("no identity found") even though the identity is
+# right there in the keychain.
+SIGN_IDENTITY="${SIGN_IDENTITY:-Developer ID Application: Canberk KILIÇARSLAN (9QB26WKA4K)}"
 NOTARY_PROFILE="vlens-notary"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
