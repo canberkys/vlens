@@ -3,7 +3,7 @@
 All notable changes to vLens are logged here, newest first. Each entry
 corresponds to a merged PR. Format: `## [version] - date time (timezone)`.
 
-## [Unreleased]
+## [1.8.2] - 2026-10-12 (+03)
 
 ### Added
 - **Double-click a column divider to fit the column** (GitHub issue #36,
