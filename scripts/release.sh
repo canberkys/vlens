@@ -10,7 +10,7 @@ set -euo pipefail
 # (also SwiftPM-only, also signed/notarized this way).
 
 APP_NAME="vLens"
-VERSION="1.8.1"
+VERSION="1.8.2"
 # Overridable with the certificate's SHA-1 hash: some shells fail to match
 # the "Ç" in the name ("no identity found") even though the identity is
 # right there in the keychain.
